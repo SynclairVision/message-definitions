@@ -362,43 +362,43 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
     uint8_t offset = 0;
-    memcpy(&params.mode, (void *)&msg.data[offset], sizeof(uint8_t));
+    memcpy(&params.mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.overlay_mode, (void *)&msg.data[offset], sizeof(uint8_t));
+    memcpy(&params.overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.sorting_mode, (void *)&msg.data[offset], sizeof(uint8_t));
+    memcpy(&params.sorting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.num_detections, (void *)&msg.data[offset], sizeof(uint8_t));
+    memcpy(&params.num_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.overlay_box, (void *)&msg.data[offset], sizeof(bounding_box));
+    memcpy(&params.overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
     offset += sizeof(bounding_box);
-    memcpy(&params.overlay_roi_size, (void *)&msg.data[offset], sizeof(uint16_t));
+    memcpy(&params.overlay_roi_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
 }
 
 inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parameters &params) {
     uint8_t offset = 0;
     int32_t mrad;
-    memcpy(&params.index, (void *)&msg.data[offset], sizeof(uint8_t));
+    memcpy(&params.index, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.score, (void *)&msg.data[offset], sizeof(int8_t));
+    memcpy(&params.score, (void *)&raw_msg.data[offset], sizeof(int8_t));
     offset += sizeof(int8_t);
-    memcpy(&mrad, (void *)&msg.data[offset], sizeof(int32_t));
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.rel_heading = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy(&mrad, (void *)&msg.data[offset], sizeof(int32_t));
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.rel_tilt = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mrad, (void *)&msg.data[offset], sizeof(int32_t));
-    params.lat = static_cast<float>(mrad) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.latitude = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mrad, (void *)&msg.data[offset], sizeof(int32_t));
-    params.lon = static_cast<float>(mrad) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.longitude = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mrad, (void *)&msg.data[offset], sizeof(int32_t));
-    params.alt = static_cast<float>(mrad) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.altitude = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mrad, (void *)&msg.data[offset], sizeof(int32_t));
-    params.dist = static_cast<float>(mrad) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.distance = static_cast<float>(mrad) / 1000.0f;
 }
 
 inline void unpack_cam_lens_parameters(message &raw_msg, cam_lens_parameters &params) {
