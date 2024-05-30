@@ -121,6 +121,9 @@ struct cam_offset_parameters {
     uint8_t cam_id;
     float x; // -1 < x < 1
     float y; // -1 < y < 1
+    uint8_t frame_rel;
+    float yaw;
+    float pitch;
 };
 
 struct cam_fov_parameters {
@@ -246,6 +249,28 @@ inline void pack_cam_crop_mode_parameters(message &msg, uint8_t cam, uint8_t mod
     memcpy((void *)&msg.data[1], &mode, sizeof(uint8_t));
 }
 
+inline void pack_cam_offset_parameters(message &msg, uint8_t cam, float x, float y, uint8_t frame_rel, float yaw = 0, float pitch = 0) {
+    msg.param_type = CAM_OFFSET;
+    uint8_t offset = 0;
+    int16_t offs_int;
+    int32_t mrad;
+    memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    offs_int = static_cast<int16_t>(x * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    offs_int = static_cast<int16_t>(y * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    memcpy((void *)&msg.data[offset], &frame_rel, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    mrad = static_cast<int32_t>(yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+}
+
 inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     msg.param_type = CAM_FOV;
     int16_t mrad;
@@ -258,7 +283,7 @@ inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
 
 /* MESSAGE PACKING
     For each parameter and info there is one set_parameter_type
-    Only one function for get parameters is needed.
+    Only one function for get parameters without arguments is needed.
 */
 inline void pack_get_parameters(message &msg, uint8_t param_type) {
     msg.version = VERSION;
@@ -279,6 +304,11 @@ inline void pack_get_detected_roi_visible(message &msg) {
 inline void pack_get_detected_roi_all(message &msg) {
     pack_get_parameters(msg, DETECTED_ROI);
     msg.data[0] = 255;
+}
+
+inline void pack_get_cam_offset_parameters(message msg, uint8_t cam, float x, float y, uint8_t frame_rel) {
+    pack_get_parameters(msg, CAM_OFFSET);
+    pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
 }
 
 inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode) {
@@ -444,14 +474,24 @@ inline void unpack_cam_crop_mode_parameters(message &raw_msg, cam_crop_mode_para
 
 inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters &params) {
     int16_t x, y;
+    int32_t yaw, pitch;
     uint8_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&x, (void *)&raw_msg.data[offset], sizeof(int16_t));
     offset += sizeof(int16_t);
     memcpy((void *)&y, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    offset += sizeof(int16_t);
+    memcpy((void *)&params.frame_rel, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&yaw, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&pitch, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
     params.x = static_cast<float>(x) / S16_MAX_F;
     params.y = static_cast<float>(y) / S16_MAX_F;
+    params.yaw = static_cast<float>(yaw) / 1000.0f;
+    params.pitch = static_cast<float>(pitch) / 1000.0f;
 }
 
 inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &params) {
