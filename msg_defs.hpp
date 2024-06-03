@@ -306,7 +306,7 @@ inline void pack_get_detected_roi_all(message &msg) {
     msg.data[0] = 255;
 }
 
-inline void pack_get_cam_offset_parameters(message msg, uint8_t cam, float x, float y, uint8_t frame_rel) {
+inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, float y, uint8_t frame_rel) {
     pack_get_parameters(msg, CAM_OFFSET);
     pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
 }
