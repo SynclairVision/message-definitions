@@ -14,8 +14,12 @@ static constexpr uint32_t VERSION = 0x00;
 static constexpr float U16_MAX_F = 65535.0f;
 static constexpr float S16_MAX_F = U16_MAX_F / 2.0f;
 
+static constexpr uint8_t CAP_FLAG_SINGLE_IMAGE = 0x01;
+static constexpr uint8_t CAP_FLAG_VIDEO = 0x02;
+
 enum PARAM_TYPE: uint8_t {
     VIDEO_OUTPUT,
+    CAPTURE,
     DETECTION,
     DETECTED_ROI,
     CAM_LENS,
@@ -63,6 +67,13 @@ struct video_output_parameters {
     uint8_t layout_mode;
     //layout info, ignored for SET_PARAMETERS
     bounding_box views[4];
+};
+
+struct capture_parameters {
+    bool cap_single_image;
+    bool record_video;
+    uint16_t images_captured;
+    uint16_t videos_captured;
 };
 
 struct detection_parameters {
@@ -157,6 +168,19 @@ inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t 
             offset += sizeof(uint16_t);
         }
     }
+}
+
+inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
+    msg.param_type = CAPTURE;
+    uint8_t offset = 0;
+    uint8_t cap_flags = 0x0;
+    cap_flags |= pic ? CAP_FLAG_SINGLE_IMAGE : 0;
+    cap_flags |= vid ? CAP_FLAG_VIDEO : 0;
+    memcpy((void *)&msg.data[offset], &cap_flags, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &num_pics, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
 }
 
 inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode, uint8_t num_detections, bounding_box overlay_box, uint16_t overlay_roi_size) {
@@ -323,6 +347,12 @@ inline void pack_set_video_output_parameters(message &msg, uint16_t width, uint1
     pack_video_output_parameters(msg, width, height, fps, layout_mode);
 }
 
+inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
+    msg.version = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_capture_parameters(msg, pic, vid);
+}
+
 inline void pack_set_cam_lens_parameters(message &msg, uint8_t lens_id) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
@@ -388,6 +418,18 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
         memcpy((void *)&params.views[i].h, (void *)&raw_msg.data[offset], sizeof(uint16_t));
         offset += sizeof(uint16_t);
     }
+}
+
+inline void unpack_capture_parameters(message &raw_msg, capture_parameters &params) {
+    uint8_t offset = 0;
+    uint8_t cap_flags = 0;
+    memcpy(&cap_flags, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&params.images_captured, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint16_t);
+    memcpy(&params.videos_captured, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.cap_single_image = cap_flags & CAP_FLAG_SINGLE_IMAGE;
+    params.record_video = cap_flags & CAP_FLAG_VIDEO;
 }
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
