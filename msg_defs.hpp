@@ -88,8 +88,8 @@ struct detection_parameters {
 struct detected_roi_parameters {
     uint8_t index;
     uint8_t score;
-    float rel_heading;
-    float rel_tilt;
+    float yaw_rel;
+    float pitch_rel;
     float latitude;
     float longitude;
     float altitude;
@@ -199,7 +199,7 @@ inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overla
     memcpy((void *)&msg.data[offset], &overlay_roi_size, sizeof(uint16_t));
 }
 
-inline void pack_detected_roi_parameters(message &msg, uint8_t index, int8_t score, float rel_heading, float rel_tilt, float lat, float lon, float alt, float dist) {
+inline void pack_detected_roi_parameters(message &msg, uint8_t index, int8_t score, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
     msg.param_type = DETECTED_ROI;
     uint8_t offset = 0;
     int32_t mrad;
@@ -207,10 +207,10 @@ inline void pack_detected_roi_parameters(message &msg, uint8_t index, int8_t sco
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &score, sizeof(int8_t));
     offset += sizeof(int8_t);
-    mrad = static_cast<int32_t>(rel_heading * 1000.0f);
+    mrad = static_cast<int32_t>(yaw_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(rel_tilt * 1000.0f);
+    mrad = static_cast<int32_t>(pitch_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
     mrad = static_cast<int32_t>(lat * 1000.0f);
