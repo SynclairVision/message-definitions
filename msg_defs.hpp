@@ -455,10 +455,10 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     memcpy(&params.score, (void *)&raw_msg.data[offset], sizeof(int8_t));
     offset += sizeof(int8_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.rel_heading = static_cast<float>(mrad) / 1000.0f;
+    params.yaw_rel = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.rel_tilt = static_cast<float>(mrad) / 1000.0f;
+    params.pitch_rel = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.latitude = static_cast<float>(mrad) / 1000.0f;
