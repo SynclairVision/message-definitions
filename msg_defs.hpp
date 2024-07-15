@@ -80,7 +80,6 @@ struct detection_parameters {
     uint8_t mode;
     uint8_t overlay_mode;
     uint8_t sorting_mode;
-    uint8_t num_detections;
     bounding_box overlay_box;
     uint16_t overlay_roi_size;
 };
@@ -88,6 +87,7 @@ struct detection_parameters {
 struct detected_roi_parameters {
     uint8_t index;
     uint8_t score;
+    uint8_t total_detections;
     float rel_heading;
     float rel_tilt;
     float latitude;
@@ -183,7 +183,7 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
     memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
 }
 
-inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode, uint8_t num_detections, bounding_box overlay_box, uint16_t overlay_roi_size) {
+inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode, bounding_box overlay_box, uint16_t overlay_roi_size) {
     msg.param_type = DETECTION;
     uint8_t offset = 0;
     memcpy((void *)&msg.data[offset], &mode, sizeof(uint8_t));
@@ -192,21 +192,21 @@ inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overla
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &sorting_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &num_detections, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &overlay_box, sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&msg.data[offset], &overlay_roi_size, sizeof(uint16_t));
 }
 
-inline void pack_detected_roi_parameters(message &msg, uint8_t index, int8_t score, float rel_heading, float rel_tilt, float lat, float lon, float alt, float dist) {
+inline void pack_detected_roi_parameters(message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float rel_heading, float rel_tilt, float lat, float lon, float alt, float dist) {
     msg.param_type = DETECTED_ROI;
     uint8_t offset = 0;
     int32_t mrad;
     memcpy((void *)&msg.data[offset], &index, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &score, sizeof(int8_t));
-    offset += sizeof(int8_t);
+    memcpy((void *)&msg.data[offset], &score, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &total_detections, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
     mrad = static_cast<int32_t>(rel_heading * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
@@ -440,8 +440,6 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     offset += sizeof(uint8_t);
     memcpy(&params.sorting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.num_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
     memcpy(&params.overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy(&params.overlay_roi_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
@@ -452,8 +450,10 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     int32_t mrad;
     memcpy(&params.index, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.score, (void *)&raw_msg.data[offset], sizeof(int8_t));
-    offset += sizeof(int8_t);
+    memcpy(&params.score, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&params.total_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.rel_heading = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
