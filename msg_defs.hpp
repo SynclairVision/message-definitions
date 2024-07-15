@@ -88,8 +88,8 @@ struct detected_roi_parameters {
     uint8_t index;
     uint8_t score;
     uint8_t total_detections;
-    float rel_heading;
-    float rel_tilt;
+    float yaw_rel;
+    float pitch_rel;
     float latitude;
     float longitude;
     float altitude;
@@ -197,7 +197,7 @@ inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overla
     memcpy((void *)&msg.data[offset], &overlay_roi_size, sizeof(uint16_t));
 }
 
-inline void pack_detected_roi_parameters(message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float rel_heading, float rel_tilt, float lat, float lon, float alt, float dist) {
+inline void pack_detected_roi_parameters(message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
     msg.param_type = DETECTED_ROI;
     uint8_t offset = 0;
     int32_t mrad;
@@ -207,10 +207,10 @@ inline void pack_detected_roi_parameters(message &msg, uint8_t total_detections,
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &total_detections, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    mrad = static_cast<int32_t>(rel_heading * 1000.0f);
+    mrad = static_cast<int32_t>(yaw_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(rel_tilt * 1000.0f);
+    mrad = static_cast<int32_t>(pitch_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
     mrad = static_cast<int32_t>(lat * 1000.0f);
@@ -338,7 +338,7 @@ inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, f
 inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, 0, {}, 0);
+    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, {}, 0);
 }
 
 inline void pack_set_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode) {
@@ -455,10 +455,10 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     memcpy(&params.total_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.rel_heading = static_cast<float>(mrad) / 1000.0f;
+    params.yaw_rel = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.rel_tilt = static_cast<float>(mrad) / 1000.0f;
+    params.pitch_rel = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.latitude = static_cast<float>(mrad) / 1000.0f;
