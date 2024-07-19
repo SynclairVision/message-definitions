@@ -22,7 +22,7 @@ enum PARAM_TYPE: uint8_t {
     CAPTURE,
     DETECTION,
     DETECTED_ROI,
-    CAM_LENS,
+    LENS,
     CAM_EULER,
     CAM_ZOOM,
     CAM_LOCK_FLAGS,
@@ -30,6 +30,7 @@ enum PARAM_TYPE: uint8_t {
     CAM_CROP_MODE,
     CAM_OFFSET,
     CAM_FOV,
+    CAM_TARGET,
 };
 
 enum MESSAGE_TYPE: uint8_t {
@@ -96,7 +97,7 @@ struct detected_roi_parameters {
     float distance;
 };
 
-struct cam_lens_parameters {
+struct lens_parameters {
     uint8_t lens_id;
 };
 
@@ -140,6 +141,13 @@ struct cam_offset_parameters {
 struct cam_fov_parameters {
     uint8_t cam_id;
     float fov;
+};
+
+struct cam_target_parameters {
+    uint8_t cam_id;
+    float t_latitude;
+    float t_longitude;
+    float t_altitude;
 };
 
 /* PARAMETER PACKING
@@ -226,8 +234,8 @@ inline void pack_detected_roi_parameters(message &msg, uint8_t total_detections,
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-inline void pack_cam_lens_parameters(message &msg, uint8_t lens_id) {
-    msg.param_type = CAM_LENS;
+inline void pack_lens_parameters(message &msg, uint8_t lens_id) {
+    msg.param_type = LENS;
     memcpy((void *)&msg.data[0], &lens_id, sizeof(uint8_t));
 }
 
@@ -305,14 +313,32 @@ inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int16_t));
 }
 
+inline void pack_cam_target_parameters(message &msg, uint8_t cam, float t_lat, float t_lon, float t_alt) {
+    msg.param_type = CAM_TARGET;
+    uint8_t offset = 0;
+    int32_t mrad;
+    memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    mrad = static_cast<int32_t>(t_lat * 1000000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(t_lon * 1000000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(t_alt * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+}
+
 /* MESSAGE PACKING
     For each parameter and info there is one set_parameter_type
     Only one function for get parameters without arguments is needed.
 */
-inline void pack_get_parameters(message &msg, uint8_t param_type) {
+inline void pack_get_parameters(message &msg, uint8_t param_type, uint8_t cam_index = 255) {
     msg.version = VERSION;
     msg.message_type = GET_PARAMETERS;
     msg.param_type = param_type;
+    if(cam_index != 255)
+        msg.data[0] = cam_index;
 }
 
 inline void pack_get_detected_roi(message &msg, uint8_t index) {
@@ -353,10 +379,10 @@ inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
     pack_capture_parameters(msg, pic, vid);
 }
 
-inline void pack_set_cam_lens_parameters(message &msg, uint8_t lens_id) {
+inline void pack_set_lens_parameters(message &msg, uint8_t lens_id) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_cam_lens_parameters(msg, lens_id);
+    pack_lens_parameters(msg, lens_id);
 }
 
 inline void pack_set_cam_euler_parameters(message &msg, uint8_t cam, uint8_t is_delta, float yaw, float pitch, float roll) {
@@ -393,6 +419,12 @@ inline void pack_set_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_fov_parameters(msg, cam, fov);
+}
+
+inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_lat, float t_lon, float t_alt) {
+    msg.version = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_cam_target_parameters(msg, cam, t_lat, t_lon, t_alt);
 }
 
 /* PARAMETER UNPACKING
@@ -473,7 +505,7 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     params.distance = static_cast<float>(mrad) / 1000.0f;
 }
 
-inline void unpack_cam_lens_parameters(message &raw_msg, cam_lens_parameters &params) {
+inline void unpack_lens_parameters(message &raw_msg, lens_parameters &params) {
     memcpy((void *)&params.lens_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
 }
 
@@ -543,6 +575,22 @@ inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &para
     offset += sizeof(uint8_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(uint16_t));
     params.fov = static_cast<float>(mrad) / 1000.0f;
+}
+
+inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters &params) {
+    int32_t mrad;
+    int32_t mm;
+    uint8_t offset = 0;
+    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.t_latitude = static_cast<float>(mrad) / 1000000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.t_longitude = static_cast<float>(mrad) / 1000000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.t_altitude = static_cast<float>(mm) / 1000.0f;
 }
 
 #endif // MSG_DEFS_HPP
