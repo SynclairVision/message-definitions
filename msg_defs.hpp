@@ -48,6 +48,7 @@ enum MESSAGE_TYPE: uint8_t {
 
 /* BASE MESSAGE */
 struct message {
+    uint64_t timestamp; // Timestamp for when the message was received
     uint8_t version;
     uint8_t message_type;
     uint8_t param_type;
