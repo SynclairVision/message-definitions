@@ -82,6 +82,12 @@ struct detection_parameters {
     uint8_t mode;
     uint8_t overlay_mode;
     uint8_t sorting_mode;
+    float confidence_threshold;
+    uint8_t creation_score_scale;
+    uint8_t bonus_detection_scale;
+    uint8_t bonus_redetection_scale;
+    uint8_t missed_detection_penalty;
+    uint8_t missed_redetection_penalty;
     bounding_box overlay_box;
     uint16_t overlay_roi_size;
 };
@@ -192,14 +198,30 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
     memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
 }
 
-inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode, bounding_box overlay_box, uint16_t overlay_roi_size) {
+inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode,
+    float confidence_threshold, uint8_t creation_score_scale, uint8_t bonus_detection_scale, uint8_t bonus_redetection_scale,
+    uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty, bounding_box overlay_box, uint16_t overlay_roi_size) {
+
     msg.param_type = DETECTION;
     uint8_t offset = 0;
+    uint8_t conf_thresh = static_cast<uint8_t>(confidence_threshold * 255.0f);
     memcpy((void *)&msg.data[offset], &mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &overlay_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &sorting_mode, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &conf_thresh, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &creation_score_scale, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &bonus_detection_scale, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &bonus_redetection_scale, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &missed_detection_penalty, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &missed_redetection_penalty, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &overlay_box, sizeof(bounding_box));
     offset += sizeof(bounding_box);
@@ -362,10 +384,15 @@ inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, f
     pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
 }
 
-inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode) {
+inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode,
+    uint8_t sorting_mode, float confidence_threshold, uint8_t creation_score_scale, uint8_t bonus_detection_scale,
+    uint8_t bonus_redetection_scale, uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
+
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, {}, 0);
+    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, confidence_threshold,
+        creation_score_scale, bonus_detection_scale, bonus_redetection_scale,
+        missed_detection_penalty, missed_redetection_penalty, {}, 0);
 }
 
 inline void pack_set_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode) {
@@ -467,11 +494,25 @@ inline void unpack_capture_parameters(message &raw_msg, capture_parameters &para
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
     uint8_t offset = 0;
+    uint8_t conf_thresh;
     memcpy(&params.mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.sorting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&conf_thresh, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.confidence_threshold = static_cast<float>(conf_thresh) / 255.0f;
+    offset += sizeof(uint8_t);
+    memcpy(&params.creation_score_scale, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&params.bonus_detection_scale, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&params.bonus_redetection_scale, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&params.missed_detection_penalty, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy(&params.missed_redetection_penalty, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
     offset += sizeof(bounding_box);
