@@ -389,13 +389,14 @@ inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, f
 }
 
 inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode,
-    uint8_t sorting_mode, float confidence_threshold, uint8_t creation_score_scale, uint8_t bonus_detection_scale,
-    uint8_t bonus_redetection_scale, uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
+    uint8_t sorting_mode, float crop_confidence_threshold, float var_confidence_threshold,
+    uint8_t creation_score_scale, uint8_t bonus_detection_scale, uint8_t bonus_redetection_scale,
+    uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, confidence_threshold,
-        creation_score_scale, bonus_detection_scale, bonus_redetection_scale,
+    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, crop_confidence_threshold,
+        var_confidence_threshold, creation_score_scale, bonus_detection_scale, bonus_redetection_scale,
         missed_detection_penalty, missed_redetection_penalty, {}, 0);
 }
 
