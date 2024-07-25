@@ -69,6 +69,8 @@ struct video_output_parameters {
     uint8_t layout_mode;
     //layout info, ignored for SET_PARAMETERS
     bounding_box views[4];
+    bounding_box detection_overlay_box;
+    uint16_t single_detection_size;
 };
 
 struct capture_parameters {
@@ -89,8 +91,6 @@ struct detection_parameters {
     uint8_t bonus_redetection_scale;
     uint8_t missed_detection_penalty;
     uint8_t missed_redetection_penalty;
-    bounding_box overlay_box;
-    uint16_t overlay_roi_size;
 };
 
 struct detected_roi_parameters {
@@ -160,7 +160,9 @@ struct cam_target_parameters {
 
 /* PARAMETER PACKING
 */
-inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, bounding_box *views = nullptr) {
+inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode,
+    bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
+
     msg.param_type = VIDEO_OUTPUT;
     uint8_t offset = 0;
     memcpy((void *)&msg.data[offset], &width, sizeof(uint16_t));
@@ -184,6 +186,9 @@ inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t 
             offset += sizeof(uint16_t);
         }
     }
+    memcpy((void *)&msg.data[offset], &detection_overlay_box, sizeof(bounding_box));
+    offset += sizeof(bounding_box);
+    memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
 }
 
 inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
@@ -201,7 +206,7 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
 
 inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode,
     float crop_confidence_threshold, float var_confidence_threshold, uint8_t creation_score_scale, uint8_t bonus_detection_scale, uint8_t bonus_redetection_scale,
-    uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty, bounding_box overlay_box, uint16_t overlay_roi_size) {
+    uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.param_type = DETECTION;
     uint8_t offset = 0;
@@ -226,10 +231,6 @@ inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overla
     memcpy((void *)&msg.data[offset], &missed_detection_penalty, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &missed_redetection_penalty, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &overlay_box, sizeof(bounding_box));
-    offset += sizeof(bounding_box);
-    memcpy((void *)&msg.data[offset], &overlay_roi_size, sizeof(uint16_t));
 }
 
 inline void pack_detected_roi_parameters(message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
@@ -397,7 +398,7 @@ inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t ov
     msg.message_type = SET_PARAMETERS;
     pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, crop_confidence_threshold,
         var_confidence_threshold, creation_score_scale, bonus_detection_scale, bonus_redetection_scale,
-        missed_detection_penalty, missed_redetection_penalty, {}, 0);
+        missed_detection_penalty, missed_redetection_penalty);
 }
 
 inline void pack_set_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode) {
@@ -483,6 +484,9 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
         memcpy((void *)&params.views[i].h, (void *)&raw_msg.data[offset], sizeof(uint16_t));
         offset += sizeof(uint16_t);
     }
+    memcpy((void *)&params.detection_overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
+    offset += sizeof(bounding_box);
+    memcpy((void *)&params.single_detection_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
 }
 
 inline void unpack_capture_parameters(message &raw_msg, capture_parameters &params) {
@@ -522,10 +526,6 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     memcpy(&params.missed_detection_penalty, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.missed_redetection_penalty, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy(&params.overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
-    offset += sizeof(bounding_box);
-    memcpy(&params.overlay_roi_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
 }
 
 inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parameters &params) {
