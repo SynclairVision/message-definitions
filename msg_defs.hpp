@@ -67,6 +67,7 @@ struct video_output_parameters {
     uint16_t height;
     uint8_t fps;
     uint8_t layout_mode;
+    uint8_t detection_overlay_mode;
     //layout info, ignored for SET_PARAMETERS
     bounding_box views[4];
     bounding_box detection_overlay_box;
@@ -82,7 +83,6 @@ struct capture_parameters {
 
 struct detection_parameters {
     uint8_t mode;
-    uint8_t overlay_mode;
     uint8_t sorting_mode;
     float crop_confidence_threshold;
     float var_confidence_threshold;
@@ -161,7 +161,7 @@ struct cam_target_parameters {
 /* PARAMETER PACKING
 */
 inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode,
-    bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
+    uint8_t detection_overlay_mode, bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint8_t offset = 0;
@@ -172,6 +172,8 @@ inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t 
     memcpy((void *)&msg.data[offset], &fps, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &layout_mode, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &detection_overlay_mode, sizeof(uint8_t));
     if(views != nullptr) {
         offset += sizeof(uint8_t);
         uint8_t num_views = (layout_mode & 0xf0) >> 4;
@@ -204,17 +206,15 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
     memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
 }
 
-inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode, uint8_t sorting_mode,
-    float crop_confidence_threshold, float var_confidence_threshold, uint8_t creation_score_scale, uint8_t bonus_detection_scale, uint8_t bonus_redetection_scale,
-    uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
+inline void pack_detection_parameters(message &msg, uint8_t mode, uint8_t sorting_mode, float crop_confidence_threshold,
+    float var_confidence_threshold, uint8_t creation_score_scale, uint8_t bonus_detection_scale,
+    uint8_t bonus_redetection_scale, uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.param_type = DETECTION;
     uint8_t offset = 0;
     uint8_t crop_conf_thresh = static_cast<uint8_t>(crop_confidence_threshold * 255.0f);
     uint8_t var_conf_thresh = static_cast<uint8_t>(var_confidence_threshold * 255.0f);
     memcpy((void *)&msg.data[offset], &mode, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &overlay_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &sorting_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -389,22 +389,23 @@ inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, f
     pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
 }
 
-inline void pack_set_detection_parameters(message &msg, uint8_t mode, uint8_t overlay_mode,
+inline void pack_set_detection_parameters(message &msg, uint8_t mode,
     uint8_t sorting_mode, float crop_confidence_threshold, float var_confidence_threshold,
     uint8_t creation_score_scale, uint8_t bonus_detection_scale, uint8_t bonus_redetection_scale,
     uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_detection_parameters(msg, mode, overlay_mode, sorting_mode, crop_confidence_threshold,
+    pack_detection_parameters(msg, mode, sorting_mode, crop_confidence_threshold,
         var_confidence_threshold, creation_score_scale, bonus_detection_scale, bonus_redetection_scale,
         missed_detection_penalty, missed_redetection_penalty);
 }
 
-inline void pack_set_video_output_parameters(message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode) {
+inline void pack_set_video_output_parameters(message &msg, uint16_t width, uint16_t height,
+    uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_video_output_parameters(msg, width, height, fps, layout_mode);
+    pack_video_output_parameters(msg, width, height, fps, layout_mode, detection_overlay_mode);
 }
 
 inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
@@ -473,6 +474,8 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     offset += sizeof(uint8_t);
     memcpy((void *)&params.layout_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&params.detection_overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
     uint8_t num_views = (params.layout_mode & 0xf0) >> 4;
     for(uint8_t i = 0; i < num_views; i++) {
         memcpy((void *)&params.views[i].x, (void *)&raw_msg.data[offset], sizeof(uint16_t));
@@ -506,8 +509,6 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     uint8_t crop_conf_thresh;
     uint8_t var_conf_thresh;
     memcpy(&params.mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy(&params.overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.sorting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
