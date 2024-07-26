@@ -174,8 +174,8 @@ inline void pack_video_output_parameters(message &msg, uint16_t width, uint16_t 
     memcpy((void *)&msg.data[offset], &layout_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &detection_overlay_mode, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
     if(views != nullptr) {
-        offset += sizeof(uint8_t);
         uint8_t num_views = (layout_mode & 0xf0) >> 4;
         for(uint8_t i = 0; i < num_views; i++) {
             memcpy((void *)&msg.data[offset], &views[i].x, sizeof(uint16_t));
