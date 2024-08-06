@@ -31,6 +31,7 @@ enum PARAM_TYPE : uint8_t {
     CAM_OFFSET,
     CAM_FOV,
     CAM_TARGET,
+    CAM_SENSOR
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -171,6 +172,12 @@ struct cam_target_parameters
     float   t_latitude;
     float   t_longitude;
     float   t_altitude;
+};
+
+struct cam_sensor_controls {
+    uint8_t awb;
+    uint8_t ae;
+    uint8_t target_brightness;
 };
 
 /* PARAMETER PACKING
@@ -482,6 +489,14 @@ inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_la
     pack_cam_target_parameters(msg, cam, t_lat, t_lon, t_alt);
 }
 
+inline void pack_cam_sensor_parameters(message &msg, uint8_t awb, uint8_t ae, uint8_t target_brightness) {
+    msg.version = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    memcpy((void *)&msg.data[0], &awb, sizeof(uint8_t));
+    memcpy((void *)&msg.data[1], &ae, sizeof(uint8_t));
+    memcpy((void *)&msg.data[2], &target_brightness, sizeof(uint8_t));
+}
+
 /* PARAMETER UNPACKING
  */
 inline void unpack_video_output_parameters(message &raw_msg, video_output_parameters &params) {
@@ -663,6 +678,12 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     offset             += sizeof(int32_t);
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
+}
+
+inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_controls &params) {
+    memcpy((void *)&params.awb, (void *)&raw_msg.data[0], sizeof(uint8_t));
+    memcpy((void *)&params.ae, (void *)&raw_msg.data[1], sizeof(uint8_t));
+    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[2], sizeof(uint8_t));
 }
 
 #endif // MSG_DEFS_HPP
