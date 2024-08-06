@@ -174,7 +174,8 @@ struct cam_target_parameters
     float   t_altitude;
 };
 
-struct cam_sensor_controls {
+struct cam_sensor_controls
+{
     uint8_t awb;
     uint8_t ae;
     uint8_t target_brightness;
@@ -490,7 +491,7 @@ inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_la
 }
 
 inline void pack_cam_sensor_parameters(message &msg, uint8_t awb, uint8_t ae, uint8_t target_brightness) {
-    msg.version = VERSION;
+    msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     memcpy((void *)&msg.data[0], &awb, sizeof(uint8_t));
     memcpy((void *)&msg.data[1], &ae, sizeof(uint8_t));
