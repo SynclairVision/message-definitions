@@ -31,6 +31,7 @@ enum PARAM_TYPE: uint8_t {
     CAM_OFFSET,
     CAM_FOV,
     CAM_TARGET,
+    CAM_SENSOR
 };
 
 enum MESSAGE_TYPE: uint8_t {
