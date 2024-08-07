@@ -18,6 +18,7 @@ static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
 enum PARAM_TYPE : uint8_t {
+    SYSTEM_STATUS,
     VIDEO_OUTPUT,
     CAPTURE,
     DETECTION,
@@ -48,8 +49,7 @@ enum MESSAGE_TYPE : uint8_t {
 };
 
 /* BASE MESSAGE */
-struct message
-{
+struct message {
     uint64_t timestamp; // Timestamp for when the message was received
     uint8_t  version;
     uint8_t  message_type;
@@ -60,13 +60,16 @@ struct message
 /* PARAMETER TYPES
     There is one struct for each group of parameters in the system.
 */
-struct bounding_box
-{
+struct bounding_box {
     uint16_t x, y, w, h;
 };
 
-struct video_output_parameters
-{
+struct system_status_parameters {
+    uint8_t status;
+    uint8_t error;
+};
+
+struct video_output_parameters {
     uint16_t     width;
     uint16_t     height;
     uint8_t      fps;
@@ -78,16 +81,14 @@ struct video_output_parameters
     uint16_t     single_detection_size;
 };
 
-struct capture_parameters
-{
+struct capture_parameters {
     bool     cap_single_image;
     bool     record_video;
     uint16_t images_captured;
     uint16_t videos_captured;
 };
 
-struct detection_parameters
-{
+struct detection_parameters {
     uint8_t mode;
     uint8_t sorting_mode;
     float   crop_confidence_threshold;
@@ -101,8 +102,7 @@ struct detection_parameters
     uint8_t missed_redetection_penalty;
 };
 
-struct detected_roi_parameters
-{
+struct detected_roi_parameters {
     uint8_t index;
     uint8_t score;
     uint8_t total_detections;
@@ -114,13 +114,11 @@ struct detected_roi_parameters
     float   distance;
 };
 
-struct lens_parameters
-{
+struct lens_parameters {
     uint8_t lens_id;
 };
 
-struct cam_euler_parameters
-{
+struct cam_euler_parameters {
     uint8_t cam_id;
     uint8_t is_delta;
     float   yaw;
@@ -128,32 +126,27 @@ struct cam_euler_parameters
     float   roll;
 };
 
-struct cam_zoom_parameters
-{
+struct cam_zoom_parameters {
     uint8_t cam_id;
     int8_t  zoom;
 };
 
-struct cam_lock_flags_parameters
-{
+struct cam_lock_flags_parameters {
     uint8_t cam_id;
     uint8_t flags;
 };
 
-struct cam_control_mode_parameters
-{
+struct cam_control_mode_parameters {
     uint8_t cam_id;
     uint8_t mode;
 };
 
-struct cam_crop_mode_parameters
-{
+struct cam_crop_mode_parameters {
     uint8_t cam_id;
     uint8_t mode;
 };
 
-struct cam_offset_parameters
-{
+struct cam_offset_parameters {
     uint8_t cam_id;
     float   x; // -1 < x < 1
     float   y; // -1 < y < 1
@@ -162,22 +155,19 @@ struct cam_offset_parameters
     float   pitch;
 };
 
-struct cam_fov_parameters
-{
+struct cam_fov_parameters {
     uint8_t cam_id;
     float   fov;
 };
 
-struct cam_target_parameters
-{
+struct cam_target_parameters {
     uint8_t cam_id;
     float   t_latitude;
     float   t_longitude;
     float   t_altitude;
 };
 
-struct cam_sensor_controls
-{
+struct cam_sensor_controls {
     uint8_t awb;
     uint8_t ae;
     uint8_t target_brightness;
@@ -185,6 +175,12 @@ struct cam_sensor_controls
 
 /* PARAMETER PACKING
  */
+inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t error) {
+    msg.param_type = SYSTEM_STATUS;
+    msg.data[0]    = status;
+    msg.data[1]    = error;
+}
+
 inline void pack_video_output_parameters(
     message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
     bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
@@ -510,6 +506,11 @@ inline void pack_cam_sensor_parameters(message &msg, uint8_t awb, uint8_t ae, ui
 
 /* PARAMETER UNPACKING
  */
+inline void unpack_system_status_parameters(message &raw_msg, system_status_parameters &params) {
+    memcpy((void *)&params.status, (void *)&raw_msg.data[0], sizeof(uint8_t));
+    memcpy((void *)&params.error, (void *)&raw_msg.data[1], sizeof(uint8_t));
+}
+
 inline void unpack_video_output_parameters(message &raw_msg, video_output_parameters &params) {
     uint8_t offset = 0;
     memcpy((void *)&params.width, (void *)&raw_msg.data[offset], sizeof(uint16_t));
