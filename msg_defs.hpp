@@ -582,10 +582,10 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     params.var_confidence_threshold  = static_cast<float>(var_conf_thresh) / 255.0f;
     offset += sizeof(uint8_t);
     memcpy(&crop_box_lim, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.crop_box_limit  = static_cast<float>(crop_box_limit) / 255.0f;
+    params.crop_box_limit  = static_cast<float>(crop_box_lim) / 255.0f;
     offset += sizeof(uint8_t);
     memcpy(&var_box_lim, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.var_box_limit  = static_cast<float>(var_box_limit) / 255.0f;
+    params.var_box_limit  = static_cast<float>(var_box_lim) / 255.0f;
     offset += sizeof(uint8_t);
     memcpy(&crop_box_ovlp, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.crop_box_overlap  = static_cast<float>(crop_box_ovlp) / 255.0f;
