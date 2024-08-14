@@ -243,8 +243,8 @@ inline void pack_detection_parameters(
     uint8_t var_conf_thresh  = static_cast<uint8_t>(var_confidence_threshold * 255.0f);
     uint8_t crop_box_ovlp    = static_cast<uint8_t>(crop_box_overlap * 255.0f);
     uint8_t var_box_ovlp     = static_cast<uint8_t>(var_box_overlap * 255.0f);
-    uint8_t crop_box_lim     = static_cast<uint8_t>(crop_box_limit * 255.0f);
-    uint8_t var_box_lim      = static_cast<uint8_t>(var_box_limit * 255.0f);
+    uint16_t crop_box_lim     = static_cast<uint16_t>(crop_box_limit);
+    uint16_t var_box_lim      = static_cast<uint16_t>(var_box_limit);
 
     memcpy((void *)&msg.data[offset], &mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -258,10 +258,10 @@ inline void pack_detection_parameters(
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &var_box_ovlp, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &crop_box_lim, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &var_box_lim, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &crop_box_lim, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    memcpy((void *)&msg.data[offset], &var_box_lim, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &creation_score_scale, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &bonus_detection_scale, sizeof(uint8_t));
@@ -567,8 +567,8 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     uint8_t offset = 0;
     uint8_t crop_conf_thresh;
     uint8_t var_conf_thresh;
-    uint8_t crop_box_lim;
-    uint8_t var_box_lim;
+    uint16_t crop_box_lim;
+    uint16_t var_box_lim;
     uint8_t crop_box_ovlp;
     uint8_t var_box_ovlp;
     memcpy(&params.mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
@@ -581,12 +581,12 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     memcpy(&var_conf_thresh, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.var_confidence_threshold  = static_cast<float>(var_conf_thresh) / 255.0f;
     offset += sizeof(uint8_t);
-    memcpy(&crop_box_lim, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.crop_box_limit  = static_cast<float>(crop_box_lim) / 255.0f;
-    offset += sizeof(uint8_t);
-    memcpy(&var_box_lim, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.var_box_limit  = static_cast<float>(var_box_lim) / 255.0f;
-    offset += sizeof(uint8_t);
+    memcpy(&crop_box_lim, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    params.crop_box_limit  = static_cast<float>(crop_box_lim);
+    offset += sizeof(uint16_t);
+    memcpy(&var_box_lim, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    params.var_box_limit  = static_cast<float>(var_box_lim);
+    offset += sizeof(uint16_t);
     memcpy(&crop_box_ovlp, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.crop_box_overlap  = static_cast<float>(crop_box_ovlp) / 255.0f;
     offset += sizeof(uint8_t);
