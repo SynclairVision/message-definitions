@@ -159,10 +159,11 @@ struct cam_target_parameters {
     float t_altitude;
 };
 
-struct cam_sensor_controls {
-    uint8_t awb;
+struct cam_sensor_parameters {
     uint8_t ae;
     uint8_t target_brightness;
+    uint32_t exposure_value;
+    uint32_t gain_value;
 };
 
 /* PARAMETER PACKING
@@ -469,12 +470,17 @@ inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_la
     pack_cam_target_parameters(msg, cam, t_lat, t_lon, t_alt);
 }
 
-inline void pack_cam_sensor_parameters(message &msg, uint8_t awb, uint8_t ae, uint8_t target_brightness) {
+inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    memcpy((void *)&msg.data[0], &awb, sizeof(uint8_t));
-    memcpy((void *)&msg.data[1], &ae, sizeof(uint8_t));
-    memcpy((void *)&msg.data[2], &target_brightness, sizeof(uint8_t));
+    uint8_t offset = 0;
+    memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &target_brightness, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &exposure_value, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
 }
 
 /* PARAMETER UNPACKING
@@ -660,10 +666,11 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
 }
 
-inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_controls &params) {
-    memcpy((void *)&params.awb, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.ae, (void *)&raw_msg.data[1], sizeof(uint8_t));
+inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters &params) {
+    memcpy((void *)&params.ae, (void *)&raw_msg.data[0], sizeof(uint8_t));
     memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[2], sizeof(uint8_t));
+    memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[4], sizeof(uint32_t));
+    memcpy((void *)&params.gain_value, (void *)&raw_msg.data[8], sizeof(uint32_t));
 }
 
 #endif // MSG_DEFS_HPP
