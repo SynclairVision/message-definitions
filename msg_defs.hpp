@@ -719,11 +719,16 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
 }
 
+
 inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters &params) {
-    memcpy((void *)&params.ae, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[2], sizeof(uint8_t));
-    memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[4], sizeof(uint32_t));
-    memcpy((void *)&params.gain_value, (void *)&raw_msg.data[8], sizeof(uint32_t));
+    uint8_t offset = 0;
+    memcpy((void *)&params.ae, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&params.gain_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
 }
 
 #endif // MSG_DEFS_HPP
