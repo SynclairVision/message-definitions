@@ -399,6 +399,19 @@ inline void pack_cam_target_parameters(message &msg, uint8_t cam, float t_lat, f
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
+
+inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+    msg.param_type = CAM_SENSOR;
+    uint8_t offset = 0;
+    memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &target_brightness, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &exposure_value, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
+}
+
 /* MESSAGE PACKING
     For each parameter and info there is one set_parameter_type
     Only one function for get parameters without arguments is needed.
@@ -505,19 +518,12 @@ inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_la
     msg.message_type = SET_PARAMETERS;
     pack_cam_target_parameters(msg, cam, t_lat, t_lon, t_alt);
 }
-
-inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+inline void pack_cam_set_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    uint8_t offset = 0;
-    memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &target_brightness, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &exposure_value, sizeof(uint32_t));
-    offset += sizeof(uint32_t);
-    memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
+    pack_cam_sensor_parameters(msg, ae, target_brightness, exposure_value, gain_value);
 }
+
 
 /* PARAMETER UNPACKING
  */
