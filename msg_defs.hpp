@@ -109,6 +109,8 @@ struct detected_roi_parameters {
     uint8_t index;
     uint8_t score;
     uint8_t total_detections;
+    float   yaw_abs;
+    float   pitch_abs;
     float   yaw_rel;
     float   pitch_rel;
     float   latitude;
@@ -170,11 +172,10 @@ struct cam_target_parameters {
     float   t_altitude;
 };
 
-struct cam_sensor_parameters {
+struct cam_sensor_controls {
+    uint8_t awb;
     uint8_t ae;
     uint8_t target_brightness;
-    uint32_t exposure_value;
-    uint32_t gain_value;
 };
 
 /* PARAMETER PACKING
@@ -273,8 +274,9 @@ inline void pack_detection_parameters(
 }
 
 inline void pack_detected_roi_parameters(
-    message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_rel, float pitch_rel, float lat, float lon,
-    float alt, float dist) {
+    message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_rel, float pitch_rel,
+    float yaw_abs, float pitch_abs, float lat, float lon, float alt, float dist) {
+
     msg.param_type = DETECTED_ROI;
     uint8_t offset = 0;
     int32_t mrad;
@@ -284,6 +286,12 @@ inline void pack_detected_roi_parameters(
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &total_detections, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    mrad    = static_cast<int32_t>(yaw_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(pitch_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(yaw_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
@@ -399,19 +407,6 @@ inline void pack_cam_target_parameters(message &msg, uint8_t cam, float t_lat, f
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-
-inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
-    msg.param_type = CAM_SENSOR;
-    uint8_t offset = 0;
-    memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &target_brightness, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &exposure_value, sizeof(uint32_t));
-    offset += sizeof(uint32_t);
-    memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
-}
-
 /* MESSAGE PACKING
     For each parameter and info there is one set_parameter_type
     Only one function for get parameters without arguments is needed.
@@ -518,12 +513,14 @@ inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_la
     msg.message_type = SET_PARAMETERS;
     pack_cam_target_parameters(msg, cam, t_lat, t_lon, t_alt);
 }
-inline void pack_cam_set_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
-    msg.version = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_sensor_parameters(msg, ae, target_brightness, exposure_value, gain_value);
-}
 
+inline void pack_cam_sensor_parameters(message &msg, uint8_t awb, uint8_t ae, uint8_t target_brightness) {
+    msg.version      = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    memcpy((void *)&msg.data[0], &awb, sizeof(uint8_t));
+    memcpy((void *)&msg.data[1], &ae, sizeof(uint8_t));
+    memcpy((void *)&msg.data[2], &target_brightness, sizeof(uint8_t));
+}
 
 /* PARAMETER UNPACKING
  */
@@ -619,20 +616,26 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     memcpy(&params.total_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_abs  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_abs  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.yaw_rel  = static_cast<float>(mrad) / 1000.0f;
-    offset         += sizeof(int32_t);
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
-    offset           += sizeof(float);
+    offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.latitude  = static_cast<float>(mrad) / 1000.0f;
-    offset          += sizeof(float);
+    offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.longitude  = static_cast<float>(mrad) / 1000.0f;
-    offset           += sizeof(float);
+    offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.altitude  = static_cast<float>(mrad) / 1000.0f;
-    offset          += sizeof(float);
+    offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.distance = static_cast<float>(mrad) / 1000.0f;
 }
@@ -725,16 +728,10 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
 }
 
-
-inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters &params) {
-    uint8_t offset = 0;
-    memcpy((void *)&params.ae, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
-    offset += sizeof(uint32_t);
-    memcpy((void *)&params.gain_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_controls &params) {
+    memcpy((void *)&params.awb, (void *)&raw_msg.data[0], sizeof(uint8_t));
+    memcpy((void *)&params.ae, (void *)&raw_msg.data[1], sizeof(uint8_t));
+    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[2], sizeof(uint8_t));
 }
 
 #endif // MSG_DEFS_HPP
