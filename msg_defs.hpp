@@ -461,6 +461,11 @@ inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, f
     pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
 }
 
+inline void pack_get_cam_target_parameters(message &msg, uint8_t cam, float x, float y) {
+    pack_get_parameters(msg, CAM_TARGET);
+    pack_cam_target_parameters(msg, cam, x, y, 0.0f, 0.0f, 0.0f);
+}
+
 inline void pack_set_detection_parameters(
     message &msg, uint8_t mode, uint8_t sorting_mode, float crop_confidence_threshold, float var_confidence_threshold,
     uint16_t crop_box_limit, uint16_t var_box_limit, float crop_box_overlap, float var_box_overlap, 
