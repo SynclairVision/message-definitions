@@ -240,7 +240,7 @@ inline void pack_detection_parameters(
     uint8_t bonus_redetection_scale, uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.param_type           = DETECTION;
-    uint8_t offset           = 0;
+    uint16_t offset           = 0;
     uint8_t crop_conf_thresh = static_cast<uint8_t>(crop_confidence_threshold * 255.0f);
     uint8_t var_conf_thresh  = static_cast<uint8_t>(var_confidence_threshold * 255.0f);
     uint8_t crop_box_ovlp    = static_cast<uint8_t>(crop_box_overlap * 255.0f);
@@ -278,7 +278,7 @@ inline void pack_detected_roi_parameters(
     float yaw_abs, float pitch_abs, float lat, float lon, float alt, float dist) {
 
     msg.param_type = DETECTED_ROI;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int32_t mrad;
     memcpy((void *)&msg.data[offset], &index, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -319,7 +319,7 @@ inline void pack_lens_parameters(message &msg, uint8_t lens_id) {
 inline void pack_cam_euler_parameters(message &msg, uint8_t cam, uint8_t is_delta, float yaw, float pitch, float roll) {
     msg.param_type = CAM_EULER;
     int32_t mrad;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &is_delta, sizeof(uint8_t));
@@ -361,7 +361,7 @@ inline void pack_cam_crop_mode_parameters(message &msg, uint8_t cam, uint8_t mod
 inline void pack_cam_offset_parameters(
     message &msg, uint8_t cam, float x, float y, uint8_t frame_rel, float yaw = 0, float pitch = 0) {
     msg.param_type = CAM_OFFSET;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int16_t offs_int;
     int32_t mrad;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
@@ -384,7 +384,7 @@ inline void pack_cam_offset_parameters(
 inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     msg.param_type = CAM_FOV;
     int16_t mrad;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     mrad    = static_cast<int16_t>(fov * 1000.0f);
@@ -393,7 +393,7 @@ inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
 
 inline void pack_cam_target_parameters(message &msg, uint8_t cam, float t_lat, float t_lon, float t_alt) {
     msg.param_type = CAM_TARGET;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int32_t mrad;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -530,7 +530,7 @@ inline void unpack_system_status_parameters(message &raw_msg, system_status_para
 }
 
 inline void unpack_video_output_parameters(message &raw_msg, video_output_parameters &params) {
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&params.width, (void *)&raw_msg.data[offset], sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&params.height, (void *)&raw_msg.data[offset], sizeof(uint16_t));
@@ -558,7 +558,7 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
 }
 
 inline void unpack_capture_parameters(message &raw_msg, capture_parameters &params) {
-    uint8_t offset    = 0;
+    uint16_t offset    = 0;
     uint8_t cap_flags = 0;
     memcpy(&cap_flags, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -570,7 +570,7 @@ inline void unpack_capture_parameters(message &raw_msg, capture_parameters &para
 }
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     uint8_t crop_conf_thresh;
     uint8_t var_conf_thresh;
     uint8_t crop_box_ovlp;
@@ -607,7 +607,7 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
 }
 
 inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parameters &params) {
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int32_t mrad;
     memcpy(&params.index, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -646,7 +646,7 @@ inline void unpack_lens_parameters(message &raw_msg, lens_parameters &params) {
 
 inline void unpack_cam_euler_parameters(message &raw_msg, cam_euler_parameters &params) {
     int32_t mrad;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.is_delta, (void *)&raw_msg.data[offset], sizeof(uint8_t));
@@ -684,7 +684,7 @@ inline void unpack_cam_crop_mode_parameters(message &raw_msg, cam_crop_mode_para
 inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters &params) {
     int16_t x, y;
     int32_t yaw, pitch;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&x, (void *)&raw_msg.data[offset], sizeof(int16_t));
@@ -705,7 +705,7 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
 
 inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &params) {
     int16_t mrad;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(uint16_t));
@@ -715,7 +715,7 @@ inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &para
 inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters &params) {
     int32_t mrad;
     int32_t mm;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
