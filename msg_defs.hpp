@@ -222,10 +222,10 @@ inline void pack_video_output_parameters(
 
 inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
     msg.param_type     = CAPTURE;
-    uint8_t offset     = 0;
+    uint16_t offset     = 0;
     uint8_t cap_flags  = 0x0;
-    cap_flags         |= pic ? CAP_FLAG_SINGLE_IMAGE : 0;
-    cap_flags         |= vid ? CAP_FLAG_VIDEO : 0;
+    cap_flags         |= static_cast<uint8_t>(pic ? CAP_FLAG_SINGLE_IMAGE : 0);
+    cap_flags         |= static_cast<uint8_t>(vid ? CAP_FLAG_VIDEO : 0);
     memcpy((void *)&msg.data[offset], &cap_flags, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &num_pics, sizeof(uint16_t));
