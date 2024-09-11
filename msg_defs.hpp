@@ -191,7 +191,7 @@ inline void pack_video_output_parameters(
     bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     memcpy((void *)&msg.data[offset], &width, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &height, sizeof(uint16_t));
