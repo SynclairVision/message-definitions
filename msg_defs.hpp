@@ -12,7 +12,7 @@ static constexpr uint32_t PARAMCOUNT            = 64;
 static constexpr uint32_t VERSION               = 0x00;
 
 static constexpr float    U16_MAX_F             = 65535.0f;
-static constexpr float    S16_MAX_F             = U16_MAX_F / 2.0f;
+static constexpr float    S16_MAX_F             = 32767.0f;
 
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
@@ -167,15 +167,18 @@ struct cam_fov_parameters {
 
 struct cam_target_parameters {
     uint8_t cam_id;
+    float   x; // -1 < x < 1
+    float   y; // -1 < y < 1
     float   t_latitude;
     float   t_longitude;
     float   t_altitude;
 };
 
-struct cam_sensor_controls {
-    uint8_t awb;
+struct cam_sensor_parameters {
     uint8_t ae;
     uint8_t target_brightness;
+    uint32_t exposure_value;
+    uint32_t gain_value;
 };
 
 /* PARAMETER PACKING
@@ -274,9 +277,8 @@ inline void pack_detection_parameters(
 }
 
 inline void pack_detected_roi_parameters(
-    message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_rel, float pitch_rel,
-    float yaw_abs, float pitch_abs, float lat, float lon, float alt, float dist) {
-
+    message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_abs, float pitch_abs,
+    float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
     msg.param_type = DETECTED_ROI;
     uint16_t offset = 0;
     int32_t mrad;
@@ -391,12 +393,19 @@ inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int16_t));
 }
 
-inline void pack_cam_target_parameters(message &msg, uint8_t cam, float t_lat, float t_lon, float t_alt) {
+inline void pack_cam_target_parameters(message &msg, uint8_t cam, float x, float y, float t_lat, float t_lon, float t_alt) {
     msg.param_type = CAM_TARGET;
     uint16_t offset = 0;
     int32_t mrad;
+    int16_t offs;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    offs    = static_cast<int16_t>(x * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    offs    = static_cast<int16_t>(y * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs, sizeof(int16_t));
+    offset += sizeof(int16_t);
     mrad    = static_cast<int32_t>(t_lat * 1000000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
@@ -405,6 +414,19 @@ inline void pack_cam_target_parameters(message &msg, uint8_t cam, float t_lat, f
     offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(t_alt * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+}
+
+
+inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+    msg.param_type = CAM_SENSOR;
+    uint8_t offset = 0;
+    memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &target_brightness, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &exposure_value, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
 }
 
 /* MESSAGE PACKING
@@ -437,6 +459,11 @@ inline void pack_get_detected_roi_all(message &msg) {
 inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, float y, uint8_t frame_rel) {
     pack_get_parameters(msg, CAM_OFFSET);
     pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
+}
+
+inline void pack_get_cam_target_parameters(message &msg, uint8_t cam, float x, float y) {
+    pack_get_parameters(msg, CAM_TARGET);
+    pack_cam_target_parameters(msg, cam, x, y, 0.0f, 0.0f, 0.0f);
 }
 
 inline void pack_set_detection_parameters(
@@ -508,19 +535,18 @@ inline void pack_set_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     pack_cam_fov_parameters(msg, cam, fov);
 }
 
-inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float t_lat, float t_lon, float t_alt) {
+inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float x, float y, float t_lat, float t_lon, float t_alt) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_cam_target_parameters(msg, cam, t_lat, t_lon, t_alt);
+    pack_cam_target_parameters(msg, cam, x, y, t_lat, t_lon, t_alt);
 }
 
-inline void pack_cam_sensor_parameters(message &msg, uint8_t awb, uint8_t ae, uint8_t target_brightness) {
-    msg.version      = VERSION;
+inline void pack_set_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+    msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    memcpy((void *)&msg.data[0], &awb, sizeof(uint8_t));
-    memcpy((void *)&msg.data[1], &ae, sizeof(uint8_t));
-    memcpy((void *)&msg.data[2], &target_brightness, sizeof(uint8_t));
+    pack_cam_sensor_parameters(msg, ae, target_brightness, exposure_value, gain_value);
 }
+
 
 /* PARAMETER UNPACKING
  */
@@ -716,8 +742,15 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     int32_t mrad;
     int32_t mm;
     uint16_t offset = 0;
+    int16_t offs;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&offs, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.x = static_cast<float>(offs) / S16_MAX_F;
+    offset += sizeof(int16_t);
+    memcpy((void *)&offs, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.y = static_cast<float>(offs) / S16_MAX_F;
+    offset += sizeof(int16_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.t_latitude  = static_cast<float>(mrad) / 1000000.0f;
     offset            += sizeof(int32_t);
@@ -728,10 +761,16 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
 }
 
-inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_controls &params) {
-    memcpy((void *)&params.awb, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.ae, (void *)&raw_msg.data[1], sizeof(uint8_t));
-    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[2], sizeof(uint8_t));
+
+inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters &params) {
+    uint8_t offset = 0;
+    memcpy((void *)&params.ae, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&params.gain_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
 }
 
 #endif // MSG_DEFS_HPP
