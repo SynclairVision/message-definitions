@@ -17,6 +17,14 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
+/*
+------------------------------------------------------------------------------------------------------------------------
+    TYPES
+
+    There is one enumeration for each parameter type and one for each message type.
+------------------------------------------------------------------------------------------------------------------------
+*/
+
 enum PARAM_TYPE : uint8_t {
     SYSTEM_STATUS,
     GENERAL_SETTINGS,
@@ -49,22 +57,27 @@ enum MESSAGE_TYPE : uint8_t {
     UNKNOWN,
 };
 
-/* BASE MESSAGE */
+/*
+------------------------------------------------------------------------------------------------------------------------
+    STRUCTS
+
+    One struct for the base message, and one for each parameter type. There is also a convenience struct for bounding
+    boxes.
+------------------------------------------------------------------------------------------------------------------------
+*/
 struct message {
-    uint64_t timestamp; // Timestamp for when the message was received
+    uint64_t timestamp;
     uint8_t  version;
     uint8_t  message_type;
     uint8_t  param_type;
     uint8_t  data[PARAMCOUNT];
 };
 
-/* PARAMETER TYPES
-    There is one struct for each group of parameters in the system.
-*/
 struct bounding_box {
     uint16_t x, y, w, h;
 };
 
+// Add comment for each parameter?
 struct system_status_parameters {
     uint8_t status;
     uint8_t error;
@@ -88,7 +101,6 @@ struct video_output_parameters {
     uint8_t      fps;
     uint8_t      layout_mode;
     uint8_t      detection_overlay_mode;
-    // layout info, ignored for SET_PARAMETERS
     bounding_box views[4];
     bounding_box detection_overlay_box;
     uint16_t     single_detection_size;
@@ -166,8 +178,8 @@ struct cam_crop_mode_parameters {
 
 struct cam_offset_parameters {
     uint8_t cam_id;
-    float   x; // -1 < x < 1
-    float   y; // -1 < y < 1
+    float   x;
+    float   y;
     uint8_t frame_rel;
     float   yaw;
     float   pitch;
@@ -180,8 +192,8 @@ struct cam_fov_parameters {
 
 struct cam_target_parameters {
     uint8_t cam_id;
-    float   x; // -1 < x < 1
-    float   y; // -1 < y < 1
+    float   x;
+    float   y;
     float   t_latitude;
     float   t_longitude;
     float   t_altitude;
@@ -194,8 +206,13 @@ struct cam_sensor_parameters {
     uint32_t gain_value;
 };
 
-/* PARAMETER PACKING
- */
+/*
+------------------------------------------------------------------------------------------------------------------------
+    PACKING FUNCTIONS
+    
+    For each parameter type there is one pack function.
+------------------------------------------------------------------------------------------------------------------------
+*/
 inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t error) {
     msg.param_type = SYSTEM_STATUS;
     msg.data[0]    = status;
@@ -471,9 +488,14 @@ inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t target_
     memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
 }
 
-/* MESSAGE PACKING
-    For each parameter and info there is one set_parameter_type
-    Only one function for get parameters without arguments is needed.
+/*
+------------------------------------------------------------------------------------------------------------------------
+    GET PACKING FUNCTIONS
+------------------------------------------------------------------------------------------------------------------------
+*/
+
+/*
+    Generic function for getting parameters. Specify the parameter type and in some cases the camera index.
 */
 inline void pack_get_parameters(message &msg, uint8_t param_type, uint8_t cam_index = 255) {
     msg.version      = VERSION;
@@ -483,31 +505,53 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, uint8_t cam_in
         msg.data[0] = cam_index;
 }
 
+/*
+    Convenience function for DETECTED_ROI. Specify the index of the detection to get.
+*/
 inline void pack_get_detected_roi(message &msg, uint8_t index) {
     pack_get_parameters(msg, DETECTED_ROI);
     msg.data[0] = index;
 }
 
+/*
+    Convenience function for DETECTED_ROI. Get all detections that are visible on screen.
+*/
 inline void pack_get_detected_roi_visible(message &msg) {
     pack_get_parameters(msg, DETECTED_ROI);
     msg.data[0] = 254;
 }
 
+/*
+    Convenience function for DETECTED_ROI. Get all detections.
+*/
 inline void pack_get_detected_roi_all(message &msg) {
     pack_get_parameters(msg, DETECTED_ROI);
     msg.data[0] = 255;
 }
 
+/*
+    Convenience function for CAM_OFFSET. Specify the camera index, offset from center and frame relative flag.
+*/
 inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, float y, uint8_t frame_rel) {
     pack_get_parameters(msg, CAM_OFFSET);
     pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
 }
 
+/*
+    Convenience function for CAM_TARGET. Specify the camera index and offset from center.
+*/
 inline void pack_get_cam_target_parameters(message &msg, uint8_t cam, float x, float y) {
     pack_get_parameters(msg, CAM_TARGET);
     pack_cam_target_parameters(msg, cam, x, y, 0.0f, 0.0f, 0.0f);
 }
 
+/*
+------------------------------------------------------------------------------------------------------------------------
+    SET PACKING FUNCTIONS
+
+    For each parameter type there is one pack function.
+------------------------------------------------------------------------------------------------------------------------
+*/
 inline void pack_set_general_settings_parameters(
     message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
     float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai) {
@@ -600,8 +644,13 @@ inline void pack_set_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t tar
 }
 
 
-/* PARAMETER UNPACKING
- */
+/*
+------------------------------------------------------------------------------------------------------------------------
+    PARAMETER UNPACKING
+
+    For each parameter type there is one unpack function.
+------------------------------------------------------------------------------------------------------------------------
+*/
 inline void unpack_system_status_parameters(message &raw_msg, system_status_parameters &params) {
     memcpy((void *)&params.status, (void *)&raw_msg.data[0], sizeof(uint8_t));
     memcpy((void *)&params.error, (void *)&raw_msg.data[1], sizeof(uint8_t));
