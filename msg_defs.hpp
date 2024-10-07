@@ -208,6 +208,25 @@ struct cam_sensor_parameters {
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
+    SERIALIZATION
+
+    Used when sending/receiving messages over the network.
+------------------------------------------------------------------------------------------------------------------------
+*/
+char *serialize_message(const message &msg) {
+    char *buffer = new char[sizeof(msg)];
+    memcpy(buffer, &msg, sizeof(msg));
+    return buffer;
+}
+
+message deserialize_message(char *buffer) {
+    message msg;
+    memcpy(&msg, buffer, sizeof(msg));
+    return msg;
+}
+
+/*
+------------------------------------------------------------------------------------------------------------------------
     PACKING FUNCTIONS
     
     For each parameter type there is one pack function.
