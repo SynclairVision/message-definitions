@@ -115,7 +115,8 @@ struct capture_parameters {
 };
 
 struct model_parameters {
-    char model_name[16];
+    char crop_model_name[16];
+    char var_model_name[16];
 };
 
 struct detection_parameters {
@@ -319,9 +320,13 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
     memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
 }
 
-inline void pack_model_parameters(message &msg, const char *model_name) {
+inline void pack_model_parameters(message &msg, const char *crop_model_name, const char *var_model_name) {
     msg.param_type = MODEL;
-    memcpy((void *)&msg.data[0], model_name, 16);
+    uint16_t offset = 0;
+    memcpy((void *)&msg.data[offset], crop_model_name, 16);
+    offset += 16;
+    memcpy((void *)&msg.data[offset], var_model_name, 16);
+    
 }
 
 inline void pack_detection_parameters(
@@ -618,10 +623,10 @@ inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
     pack_capture_parameters(msg, pic, vid);
 }
 
-inline void pack_set_model_parameters(message &msg, const char *model_name) {
+inline void pack_set_model_parameters(message &msg, const char *crop_model_name, const char *var_model_name) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_model_parameters(msg, model_name);
+    pack_model_parameters(msg, crop_model_name, var_model_name);
 }
 
 inline void pack_set_lens_parameters(message &msg, uint8_t lens_id) {
@@ -760,7 +765,10 @@ inline void unpack_capture_parameters(message &raw_msg, capture_parameters &para
 }
 
 inline void unpack_model_parameters(message &raw_msg, model_parameters &params) {
-    memcpy((void *)&params.model_name, (void *)&raw_msg.data[0], 16);
+    uint16_t offset = 0;
+    memcpy((void *)&params.crop_model_name, (void *)&raw_msg.data[offset], 16);
+    offset += 16;
+    memcpy((void *)&params.var_model_name, (void *)&raw_msg.data[offset], 16);
 }
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
