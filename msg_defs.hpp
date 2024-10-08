@@ -30,7 +30,6 @@ enum PARAM_TYPE : uint8_t {
     GENERAL_SETTINGS,
     VIDEO_OUTPUT,
     CAPTURE,
-    MODEL,
     DETECTION,
     DETECTED_ROI,
     LENS,
@@ -94,6 +93,8 @@ struct general_settings_parameters {
     float    mount_pitch;
     float    mount_roll;
     uint8_t  run_ai;
+    char crop_model_name[16];
+    char var_model_name[16];
 };
 
 struct video_output_parameters {
@@ -112,11 +113,6 @@ struct capture_parameters {
     bool     record_video;
     uint16_t images_captured;
     uint16_t videos_captured;
-};
-
-struct model_parameters {
-    char crop_model_name[16];
-    char var_model_name[16];
 };
 
 struct detection_parameters {
@@ -246,7 +242,7 @@ inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t 
 
 inline void pack_general_settings_parameters(
     message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
-    float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai) {
+    float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
 
     msg.param_type = GENERAL_SETTINGS;
     uint8_t offset = 0;
@@ -271,6 +267,10 @@ inline void pack_general_settings_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
     memcpy((void *)&msg.data[offset], &run_ai, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], crop_model_name, 16);
+    offset += 16;
+    memcpy((void *)&msg.data[offset], var_model_name, 16);
 }
 
 inline void pack_video_output_parameters(
@@ -318,15 +318,6 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
     memcpy((void *)&msg.data[offset], &num_pics, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
-}
-
-inline void pack_model_parameters(message &msg, const char *crop_model_name, const char *var_model_name) {
-    msg.param_type = MODEL;
-    uint16_t offset = 0;
-    memcpy((void *)&msg.data[offset], crop_model_name, 16);
-    offset += 16;
-    memcpy((void *)&msg.data[offset], var_model_name, 16);
-    
 }
 
 inline void pack_detection_parameters(
@@ -588,12 +579,13 @@ inline void pack_get_cam_target_parameters(message &msg, uint8_t cam, float x, f
 */
 inline void pack_set_general_settings_parameters(
     message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
-    float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai) {
+    float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_general_settings_parameters(
-        msg, camera_width, camera_height, roi_width, roi_height, camera_fps, mount_yaw, mount_pitch, mount_roll, run_ai);
+        msg, camera_width, camera_height, roi_width, roi_height, camera_fps, mount_yaw, mount_pitch, mount_roll, run_ai,
+        crop_model_name, var_model_name);
 }
 
 inline void pack_set_detection_parameters(
@@ -621,12 +613,6 @@ inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_capture_parameters(msg, pic, vid);
-}
-
-inline void pack_set_model_parameters(message &msg, const char *crop_model_name, const char *var_model_name) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_model_parameters(msg, crop_model_name, var_model_name);
 }
 
 inline void pack_set_lens_parameters(message &msg, uint8_t lens_id) {
@@ -722,6 +708,10 @@ inline void unpack_general_settings_parameters(message &raw_msg, general_setting
     params.mount_roll = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy((void *)&params.run_ai, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.crop_model_name, (void *)&raw_msg.data[offset], 16);
+    offset += 16;
+    memcpy((void *)&params.var_model_name, (void *)&raw_msg.data[offset], 16);
 }
 
 inline void unpack_video_output_parameters(message &raw_msg, video_output_parameters &params) {
@@ -762,13 +752,6 @@ inline void unpack_capture_parameters(message &raw_msg, capture_parameters &para
     memcpy(&params.videos_captured, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.cap_single_image = cap_flags & CAP_FLAG_SINGLE_IMAGE;
     params.record_video     = cap_flags & CAP_FLAG_VIDEO;
-}
-
-inline void unpack_model_parameters(message &raw_msg, model_parameters &params) {
-    uint16_t offset = 0;
-    memcpy((void *)&params.crop_model_name, (void *)&raw_msg.data[offset], 16);
-    offset += 16;
-    memcpy((void *)&params.var_model_name, (void *)&raw_msg.data[offset], 16);
 }
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
