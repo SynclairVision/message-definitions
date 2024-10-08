@@ -30,6 +30,7 @@ enum PARAM_TYPE : uint8_t {
     GENERAL_SETTINGS,
     VIDEO_OUTPUT,
     CAPTURE,
+    MODEL,
     DETECTION,
     DETECTED_ROI,
     LENS,
@@ -111,6 +112,10 @@ struct capture_parameters {
     bool     record_video;
     uint16_t images_captured;
     uint16_t videos_captured;
+};
+
+struct model_parameters {
+    char model_name[16];
 };
 
 struct detection_parameters {
@@ -312,6 +317,11 @@ inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t n
     memcpy((void *)&msg.data[offset], &num_pics, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &num_vids, sizeof(uint16_t));
+}
+
+inline void pack_model_parameters(message &msg, const char *model_name) {
+    msg.param_type = MODEL;
+    memcpy((void *)&msg.data[0], model_name, 16);
 }
 
 inline void pack_detection_parameters(
@@ -608,6 +618,12 @@ inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
     pack_capture_parameters(msg, pic, vid);
 }
 
+inline void pack_set_model_parameters(message &msg, const char *model_name) {
+    msg.version      = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_model_parameters(msg, model_name);
+}
+
 inline void pack_set_lens_parameters(message &msg, uint8_t lens_id) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
@@ -741,6 +757,10 @@ inline void unpack_capture_parameters(message &raw_msg, capture_parameters &para
     memcpy(&params.videos_captured, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.cap_single_image = cap_flags & CAP_FLAG_SINGLE_IMAGE;
     params.record_video     = cap_flags & CAP_FLAG_VIDEO;
+}
+
+inline void unpack_model_parameters(message &raw_msg, model_parameters &params) {
+    memcpy((void *)&params.model_name, (void *)&raw_msg.data[0], 16);
 }
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
@@ -908,7 +928,6 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
 }
-
 
 inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters &params) {
     uint8_t offset = 0;
