@@ -28,6 +28,7 @@ static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 enum PARAM_TYPE : uint8_t {
     SYSTEM_STATUS,
     GENERAL_SETTINGS,
+    MODEL,
     VIDEO_OUTPUT,
     CAPTURE,
     DETECTION,
@@ -93,8 +94,12 @@ struct general_settings_parameters {
     float    mount_pitch;
     float    mount_roll;
     uint8_t  run_ai;
-    char crop_model_name[16];
-    char var_model_name[16];
+    char     crop_model_name[16];
+    char     var_model_name[16];
+};
+
+struct model_parameters {
+    char model_name[16];
 };
 
 struct video_output_parameters {
@@ -215,13 +220,13 @@ struct cam_sensor_parameters {
     Used when sending/receiving messages over the network.
 ------------------------------------------------------------------------------------------------------------------------
 */
-char *serialize_message(const message &msg) {
+inline char *serialize_message(const message &msg) {
     char *buffer = new char[sizeof(msg)];
     memcpy(buffer, &msg, sizeof(msg));
     return buffer;
 }
 
-message deserialize_message(char *buffer) {
+inline message deserialize_message(char *buffer) {
     message msg;
     memcpy(&msg, buffer, sizeof(msg));
     return msg;
@@ -271,6 +276,11 @@ inline void pack_general_settings_parameters(
     memcpy((void *)&msg.data[offset], crop_model_name, 16);
     offset += 16;
     memcpy((void *)&msg.data[offset], var_model_name, 16);
+}
+
+inline void pack_model_parameters(message &msg, const char *model_name) {
+    msg.param_type = MODEL;
+    memcpy((void *)&msg.data[0], model_name, 16);
 }
 
 inline void pack_video_output_parameters(
@@ -712,6 +722,10 @@ inline void unpack_general_settings_parameters(message &raw_msg, general_setting
     memcpy((void *)&params.crop_model_name, (void *)&raw_msg.data[offset], 16);
     offset += 16;
     memcpy((void *)&params.var_model_name, (void *)&raw_msg.data[offset], 16);
+}
+
+inline void unpack_model_parameters(message &raw_msg, model_parameters &params) {
+    memcpy((void *)&params.model_name, (void *)&raw_msg.data[0], 16);
 }
 
 inline void unpack_video_output_parameters(message &raw_msg, video_output_parameters &params) {
