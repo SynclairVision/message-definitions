@@ -187,9 +187,10 @@ struct cam_offset_parameters {
     uint8_t cam_id;
     float   x;
     float   y;
-    uint8_t frame_rel;
-    float   yaw;
-    float   pitch;
+    float   yaw_abs;
+    float   pitch_abs;
+    float   yaw_rel;
+    float   pitch_rel;
 };
 
 struct cam_fov_parameters {
@@ -455,7 +456,7 @@ inline void pack_cam_crop_mode_parameters(message &msg, uint8_t cam, uint8_t mod
 }
 
 inline void pack_cam_offset_parameters(
-    message &msg, uint8_t cam, float x, float y, uint8_t frame_rel, float yaw = 0, float pitch = 0) {
+    message &msg, uint8_t cam, float x, float y, float yaw_abs = 0, float pitch_abs = 0, float yaw_rel = 0, float pitch_rel = 0) {
     msg.param_type = CAM_OFFSET;
     uint16_t offset = 0;
     int16_t offs_int;
@@ -468,13 +469,15 @@ inline void pack_cam_offset_parameters(
     offs_int  = static_cast<int16_t>(y * S16_MAX_F);
     memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
     offset += sizeof(int16_t);
-    memcpy((void *)&msg.data[offset], &frame_rel, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    mrad    = static_cast<int32_t>(yaw * 1000.0f);
+    mrad    = static_cast<int32_t>(yaw_abs * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(pitch * 1000.0f);
+    mrad    = static_cast<int32_t>(pitch_abs * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(yaw_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
 }
 
 inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
@@ -565,11 +568,11 @@ inline void pack_get_detected_roi_all(message &msg) {
 }
 
 /*
-    Convenience function for CAM_OFFSET. Specify the camera index, offset from center and frame relative flag.
+    Convenience function for CAM_OFFSET. Specify the camera index and offset from center.
 */
-inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, float y, uint8_t frame_rel) {
+inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, float y) {
     pack_get_parameters(msg, CAM_OFFSET);
-    pack_cam_offset_parameters(msg, cam, x, y, frame_rel);
+    pack_cam_offset_parameters(msg, cam, x, y);
 }
 
 /*
@@ -882,7 +885,7 @@ inline void unpack_cam_crop_mode_parameters(message &raw_msg, cam_crop_mode_para
 
 inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters &params) {
     int16_t x, y;
-    int32_t yaw, pitch;
+    int32_t mrad;
     uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -890,16 +893,19 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
     offset += sizeof(int16_t);
     memcpy((void *)&y, (void *)&raw_msg.data[offset], sizeof(int16_t));
     offset += sizeof(int16_t);
-    memcpy((void *)&params.frame_rel, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&yaw, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_abs    = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy((void *)&pitch, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    offset       += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_abs  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_rel    = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
     params.x      = static_cast<float>(x) / S16_MAX_F;
     params.y      = static_cast<float>(y) / S16_MAX_F;
-    params.yaw    = static_cast<float>(yaw) / 1000.0f;
-    params.pitch  = static_cast<float>(pitch) / 1000.0f;
 }
 
 inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &params) {
