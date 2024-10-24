@@ -478,6 +478,8 @@ inline void pack_cam_offset_parameters(
     mrad    = static_cast<int32_t>(yaw_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(pitch_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
