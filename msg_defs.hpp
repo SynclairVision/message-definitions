@@ -72,6 +72,7 @@ struct message {
     uint8_t  message_type;
     uint8_t  param_type;
     uint8_t  data[PARAMCOUNT];
+    uint8_t checksum;
 };
 
 struct bounding_box {
@@ -958,4 +959,252 @@ inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters
     memcpy((void *)&params.gain_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
 }
 
+// CHECK_SUM stuff
+
+enum CRC8TYPE{
+    AUTOSAR,
+    BLUETOOTH,
+    CDMA2000,
+    DARC,
+    DVB_S2,
+    GSM_A,
+    GSM_B,
+    HITAG,
+    I_432_1,
+    I_CODE,
+    LTE,
+    MAXIN_DOW,
+    MIFARE_MAD,
+    NRSC_5,
+    OPENSAFETY,
+    ROHC,
+    SAE_J1850,
+    SMBUS,
+    TECH_3250,
+    WCDMA
+};
+
+struct crc8 {
+    crc8() : polynomial(0x07), init_val(0x00), final_xor(0x00), reflect_in(false), reflect_out(false) {}
+    crc8(uint8_t key, uint8_t initial_value = 0x00, uint8_t final_xor_value = 0x00, bool b_reflection_in = false, bool b_reflection_out = false) : 
+                                        polynomial(key), init_val(initial_value), final_xor(final_xor_value), reflect_in(b_reflection_in), reflect_out(b_reflection_out){}
+    crc8(int preset){
+        switch (preset)
+        {
+            case CRC8TYPE::AUTOSAR:
+            {
+                this->polynomial = 0x2F;
+                this->init_val = 0xFF;
+                this->final_xor = 0xFF;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::BLUETOOTH:
+            {
+                this->polynomial = 0xA7;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = true;
+                this->reflect_out = true;
+                break;
+            }
+            case CRC8TYPE::CDMA2000:
+            {
+                this->polynomial = 0x9B;
+                this->init_val = 0xFF;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::DARC:
+            {
+                this->polynomial = 0x39;
+                this->init_val = 0xFF;
+                this->final_xor = 0x00;
+                this->reflect_in = true;
+                this->reflect_out = true;            
+                break;
+            }
+            case CRC8TYPE::DVB_S2:
+            {
+                this->polynomial = 0xD5;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::GSM_A:
+            {
+                this->polynomial = 0x1D;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::GSM_B:
+            {
+                this->polynomial = 0x49;
+                this->init_val = 0x00;
+                this->final_xor = 0xFF;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::HITAG:
+            {
+                this->polynomial = 0x1D;
+                this->init_val = 0xFF;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::I_432_1:
+            {
+                this->polynomial = 0x07;
+                this->init_val = 0x00;
+                this->final_xor = 0x55;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::I_CODE:
+            {
+                this->polynomial = 0x1D;
+                this->init_val = 0xFD;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;    
+                break;
+            }
+            case CRC8TYPE::LTE:
+            {
+                this->polynomial = 0x9B;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::MAXIN_DOW:
+            {
+                this->polynomial = 0x31;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = true;
+                this->reflect_out = true;
+                break;
+            }
+            case CRC8TYPE::MIFARE_MAD:
+            {
+                this->polynomial = 0x1D;
+                this->init_val = 0xC7;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::NRSC_5:
+            {
+                this->polynomial = 0x31;
+                this->init_val = 0xFF;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::OPENSAFETY:
+            {
+                this->polynomial = 0X2F;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::ROHC:
+            {
+                this->polynomial = 0x07;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = true;
+                this->reflect_out = true;
+                break;
+            }
+            case CRC8TYPE::SAE_J1850:
+            {
+                this->polynomial = 0x1D;
+                this->init_val = 0xFF;
+                this->final_xor = 0xFF;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::SMBUS:
+            {
+                this->polynomial = 0x07;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = false;
+                this->reflect_out = false;
+                break;
+            }
+            case CRC8TYPE::TECH_3250:
+            {
+                this->polynomial = 0x1D;
+                this->init_val = 0xFF;
+                this->final_xor = 0x00;
+                this->reflect_in = true;
+                this->reflect_out = true;
+                break;
+            }
+            case CRC8TYPE::WCDMA:
+            {
+                this->polynomial = 0x9B;
+                this->init_val = 0x00;
+                this->final_xor = 0x00;
+                this->reflect_in = true;
+                this->reflect_out = true;
+                break;
+            }
+        }
+    }
+    uint8_t reflect(uint8_t data) {
+        uint8_t reflection = 0x00;
+        for (uint8_t bit = 0; bit < 8; ++bit) {
+            if (data & (1 << bit)) {
+                reflection |= (1 << (7 - bit));
+            }
+        }
+        return reflection;
+    }
+
+    uint8_t crc(uint8_t* data, uint32_t n_bytes) {
+        uint8_t crc_ret = init_val;
+
+        for (uint32_t byte = 0; byte < n_bytes; ++byte) {
+            uint8_t current_byte = reflect_in ? reflect(data[byte]) : data[byte];
+            crc_ret ^= current_byte;
+            for (uint8_t bit = 0; bit < 8; ++bit) {
+                if (crc_ret & 0x80) {
+                    crc_ret = (crc_ret << 1) ^ polynomial;
+                } else {
+                    crc_ret <<= 1;
+                }
+            }
+        }
+        crc_ret = reflect_out ? reflect(crc_ret) : crc_ret;
+        return crc_ret ^ final_xor;
+    }
+    uint8_t final_xor = 0x00;
+    uint8_t init_val = 0x00;
+    uint8_t filler = 0x00;
+    uint8_t polynomial = 0x07;
+    bool reflect_in = false;
+    bool reflect_out = false;
+};
 #endif // MSG_DEFS_HPP
