@@ -686,7 +686,7 @@ inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float x, f
 inline void pack_set_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_cam_sensor_parameters(msg, ae, target_brightness, exposure_value, ag, gain_value);
+    pack_cam_sensor_parameters(msg, ae, ag, target_brightness, exposure_value, gain_value);
 }
 
 
