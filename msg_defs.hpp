@@ -751,6 +751,7 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     memcpy((void *)&params.detection_overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset            += sizeof(uint8_t);
     uint8_t num_views  = (params.layout_mode & 0xf0) >> 4;
+    if (num_views > 4) num_views = 4;
     for (uint8_t i = 0; i < num_views; i++) {
         memcpy((void *)&params.views[i].x, (void *)&raw_msg.data[offset], sizeof(uint16_t));
         offset += sizeof(uint16_t);
