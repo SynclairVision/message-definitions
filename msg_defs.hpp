@@ -304,6 +304,7 @@ inline void pack_video_output_parameters(
     offset += sizeof(uint8_t);
     if (views != nullptr) {
         uint8_t num_views = (layout_mode & 0xf0) >> 4;
+        if (num_views > 4) num_views = 4;
         for (uint8_t i = 0; i < num_views; i++) {
             memcpy((void *)&msg.data[offset], &views[i].x, sizeof(uint16_t));
             offset += sizeof(uint16_t);
