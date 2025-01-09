@@ -42,7 +42,8 @@ enum PARAM_TYPE : uint8_t {
     CAM_OFFSET,
     CAM_FOV,
     CAM_TARGET,
-    CAM_SENSOR
+    CAM_SENSOR,
+    CAM_DEPTH_ESTIMATION,
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -214,6 +215,11 @@ struct cam_sensor_parameters {
     uint8_t target_brightness;
     uint32_t exposure_value;
     uint32_t gain_value;
+};
+
+struct cam_depth_estimation_parameters {
+    uint8_t cam_id;
+    uint8_t depth_estimation_mode;
 };
 
 /*
@@ -533,6 +539,14 @@ inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag, uin
     memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
 }
 
+inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
+    msg.param_type = CAM_DEPTH_ESTIMATION;
+    uint8_t offset = 0;
+    memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &depth_estimation_mode, sizeof(uint8_t));
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     GET PACKING FUNCTIONS
@@ -687,6 +701,12 @@ inline void pack_set_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag,
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_sensor_parameters(msg, ae, ag, target_brightness, exposure_value, gain_value);
+}
+
+inline void pack_set_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
+    msg.version = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_cam_depth_estimation_parameters(msg, cam_id, depth_estimation_mode);
 }
 
 
@@ -959,6 +979,13 @@ inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters
     memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     offset += sizeof(uint32_t);
     memcpy((void *)&params.gain_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+}
+
+inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_estimation_parameters &params) {
+    uint8_t offset = 0;
+    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.depth_estimation_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 // CHECK_SUM stuff
