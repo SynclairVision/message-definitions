@@ -220,6 +220,7 @@ struct cam_sensor_parameters {
 struct cam_depth_estimation_parameters {
     uint8_t cam_id;
     uint8_t depth_estimation_mode;
+    float depth;
 };
 
 /*
@@ -539,12 +540,16 @@ inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag, uin
     memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
 }
 
-inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
+inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
     msg.param_type = CAM_DEPTH_ESTIMATION;
     uint8_t offset = 0;
+    int32_t mm;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &depth_estimation_mode, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    mm = static_cast<int32_t>(depth * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
 /*
@@ -706,7 +711,7 @@ inline void pack_set_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag,
 inline void pack_set_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_cam_depth_estimation_parameters(msg, cam_id, depth_estimation_mode);
+    pack_cam_depth_estimation_parameters(msg, cam_id, depth_estimation_mode, 0.0f);
 }
 
 
@@ -983,9 +988,13 @@ inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters
 
 inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_estimation_parameters &params) {
     uint8_t offset = 0;
+    int32_t mm;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.depth_estimation_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.depth = static_cast<float>(mm) / 1000.0f;
 }
 
 // CHECK_SUM stuff
