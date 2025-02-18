@@ -57,19 +57,7 @@ enum MESSAGE_TYPE : uint8_t {
     DATA_ERROR,
     FORBIDDEN,
     UNKNOWN,
-    BATTERY_STATUS,          // Ny meddelandetyp
-    START_VIDEO_RECORDING,   // Ny meddelandetyp
-    STOP_VIDEO_RECORDING,    // Ny meddelandetyp
-    TAKE_PHOTO               // Ny meddelandetyp
 };
-
-// Funktionssignaturer för nya funktioner
-void pack_get_battery_status(message &msg);
-void pack_start_video_recording(message &msg);
-void pack_stop_video_recording(message &msg);
-void pack_take_photo(message &msg);
-
-
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
