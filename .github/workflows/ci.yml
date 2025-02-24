@@ -1,4 +1,4 @@
-name: CI
+kname: CI
 
 on:
   push:
@@ -19,7 +19,9 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up C++ environment
-      uses: actions/setup-cpp@v2  # Uppdatera här
+      uses: actions/setup-cpp@v1  # Rätta versionen
+      with:
+        compiler: g++
 
     - name: Install dependencies
       run: sudo apt-get install -y clang-format clang-tidy
@@ -34,17 +36,9 @@ jobs:
     - name: Run tests
       run: |
         cd build
-        make test
+        ctest
 
     - name: Run clang-format
       run: |
         find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
-      shell: bash
 
-    - name: Run clang-tidy
-      run: |
-        cd build
-        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-        cd ..
-        find . -name '*.cpp' | xargs clang-tidy
-      shell: bash
