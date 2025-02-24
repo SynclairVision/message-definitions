@@ -19,9 +19,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up C++ environment
-      uses: actions/setup-cpp@v1
-      with:
-        compiler: 'clang'
+      uses: actions/setup-cpp@v2  # Uppdatera här
 
     - name: Install dependencies
       run: sudo apt-get install -y clang-format clang-tidy
