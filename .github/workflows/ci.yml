@@ -1,0 +1,44 @@
+kname: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev-0.4
+  pull_request:
+    branches:
+      - main
+      - dev-0.4
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up C++ environment
+      uses: actions/setup-cpp@v1  # Rätta versionen
+      with:
+        compiler: g++
+
+    - name: Install dependencies
+      run: sudo apt-get install -y clang-format clang-tidy
+
+    - name: Build the project
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make
+
+    - name: Run tests
+      run: |
+        cd build
+        ctest
+
+    - name: Run clang-format
+      run: |
+        find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
+
