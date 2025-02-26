@@ -1,4 +1,4 @@
-kname: CI
+name: CI
 
 on:
   push:
@@ -42,3 +42,5 @@ jobs:
       run: |
         find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
 
+    - name: Clean-up
+      run: rm -rf build/
