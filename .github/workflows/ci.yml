@@ -19,9 +19,17 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up C++ environment
-      uses: actions/setup-cpp@v1  # Rätta versionen
+      uses: actions/setup-cpp@v1  # Kontrollera version
       with:
         compiler: g++
+
+    - name: Cache CMake files
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.build-cache
+        key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-cmake-
 
     - name: Install dependencies
       run: sudo apt-get install -y clang-format clang-tidy
