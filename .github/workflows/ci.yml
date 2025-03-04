@@ -6,8 +6,9 @@ on:
       - main      
       - dev-0.4  
   pull_request:    
-    branches:      
+    branches:
       - main
+      - dev-0.4
 
 jobs:
   build:
@@ -20,7 +21,7 @@ jobs:
         uses: actions/setup-cpp@latest  # Se till att kolla versionen
         with:
           compiler: g++
-          
+        
       - name: Cache CMake files
         uses: actions/cache@v3  # Uppdaterad till v3
         with:
@@ -31,7 +32,7 @@ jobs:
 
       - name: Install dependencies
         run: sudo apt-get install -y clang-format clang-tidy
-        
+
       - name: Build the project
         run: |
           mkdir build
@@ -43,10 +44,3 @@ jobs:
         run: |
           cd build
           ctest
-        
-      - name: Run clang-format
-        run: |
-          find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
-        
-      - name: Clean-up
-        run: rm -rf build/
