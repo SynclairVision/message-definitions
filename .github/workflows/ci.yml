@@ -1,27 +1,52 @@
 name: CI
 
-on: [push, pull_request]
+on: 
+  push:    
+    branches:      
+      - main      
+      - dev-0.4  
+  pull_request:    
+    branches:      
+      - main      
+      - dev-0.4
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+jobs:  
+  build:    
+    runs-on: ubuntu-latest    
 
-    steps:
-    - name: Checkout code
+    steps:    
+    - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up C++ environment
-      uses: actions/setup-cpp@latest  # Se till att kolla versionen
-      with:
-        compiler: g++
+    - name: Set up C++ environment      
+      uses: actions/setup-cpp@latest  # Se till att kolla versionen      
+      with:        
+        compiler: g++    
 
-    - name: Cache CMake files
-      uses: actions/cache@v3  # Uppdaterad till v3
-      with:
-        path: /tmp/.build-cache
-        key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-cmake-
+    - name: Cache CMake files      
+      uses: actions/cache@v3  # Uppdaterad till v3      
+      with:        
+        path: /tmp/.build-cache        
+        key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}    
 
-    - name: Install dependencies
+    - name: Install dependencies      
       run: sudo apt-get install -y clang-format clang-tidy
+
+    - name: Build the project      
+      run: |        
+        mkdir build        
+        cd build        
+        cmake ..        
+        make    
+
+    - name: Run tests      
+      run: |        
+        cd build        
+        ctest    
+
+    - name: Run clang-format      
+      run: |        
+        find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i    
+
+    - name: Clean-up      
+      run: rm -rf build/
