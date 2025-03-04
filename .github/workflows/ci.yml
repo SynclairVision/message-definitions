@@ -18,12 +18,12 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up C++ environment
-        uses: actions/setup-cpp@latest  # Se till att kolla versionen
+        uses: actions/setup-cpp@v1
         with:
           compiler: g++
         
       - name: Cache CMake files
-        uses: actions/cache@v3  # Uppdaterad till v3
+        uses: actions/cache@v3
         with:
           path: /tmp/.build-cache
           key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
@@ -43,4 +43,4 @@ jobs:
       - name: Run tests
         run: |
           cd build
-          ctest
+          ctest --output-on-failure
