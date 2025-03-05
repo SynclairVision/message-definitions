@@ -44,6 +44,7 @@ enum PARAM_TYPE : uint8_t {
     CAM_TARGET,
     CAM_SENSOR,
     CAM_DEPTH_ESTIMATION,
+    BATTERY_STATUS,
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -222,6 +223,14 @@ struct cam_depth_estimation_parameters {
     uint8_t depth_estimation_mode;
     float depth;
 };
+
+// Battery Status Parameters
+struct battery_status_parameters {
+    float   battery_level;      // Battery level in percentage (0-100)
+    bool    is_charging;        // Whether the device is charging (true/false)
+    char    status_message[32]; // Message for the battery status, e.g., "Low battery", "Charging", etc.
+};
+
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
