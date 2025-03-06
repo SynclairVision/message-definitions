@@ -229,8 +229,11 @@ namespace MsgDef {
         float   battery_level;      // Battery level in percentage (0-100)
         bool    is_charging;        // Whether the device is charging (true/false)
         char    status_message[32]; // Message for the battery status, e.g., "Low battery", "Charging", etc.
+        float   voltage;            // Battery voltage in volts
+        float   percentage;         // Battery percentage
     };
 }
+
 
 
 
@@ -563,7 +566,7 @@ inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, u
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
-inline void unpack_battery_status(message &raw_msg, battery_status &status) {
+inline void unpack_battery_status(message &raw_msg, MsgDef::battery_status_parameters &status) {
     uint16_t offset = 0;
     int32_t voltage_raw;
     uint8_t charging_status;
@@ -580,6 +583,7 @@ inline void unpack_battery_status(message &raw_msg, battery_status &status) {
     // Läs laddstatus (t.ex. 0 för ej laddning, 1 för laddning)
     memcpy((void *)&charging_status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     status.is_charging = (charging_status != 0);  // Om 1, så laddar det
+
 
 }
 
