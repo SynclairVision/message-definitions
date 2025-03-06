@@ -224,12 +224,14 @@ struct cam_depth_estimation_parameters {
     float depth;
 };
 
-// Battery Status Parameters
-struct battery_status_parameters {
-    float   battery_level;      // Battery level in percentage (0-100)
-    bool    is_charging;        // Whether the device is charging (true/false)
-    char    status_message[32]; // Message for the battery status, e.g., "Low battery", "Charging", etc.
-};
+namespace MsgDef {
+    struct battery_status_parameters {
+        float   battery_level;      // Battery level in percentage (0-100)
+        bool    is_charging;        // Whether the device is charging (true/false)
+        char    status_message[32]; // Message for the battery status, e.g., "Low battery", "Charging", etc.
+    };
+}
+
 
 
 /*
