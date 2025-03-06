@@ -561,6 +561,26 @@ inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, u
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
+inline void unpack_battery_status(message &raw_msg, battery_status &status) {
+    uint16_t offset = 0;
+    int32_t voltage_raw;
+    uint8_t charging_status;
+    
+    // Läs batterivoltage (i millivolt, konvertera till volt)
+    memcpy((void *)&voltage_raw, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    status.voltage = static_cast<float>(voltage_raw) / 1000.0f;  // Omvandling till volt
+    offset += sizeof(int32_t);
+
+    // Läs batteriprocent
+    memcpy((void *)&status.percentage, (void *)&raw_msg.data[offset], sizeof(float));
+    offset += sizeof(float);
+
+    // Läs laddstatus (t.ex. 0 för ej laddning, 1 för laddning)
+    memcpy((void *)&charging_status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    status.is_charging = (charging_status != 0);  // Om 1, så laddar det
+
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     GET PACKING FUNCTIONS
