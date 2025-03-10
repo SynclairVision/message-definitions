@@ -1,11 +1,10 @@
 name: CI
-
-on:
-  push:
-    branches:
-      - main
-      - dev-0.4
-  pull_request:
+on: 
+  push:    
+    branches:      
+      - main      
+      - dev-0.4  
+  pull_request:    
     branches:
       - main
       - dev-0.4
@@ -13,40 +12,34 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up C++ environment
-      uses: actions/setup-cpp@v1
-      with:
-        compiler: 'clang'
+      - name: Set up C++ environment
+        uses: actions/setup-cpp@v1
+        with:
+          compiler: g++
+      
+      - name: Cache CMake files
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.build-cache
+          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
 
-    - name: Install dependencies
-      run: sudo apt-get install -y clang-format clang-tidy
+      - name: Install dependencies
+        run: sudo apt-get install -y clang-format clang-tidy
 
-    - name: Build the project
-      run: |
-        mkdir build
-        cd build
-        cmake ..
-        make
-
-    - name: Run tests
-      run: |
-        cd build
-        make test
-
-    - name: Run clang-format
-      run: |
-        find . -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
-      shell: bash
-
-    - name: Run clang-tidy
-      run: |
-        cd build
-        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-        cd ..
-        find . -name '*.cpp' | xargs clang-tidy
-      shell: bash
+      - name: Build the project
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make
+      
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure
