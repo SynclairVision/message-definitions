@@ -22,19 +22,12 @@ jobs:
         with:
           compiler: g++
           cmake: true
-          ninja: true
-          vcpkg: true
 
-      - name: Cache CMake files
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/CMake
-          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
-
-      - name: Install dependencies
-        run: sudo apt-get install -y clang-format clang-tidy
+      - name: Install Google Test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtest-dev
+          sudo apt-get install -y cmake # Om cmake inte redan är installerat
 
       - name: Build the project
         run: |
