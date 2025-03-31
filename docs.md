@@ -923,7 +923,7 @@ DigiView is configured to follow the standard of MAVLink's Gimbal Protocol v2. D
 
 ## Messages read by DigiView
 
-DigiView needs a high rate of attitude messages to work properly. Make sure that the autopilot emits ATTITUDE or ATTITUDE_QUATERNION at a minimum of 100 Hz.
+DigiView needs a high rate of attitude messages to work properly. Make sure that the autopilot emits ATTITUDE or ATTITUDE_QUATERNION at a minimum of 100 Hz. Note: if you're working with the development kit, which includes internal sensors, you can ignore any ATTITUDE-messages.
 
 | Number | Type | Name |
 |---|---|---|
