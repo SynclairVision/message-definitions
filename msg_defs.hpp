@@ -92,9 +92,6 @@ struct general_settings_parameters {
     uint16_t roi_width;
     uint16_t roi_height;
     uint8_t  camera_fps;
-    float    mount_yaw;
-    float    mount_pitch;
-    float    mount_roll;
     uint8_t  run_ai;
     char     crop_model_name[16];
     char     var_model_name[16];
@@ -257,7 +254,7 @@ inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t 
 
 inline void pack_general_settings_parameters(
     message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
-    float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
+    uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
 
     msg.param_type = GENERAL_SETTINGS;
     uint8_t offset = 0;
@@ -272,15 +269,6 @@ inline void pack_general_settings_parameters(
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &camera_fps, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    mrad = static_cast<int32_t>(mount_yaw * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(mount_pitch * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(mount_roll * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
     memcpy((void *)&msg.data[offset], &run_ai, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], crop_model_name, 16);
@@ -618,12 +606,12 @@ inline void pack_get_cam_target_parameters(message &msg, uint8_t cam, float x, f
 */
 inline void pack_set_general_settings_parameters(
     message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
-    float mount_yaw, float mount_pitch, float mount_roll, uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
+    uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_general_settings_parameters(
-        msg, camera_width, camera_height, roi_width, roi_height, camera_fps, mount_yaw, mount_pitch, mount_roll, run_ai,
+        msg, camera_width, camera_height, roi_width, roi_height, camera_fps, run_ai,
         crop_model_name, var_model_name);
 }
 
@@ -740,18 +728,6 @@ inline void unpack_general_settings_parameters(message &raw_msg, general_setting
     offset += sizeof(uint16_t);
     memcpy((void *)&params.camera_fps, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    mrad = 0;
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.mount_yaw = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(int32_t);
-    mrad = 0;
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.mount_pitch = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(int32_t);
-    mrad = 0;
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.mount_roll = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(int32_t);
     memcpy((void *)&params.run_ai, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.crop_model_name, (void *)&raw_msg.data[offset], 16);
