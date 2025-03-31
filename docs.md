@@ -16,7 +16,6 @@ It is recommended to have msg_defs.hpp open while reading this documentation.
 | message_type | enum: uint8_t | Message type, see below |
 |  param_type  | enum: uint8_t | Parameter type, see below |
 |     data     |  \[uint8_t\]  | Arguments or data for specific parameter type |
-| checksum     |  \[uint8_t\]  | Checksum of the message |
 
 #
 
@@ -53,22 +52,20 @@ An asterisk means a specific operation is not yet implemented.
 | **Name** | **Value** | **Message type** | **Description** |
 |:-------------------|:-----|:-----------|:---------------------------|
 | SYSTEM_STATUS | 0 | GET | Returns whether the system is currently running |
-| GENERAL_SETTINGS | 1 | GET & SET | General settings for the system |
-| VIDEO_OUTPUT | 2 | GET & SET | Information regarding the video output |
-| CAPTURE* | 3 | GET & SET | Message for controlling system recording |
-| DETECTION | 4 | GET & SET | Message containing AI post processing parameters |
-| DETECTED_ROI | 5 | GET | Retrieve information of specific detections |
-| LENS | 6 | GET & SET | Control for which lens parameters to use when doing undistortion calculations |
-| CAM_EULER | 7 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to the world |
-| CAM_ZOOM | 8 | GET & SET | Handles user-controlled cameras' zoom |
-| CAM_LOCK_FLAGS | 9 | GET & SET | Handles user-controlled cameras' locking settings |
-| CAM_CONTROL_MODE | 10 | GET & SET | Handles user-controlled cameras' control mode |
-| CAM_CROP_MODE | 11 | GET & SET | Handles user-controlled cameras' way of cropping its output image |
-| CAM_OFFSET | 12 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to center of picture |
-| CAM_FOV | 13 | GET* & SET | Handles field of view of the user-controlled cameras |
-| CAM_TARGET | 14 | GET & SET | Handles user-controlled cameras' direction in the geographic coordinate system lat/lon + altitude |
-| CAM_SENSOR | 15 | GET & SET | Control for the image sensor's settings |
-| CAM_DEPTH_ESTIMATION | 16 | GET & SET | Control for the depth estimation unit |
+| VIDEO_OUTPUT | 1 | GET & SET | Information regarding the video output |
+| CAPTURE* | 2 | GET & SET | Message for controlling system recording |
+| DETECTION | 3 | GET & SET | Message containing AI post processing parameters |
+| DETECTED_ROI | 4 | GET | Retrieve information of specific detections |
+| LENS | 5 | GET & SET | Control for which lens parameters to use when doing undistortion calculations |
+| CAM_EULER | 6 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to the world |
+| CAM_ZOOM | 7 | GET & SET | Handles user-controlled cameras' zoom |
+| CAM_LOCK_FLAGS | 8 | GET & SET | Handles user-controlled cameras' locking settings |
+| CAM_CONTROL_MODE | 9 | GET & SET | Handles user-controlled cameras' control mode |
+| CAM_CROP_MODE | 10 | GET & SET | Handles user-controlled cameras' way of cropping its output image |
+| CAM_OFFSET | 11 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to center of picture |
+| CAM_FOV | 12 | GET* & SET | Handles field of view of the user-controlled cameras |
+| CAM_TARGET | 13 | GET & SET | Handles user-controlled cameras' direction in the geographic coordinate system lat/lon + altitude |
+| CAM_SENSOR | 14 | GET & SET | Control for the image sensor's settings |
 |  |  |  |  |
 
 # Messages
@@ -100,88 +97,6 @@ listed below.
 |     3     | System encountered an error |
 
 The error field is currently unused and will always return 0.
-
-## GENERAL_SETTINGS
-
-### Data field
-
-The general settings message contains the following fields:
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-| camera_width | uint16_t | depends on camera resolution | '' |
-| camera_height | uint16_t | depends on camera resolution | '' |
-| roi_width | uint16_t | $\leq$ camera_width | '' |
-| roi_height | uint16_t | $\leq$ camera_height | '' |
-| camera_fps | uint8_t | \[1,30\] | \[1,30\] |
-| mount_yaw | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| mount_pitch | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| mount_roll | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
-| run_ai | uint8_t | \[0,1\] | \[0,1\] |
-| crop_model_name | char[16] | n/a | n/a |
-| var_model_name | char[16] | n/a | n/a |
-
-### Set behavior
-
-All fields are optional and can be set independently of each other. Any change
-requires a system restart in order to take effect.
-
-##### camera_width and camera_height
-
-The width and height of the camera sensor. Refer to the sensor's datasheet for
-valid values.
-
-##### roi_width and roi_height
-
-The width and height of the region of interest (ROI) of the camera sensor. The
-ROI is the area of the sensor that is used for image processing. The ROI must
-be smaller than or equal to the camera sensor's width and height.
-
-##### camera_fps
-
-The frames per second of the camera sensor.
-
-##### mount_yaw, mount_pitch, and mount_roll
-
-The yaw, pitch, and roll of the camera in relation to the internal IMU.
-
-##### run_ai
-
-A flag to enable or disable the AI processing.
-
-##### crop_model_name and var_model_name
-
-The names of the models used for the system's scanning and tracking, respectively.
-
-### Get behavior
-
-All fields will return the current values used by the system, with one exception
-being the model names.
-
-##### crop_model_name and var_model_name
-
-When requested, the system will respond with one model_parameters message for each
-model available. Refer to the model_parameters message for more information.
-
-## MODEL
-
-### Data field
-
-The model message contains the following field:
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-| model_name | char[16] | n/a | n/a |
-
-### Set behavior
-
-Ignored.
-
-### Get behavior
-
-The model message will return one message for each model available. The model name
-is a string containing the name of the model. This can then be used in GENERAL_SETTINGS
-to set the model used for the system's scanning and tracking.
 
 ## VIDEO_OUTPUT
 
@@ -511,6 +426,29 @@ implemented and always returns 0.
 
 The distance to the object from the camera (drone) in meters. Currently
 not implemented and always returns 0.
+
+## LENS
+
+Controls which lens calibration data to use.
+
+### Data field
+
+| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
+|:--------------:|:------------:|:-----------------------:|:-----------------------:|
+|    lens_id     |   uint8_t    |         \[0,2\]         |         \[0,2\]         |
+
+### Behavior
+
+Controls which calibration data from the lens.cal file to use when
+removing distortion caused by the lens. The index to lens mapping can be
+found here.
+
+|                 |                           |
+|:---------------:|:-------------------------:|
+| **index Value** | **Lens name in lens.cal** |
+|        0        |          CIL216           |
+|        1        |          CIL018           |
+|        2        |           LN007           |
 
 ## CAM_EULER
 
@@ -934,7 +872,6 @@ Message for control of the camera hardware.
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--:|:--:|:--:|:--:|
 | ae | uint8_t | 0,1 | 0,1 |
-| ag | uint8_t | 0,1 | 0,1 |
 | target_brightness | uint8_t | (0,255) | (0,255) |
 | exposure_value | uint32_t | (0,40000\] | (0,40000\] |
 | gain_value | uint32_t | (0,50000\] | (0,50000\] |
@@ -952,17 +889,10 @@ camera, with 0 being false. While any non-zero value will resolve to
 interpreting the data as true, it is recommended to stick to 1 meaning
 true.
 
-##### automatic gain (ag)
-
-Sets whether the system should automatically adjust the gain of the
-camera, with 0 being false. While any non-zero value will resolve to
-interpreting the data as true, it is recommended to stick to 1 meaning
-true.
-
 ##### target brightness
 
 The targeted brightness of the image, used for automatic exposure
-and gain calculations, 0 completely dark and 255 entirely white.
+calculations.
 
 ##### exposure value
 
@@ -983,46 +913,6 @@ of the image.
 Using this message's getter will simply return the values currently used
 by the system. See the set behavior for each field's meaning.
 
-## CAM_DEPTH_ESTIMATION
-
-Message for control of the depth estimation system.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-| cam_id | uint8_t | \[0,3\] | \[0,3\] |
-| depth_estimation_mode | uint8_t | \[0,1\] | \[0,1\] |
-| depth | float | \[0.0, 100.0\] | \[0.0, 100.0\] |
-
-### Set behavior
-
-##### cam id
-
-The user-controllable camera's id to set the depth estimation for.
-
-##### depth estimation mode
-
-Sets the depth estimation mode. To be implemented.
-
-##### depth
-
-Ignored.
-
-### Get behavior
-
-##### cam id
-
-The user-controllable camera's id to get the depth estimation for.
-
-##### depth estimation mode
-
-The depth estimation mode.
-
-##### depth
-
-The estimated depth in meters of the center point of the camera. To be implemented.
-
 # Supported MAVLINK messages
 Both PX4 and Ardupilot are currently supported.
 
@@ -1033,7 +923,7 @@ DigiView is configured to follow the standard of MAVLink's Gimbal Protocol v2. D
 
 ## Messages read by DigiView
 
-DigiView needs a high rate of attitude messages to work properly. Make sure that the autopilot emits ATTITUDE or ATTITUDE_QUATERNION at a minimum of 100 Hz.
+DigiView needs a high rate of attitude messages to work properly. Make sure that the autopilot emits ATTITUDE or ATTITUDE_QUATERNION at a minimum of 100 Hz. Note: if you're working with the development kit, which includes internal sensors, you can ignore any ATTITUDE-messages.
 
 | Number | Type | Name |
 |---|---|---|
