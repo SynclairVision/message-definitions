@@ -259,7 +259,6 @@ inline void pack_general_settings_parameters(
 
     msg.param_type = GENERAL_SETTINGS;
     uint8_t offset = 0;
-    int32_t mrad;
     memcpy((void *)&msg.data[offset], &camera_width, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &camera_height, sizeof(uint16_t));
@@ -718,7 +717,6 @@ inline void unpack_system_status_parameters(message &raw_msg, system_status_para
 
 inline void unpack_general_settings_parameters(message &raw_msg, general_settings_parameters &params) {
     uint8_t offset = 0;
-    int32_t mrad;
     memcpy((void *)&params.camera_width, (void *)&raw_msg.data[offset], sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&params.camera_height, (void *)&raw_msg.data[offset], sizeof(uint16_t));
