@@ -1,0 +1,4 @@
+/home/synclairuser/message-definitions/build/CMakeFiles/rebuild_cache.dir
+/home/synclairuser/message-definitions/build/CMakeFiles/edit_cache.dir
+/home/synclairuser/message-definitions/build/CMakeFiles/test.dir
+/home/synclairuser/message-definitions/build/CMakeFiles/msg_defs_test_program.dir

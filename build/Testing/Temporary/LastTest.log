@@ -1,0 +1,28 @@
+Start testing: Mar 10 11:04 UTC
+----------------------------------------------------------
+1/1 Testing: MsgDefsTest
+1/1 Test: MsgDefsTest
+Command: "/home/synclairuser/message-definitions/build/msg_defs_test_program"
+Directory: /home/synclairuser/message-definitions/build
+"MsgDefsTest" start time: Mar 10 11:04 UTC
+Output:
+----------------------------------------------------------
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from MsgDefsTest
+[ RUN      ] MsgDefsTest.ExampleMessageTest
+[       OK ] MsgDefsTest.ExampleMessageTest (0 ms)
+[----------] 1 test from MsgDefsTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"MsgDefsTest" end time: Mar 10 11:04 UTC
+"MsgDefsTest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Mar 10 11:04 UTC
