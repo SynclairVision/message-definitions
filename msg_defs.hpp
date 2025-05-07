@@ -17,6 +17,8 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
+static constexpr uint32_t STREAM_NAME_SIZE      = 8;
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     TYPES
@@ -103,6 +105,7 @@ struct model_parameters {
 };
 
 struct video_output_parameters {
+    char         stream_name[STREAM_NAME_SIZE];
     uint16_t     width;
     uint16_t     height;
     uint8_t      fps;
@@ -282,11 +285,13 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
 }
 
 inline void pack_video_output_parameters(
-    message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
+    message &msg, char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
     bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint16_t offset = 0;
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &width, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &height, sizeof(uint16_t));
@@ -558,6 +563,14 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, uint8_t cam_in
 }
 
 /*
+    Getter for video output, specifies the stream name.
+*/
+inline void pack_get_video_output_parameters(message &msg, char *stream_name) {
+    pack_get_parameters(msg, VIDEO_OUTPUT);
+    memcpy((void *)&msg.data[0], stream_name, STREAM_NAME_SIZE);
+}
+
+/*
     Convenience function for DETECTED_ROI. Specify the index of the detection to get.
 */
 inline void pack_get_detected_roi(message &msg, uint8_t index) {
@@ -630,10 +643,10 @@ inline void pack_set_detection_parameters(
 }
 
 inline void pack_set_video_output_parameters(
-    message &msg, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
+    message &msg, char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_video_output_parameters(msg, width, height, fps, layout_mode, detection_overlay_mode);
+    pack_video_output_parameters(msg, stream_name, width, height, fps, layout_mode, detection_overlay_mode);
 }
 
 inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
@@ -740,6 +753,8 @@ inline void unpack_model_parameters(message &raw_msg, model_parameters &params) 
 
 inline void unpack_video_output_parameters(message &raw_msg, video_output_parameters &params) {
     uint16_t offset = 0;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.width, (void *)&raw_msg.data[offset], sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&params.height, (void *)&raw_msg.data[offset], sizeof(uint16_t));
