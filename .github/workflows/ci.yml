@@ -4,10 +4,8 @@ on:
   push:    
     branches:      
       - your-branch-name     
-      - your-branch-name 
   pull_request:    
     branches:
-      - your-branch-name 
       - your-branch-name 
 jobs:
   build:
