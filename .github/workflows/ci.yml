@@ -3,12 +3,12 @@ name: CI
 on: 
   push:    
     branches:      
-      - main      
-      - dev-0.4  
+      - your-branch-name     
+      - your-branch-name 
   pull_request:    
     branches:
-      - main
-      - dev-0.4
+      - your-branch-name 
+      - your-branch-name 
 jobs:
   build:
     runs-on: ubuntu-latest
