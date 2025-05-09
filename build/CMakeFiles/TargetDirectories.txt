@@ -1,0 +1,3 @@
+/home/synclairuser/message-definitions/build/CMakeFiles/rebuild_cache.dir
+/home/synclairuser/message-definitions/build/CMakeFiles/edit_cache.dir
+/home/synclairuser/message-definitions/build/CMakeFiles/message_definitions.dir

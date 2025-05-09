@@ -46,6 +46,7 @@ enum PARAM_TYPE : uint8_t {
     CAM_TARGET,
     CAM_SENSOR,
     CAM_DEPTH_ESTIMATION,
+    BATTERY_STATUS,
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -223,6 +224,19 @@ struct cam_depth_estimation_parameters {
     uint8_t depth_estimation_mode;
     float depth;
 };
+
+// Batteristatusstruktur utan namespace
+struct battery_status_parameters {
+    float battery_level;     // Battery level in percentage (0-100)
+    bool is_charging;        // Whether the device is charging (true/false)
+    char status_message[32]; // Message for the battery status, e.g., "Low battery", "Charging", etc.
+    float voltage;           // Battery voltage in volts
+    float percentage;        // Battery percentage
+};
+
+
+
+
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -544,6 +558,26 @@ inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, u
     mm = static_cast<int32_t>(depth * 1000.0f);
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
+
+inline void unpack_battery_status(message &raw_msg, battery_status_parameters &status) {
+    uint16_t offset = 0;
+    int32_t voltage_raw;
+    uint8_t charging_status;
+
+    // Läs batterivoltage (i millivolt, konvertera till volt)
+    memcpy((void *)&voltage_raw, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    status.voltage = static_cast<float>(voltage_raw) / 1000.0f;  // Omvandling till volt
+    offset += sizeof(int32_t);
+
+    // Läs batteriprocent
+    memcpy((void *)&status.percentage, (void *)&raw_msg.data[offset], sizeof(float));
+    offset += sizeof(float);
+
+    // Läs laddstatus (t.ex. 0 för ej laddning, 1 för laddning)
+    memcpy((void *)&charging_status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    status.is_charging = (charging_status != 0);  // Om 1, så laddar det
+}
+
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
