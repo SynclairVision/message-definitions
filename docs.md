@@ -933,10 +933,10 @@ Message for control of the camera hardware.
 
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--:|:--:|:--:|:--:|
-| min_exposure | uint32_t | (0,40000\] | (0,40000\] |
-| max_exposure | uint32_t | (0,40000\] | (0,40000\] |
-| min_gain | uint32_t | (0,51000\] | (0,51000\] |
-| max_gain | uint32_t | (0,51000\] | (0,51000\] |
+| min_exposure | uint32_t | (1,40000\] | (1,40000\] |
+| max_exposure | uint32_t | (1,40000\] | (1,40000\] |
+| min_gain | uint32_t | (1000,51000\] | (1000,51000\] |
+| max_gain | uint32_t | (1000,51000\] | (1000,51000\] |
 
 ### Set behavior
 
