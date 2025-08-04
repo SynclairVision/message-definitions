@@ -523,7 +523,7 @@ inline void pack_cam_sensor_parameters(message &msg, uint32_t min_exposure, uint
     uint32_t offset = 0;
     memcpy((void *)&msg.data[offset], &min_exposure, sizeof(uint32_t));
     offset += sizeof(uint32_t);
-    memcpy((void *)&msg.data[offset], &max_exposure, sizeof(uint8_t));
+    memcpy((void *)&msg.data[offset], &max_exposure, sizeof(uint32_t));
     offset += sizeof(uint32_t);
     memcpy((void *)&msg.data[offset], &min_gain, sizeof(uint32_t));
     offset += sizeof(uint32_t);
