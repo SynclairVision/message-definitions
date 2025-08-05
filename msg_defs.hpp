@@ -146,6 +146,7 @@ struct detected_roi_parameters {
 struct cam_targeting_parameters {
     char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
+    uint8_t targeting_mode;
     bool    euler_delta;
     float   yaw;
     float   pitch;
