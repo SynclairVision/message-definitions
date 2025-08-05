@@ -370,15 +370,19 @@ inline void pack_detected_roi_parameters(
 }
 
 inline void pack_cam_targeting_parameters(
-    message &msg, uint8_t cam_id, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
     int32_t mrad;
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(cam_id);
+    memcpy((void *)&msg.data[offset], &targeting_mode, sizeof(uint8_t));
+    offset += sizeof(targeting_mode);
     memcpy((void *)&msg.data[offset], &euler_delta, sizeof(bool));
     offset += sizeof(euler_delta);
     mrad = static_cast<int32_t>(yaw * 1000.0f);
@@ -578,14 +582,14 @@ inline void pack_set_detection_parameters(
 }
 
 inline void pack_set_cam_targeting_parameters(
-    message &msg, uint8_t cam_id, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_targeting_parameters(
-        msg, cam_id, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
+        msg, stream_name, cam_id, targeting_mode, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
         target_latitude, target_longitude, target_altitude);
 }
 
@@ -757,7 +761,11 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     uint16_t offset = 0;
     int32_t mrad;
     int16_t offs_int;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.targeting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.euler_delta, (void *)&raw_msg.data[offset], sizeof(bool));
     offset += sizeof(bool);
