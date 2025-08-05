@@ -241,7 +241,7 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
 }
 
 inline void pack_video_output_parameters(
-    message &msg, char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
+    message &msg, const char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
     bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
@@ -277,7 +277,7 @@ inline void pack_video_output_parameters(
     memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
 }
 
-inline void pack_capture_parameters(message &msg, char *stream_name, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
+inline void pack_capture_parameters(message &msg, const char *stream_name, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
     msg.param_type     = CAPTURE;
     uint16_t offset     = 0;
     uint8_t cap_flags  = 0x0;
@@ -370,7 +370,7 @@ inline void pack_detected_roi_parameters(
 }
 
 inline void pack_cam_targeting_parameters(
-    message &msg, char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, const char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude) {
     msg.param_type = CAM_TARGETING;
@@ -416,7 +416,7 @@ inline void pack_cam_targeting_parameters(
 }
 
 inline void pack_cam_optics_and_control_parameters(
-    message &msg, char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+    message &msg, const char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
     msg.param_type = CAM_OPTICS_AND_CONTROL;
     uint16_t offset = 0;
     memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
@@ -494,7 +494,7 @@ inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, u
 /*
     Generic function for getting parameters. Specify the parameter type and in some cases the camera index.
 */
-inline void pack_get_parameters(message &msg, uint8_t param_type, char *stream_name = nullptr, uint8_t cam = 255) {
+inline void pack_get_parameters(message &msg, uint8_t param_type, const char *stream_name = nullptr, uint8_t cam = 255) {
     msg.version      = VERSION;
     msg.message_type = GET_PARAMETERS;
     msg.param_type   = param_type;
@@ -555,13 +555,13 @@ inline void pack_set_ai_parameters(
 }
 
 inline void pack_set_video_output_parameters(
-    message &msg, char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
+    message &msg, const char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_video_output_parameters(msg, stream_name, width, height, fps, layout_mode, detection_overlay_mode);
 }
 
-inline void pack_set_capture_parameters(message &msg, char *stream_name, bool pic, bool vid) {
+inline void pack_set_capture_parameters(message &msg, const char *stream_name, bool pic, bool vid) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_capture_parameters(msg, stream_name, pic, vid);
@@ -582,7 +582,7 @@ inline void pack_set_detection_parameters(
 }
 
 inline void pack_set_cam_targeting_parameters(
-    message &msg, char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, const char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude) {
 
@@ -594,7 +594,7 @@ inline void pack_set_cam_targeting_parameters(
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
-    message &msg, char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+    message &msg, const char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
