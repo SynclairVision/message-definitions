@@ -29,22 +29,16 @@ static constexpr uint32_t STREAM_NAME_SIZE      = 8;
 
 enum PARAM_TYPE : uint8_t {
     SYSTEM_STATUS,
-    GENERAL_SETTINGS,
+    AI,
     MODEL,
     VIDEO_OUTPUT,
     CAPTURE,
     DETECTION,
     DETECTED_ROI,
-    LENS,
-    CAM_EULER,
-    CAM_ZOOM,
-    CAM_LOCK_FLAGS,
-    CAM_CONTROL_MODE,
-    CAM_CROP_MODE,
+    CAM_TARGETING,
+    CAM_OPTICS_AND_CONTROL,
     CAM_OFFSET,
-    CAM_FOV,
-    CAM_TARGET,
-    CAM_SENSOR,
+    SENSOR,
     CAM_DEPTH_ESTIMATION,
 };
 
@@ -76,26 +70,20 @@ struct message {
     uint8_t  message_type;
     uint8_t  param_type;
     uint8_t  data[PARAMCOUNT];
-    uint8_t checksum;
+    uint8_t  checksum;
 };
 
 struct bounding_box {
     uint16_t x, y, w, h;
 };
 
-// Add comment for each parameter?
 struct system_status_parameters {
     uint8_t status;
     uint8_t error;
 };
 
-struct general_settings_parameters {
-    uint16_t camera_width;
-    uint16_t camera_height;
-    uint16_t roi_width;
-    uint16_t roi_height;
-    uint8_t  camera_fps;
-    uint8_t  run_ai;
+struct ai_parameters {
+    bool     run_ai;
     char     crop_model_name[16];
     char     var_model_name[16];
 };
@@ -117,6 +105,7 @@ struct video_output_parameters {
 };
 
 struct capture_parameters {
+    char     stream_name[STREAM_NAME_SIZE];
     bool     cap_single_image;
     bool     record_video;
     uint16_t images_captured;
@@ -154,39 +143,31 @@ struct detected_roi_parameters {
     float   distance;
 };
 
-struct lens_parameters {
-    uint8_t lens_id;
-};
-
-struct cam_euler_parameters {
+struct cam_targeting_parameters {
+    char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
-    uint8_t is_delta;
+    bool    euler_delta;
     float   yaw;
     float   pitch;
     float   roll;
+    uint8_t lock_flags;
+    float   x_offset;
+    float   y_offset;
+    float   target_latitude;
+    float   target_longitude;
+    float   target_altitude;
 };
 
-struct cam_zoom_parameters {
+struct cam_optics_and_control_parameters {
+    char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
     int8_t  zoom;
-};
-
-struct cam_lock_flags_parameters {
-    uint8_t cam_id;
-    uint8_t flags;
-};
-
-struct cam_control_mode_parameters {
-    uint8_t cam_id;
-    uint8_t mode;
-};
-
-struct cam_crop_mode_parameters {
-    uint8_t cam_id;
-    uint8_t mode;
+    float   fov;
+    uint8_t crop_mode;
 };
 
 struct cam_offset_parameters {
+    char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
     float   x;
     float   y;
@@ -196,32 +177,19 @@ struct cam_offset_parameters {
     float   pitch_rel;
 };
 
-struct cam_fov_parameters {
-    uint8_t cam_id;
-    float   fov;
-};
-
-struct cam_target_parameters {
-    uint8_t cam_id;
-    float   x;
-    float   y;
-    float   t_latitude;
-    float   t_longitude;
-    float   t_altitude;
-};
-
-struct cam_sensor_parameters {
-    uint8_t ae; // automatic exposure
-    uint8_t ag; // automatic gain
-    uint8_t target_brightness;
+struct sensor_parameters {
+    uint8_t  ae; // Auto Exposure
+    uint8_t  ag; // Auto Gain
+    uint8_t  target_brightness;
     uint32_t exposure_value;
     uint32_t gain_value;
 };
 
 struct cam_depth_estimation_parameters {
+    char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
     uint8_t depth_estimation_mode;
-    float depth;
+    float   depth;
 };
 
 /*
@@ -256,24 +224,11 @@ inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t 
     msg.data[1]    = error;
 }
 
-inline void pack_general_settings_parameters(
-    message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
-    uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
-
-    msg.param_type = GENERAL_SETTINGS;
+inline void pack_ai_parameters(message &msg, bool run_ai, const char *crop_model_name, const char *var_model_name) {
+    msg.param_type = AI;
     uint8_t offset = 0;
-    memcpy((void *)&msg.data[offset], &camera_width, sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&msg.data[offset], &camera_height, sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&msg.data[offset], &roi_width, sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&msg.data[offset], &roi_height, sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&msg.data[offset], &camera_fps, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &run_ai, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &run_ai, sizeof(bool));
+    offset += sizeof(bool);
     memcpy((void *)&msg.data[offset], crop_model_name, 16);
     offset += 16;
     memcpy((void *)&msg.data[offset], var_model_name, 16);
@@ -321,12 +276,14 @@ inline void pack_video_output_parameters(
     memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
 }
 
-inline void pack_capture_parameters(message &msg, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
+inline void pack_capture_parameters(message &msg, char *stream_name, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
     msg.param_type     = CAPTURE;
     uint16_t offset     = 0;
     uint8_t cap_flags  = 0x0;
     cap_flags         |= static_cast<uint8_t>(pic ? CAP_FLAG_SINGLE_IMAGE : 0);
     cap_flags         |= static_cast<uint8_t>(vid ? CAP_FLAG_VIDEO : 0);
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cap_flags, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &num_pics, sizeof(uint16_t));
@@ -411,51 +368,62 @@ inline void pack_detected_roi_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-inline void pack_lens_parameters(message &msg, uint8_t lens_id) {
-    msg.param_type = LENS;
-    memcpy((void *)&msg.data[0], &lens_id, sizeof(uint8_t));
-}
-
-inline void pack_cam_euler_parameters(message &msg, uint8_t cam, uint8_t is_delta, float yaw, float pitch, float roll) {
-    msg.param_type = CAM_EULER;
-    int32_t mrad;
+inline void pack_cam_targeting_parameters(
+    message &msg, uint8_t cam_id, bool euler_delta, float yaw, float pitch, float roll,
+    uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
+    float target_longitude, float target_altitude) {
+    msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
-    memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &is_delta, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    mrad    = static_cast<int32_t>(yaw * 1000.0f);
+    int16_t offs_int;
+    int32_t mrad;
+    memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
+    offset += sizeof(cam_id);
+    memcpy((void *)&msg.data[offset], &euler_delta, sizeof(bool));
+    offset += sizeof(euler_delta);
+    mrad = static_cast<int32_t>(yaw * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(pitch * 1000.0f);
+    mrad = static_cast<int32_t>(pitch * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(roll * 1000.0f);
+    mrad = static_cast<int32_t>(roll * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &lock_flags, sizeof(uint8_t));
+    offset += sizeof(lock_flags);
+    offs_int = static_cast<int16_t>(x_offset * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    offs_int = static_cast<int16_t>(y_offset * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    mrad    = static_cast<int32_t>(target_latitude * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(target_latitude * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(target_longitude * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(target_altitude * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-inline void pack_cam_zoom_parameters(message &msg, uint8_t cam, int8_t zoom) {
-    msg.param_type = CAM_ZOOM;
-    memcpy((void *)&msg.data[0], &cam, sizeof(uint8_t));
-    memcpy((void *)&msg.data[1], &zoom, sizeof(int8_t));
-}
-
-inline void pack_cam_lock_flags_parameters(message &msg, uint8_t cam, uint8_t flags) {
-    msg.param_type = CAM_LOCK_FLAGS;
-    memcpy((void *)&msg.data[0], &cam, sizeof(uint8_t));
-    memcpy((void *)&msg.data[1], &flags, sizeof(uint8_t));
-}
-
-inline void pack_cam_control_mode_parameters(message &msg, uint8_t cam, uint8_t mode) {
-    msg.param_type = CAM_CONTROL_MODE;
-    memcpy((void *)&msg.data[0], &cam, sizeof(uint8_t));
-    memcpy((void *)&msg.data[1], &mode, sizeof(uint8_t));
-}
-
-inline void pack_cam_crop_mode_parameters(message &msg, uint8_t cam, uint8_t mode) {
-    msg.param_type = CAM_CROP_MODE;
-    memcpy((void *)&msg.data[0], &cam, sizeof(uint8_t));
-    memcpy((void *)&msg.data[1], &mode, sizeof(uint8_t));
+inline void pack_cam_optics_and_control_parameters(
+    message &msg, char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+    msg.param_type = CAM_OPTICS_AND_CONTROL;
+    uint16_t offset = 0;
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &zoom, sizeof(int8_t));
+    offset += sizeof(int8_t);
+    int32_t mrad = static_cast<int32_t>(fov * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &crop_mode, sizeof(uint8_t));
 }
 
 inline void pack_cam_offset_parameters(
@@ -485,43 +453,10 @@ inline void pack_cam_offset_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
-    msg.param_type = CAM_FOV;
-    int16_t mrad;
+inline void pack_sensor_parameters(
+    message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+    msg.param_type = SENSOR;
     uint16_t offset = 0;
-    memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    mrad    = static_cast<int16_t>(fov * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int16_t));
-}
-
-inline void pack_cam_target_parameters(message &msg, uint8_t cam, float x, float y, float t_lat, float t_lon, float t_alt) {
-    msg.param_type = CAM_TARGET;
-    uint16_t offset = 0;
-    int32_t mrad;
-    int16_t offs;
-    memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    offs    = static_cast<int16_t>(x * S16_MAX_F);
-    memcpy((void *)&msg.data[offset], &offs, sizeof(int16_t));
-    offset += sizeof(int16_t);
-    offs    = static_cast<int16_t>(y * S16_MAX_F);
-    memcpy((void *)&msg.data[offset], &offs, sizeof(int16_t));
-    offset += sizeof(int16_t);
-    mrad    = static_cast<int32_t>(t_lat * 1000000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(t_lon * 1000000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(t_alt * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-}
-
-
-inline void pack_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
-    msg.param_type = CAM_SENSOR;
-    uint8_t offset = 0;
     memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &ag, sizeof(uint8_t));
@@ -554,20 +489,18 @@ inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, u
 /*
     Generic function for getting parameters. Specify the parameter type and in some cases the camera index.
 */
-inline void pack_get_parameters(message &msg, uint8_t param_type, uint8_t cam_index = 255) {
+inline void pack_get_parameters(message &msg, uint8_t param_type, char *stream_name = nullptr, uint8_t cam = 255) {
     msg.version      = VERSION;
     msg.message_type = GET_PARAMETERS;
     msg.param_type   = param_type;
-    if (cam_index != 255)
-        msg.data[0] = cam_index;
-}
-
-/*
-    Getter for video output, specifies the stream name.
-*/
-inline void pack_get_video_output_parameters(message &msg, char *stream_name) {
-    pack_get_parameters(msg, VIDEO_OUTPUT);
-    memcpy((void *)&msg.data[0], stream_name, STREAM_NAME_SIZE);
+    if (stream_name != nullptr) {
+        memcpy((void *)&msg.data[0], stream_name, STREAM_NAME_SIZE);
+    } else {
+        memset((void *)&msg.data[0], 0, STREAM_NAME_SIZE);
+    }
+    if (cam != 255) {
+        msg.data[STREAM_NAME_SIZE] = cam;
+    }
 }
 
 /*
@@ -603,29 +536,30 @@ inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, f
 }
 
 /*
-    Convenience function for CAM_TARGET. Specify the camera index and offset from center.
-*/
-inline void pack_get_cam_target_parameters(message &msg, uint8_t cam, float x, float y) {
-    pack_get_parameters(msg, CAM_TARGET);
-    pack_cam_target_parameters(msg, cam, x, y, 0.0f, 0.0f, 0.0f);
-}
-
-/*
 ------------------------------------------------------------------------------------------------------------------------
     SET PACKING FUNCTIONS
 
     For each parameter type there is one pack function.
 ------------------------------------------------------------------------------------------------------------------------
 */
-inline void pack_set_general_settings_parameters(
-    message &msg, uint16_t camera_width, uint16_t camera_height, uint16_t roi_width, uint16_t roi_height, uint8_t camera_fps,
-    uint8_t run_ai, const char *crop_model_name, const char *var_model_name) {
-
+inline void pack_set_ai_parameters(
+    message &msg, bool run_ai, const char *crop_model_name, const char *var_model_name) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_general_settings_parameters(
-        msg, camera_width, camera_height, roi_width, roi_height, camera_fps, run_ai,
-        crop_model_name, var_model_name);
+    pack_ai_parameters(msg, run_ai, crop_model_name, var_model_name);
+}
+
+inline void pack_set_video_output_parameters(
+    message &msg, char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
+    msg.version      = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_video_output_parameters(msg, stream_name, width, height, fps, layout_mode, detection_overlay_mode);
+}
+
+inline void pack_set_capture_parameters(message &msg, char *stream_name, bool pic, bool vid) {
+    msg.version      = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_capture_parameters(msg, stream_name, pic, vid);
 }
 
 inline void pack_set_detection_parameters(
@@ -642,71 +576,32 @@ inline void pack_set_detection_parameters(
         bonus_redetection_scale, missed_detection_penalty, missed_redetection_penalty);
 }
 
-inline void pack_set_video_output_parameters(
-    message &msg, char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode) {
+inline void pack_set_cam_targeting_parameters(
+    message &msg, uint8_t cam_id, bool euler_delta, float yaw, float pitch, float roll,
+    uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
+    float target_longitude, float target_altitude) {
+
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_video_output_parameters(msg, stream_name, width, height, fps, layout_mode, detection_overlay_mode);
+    pack_cam_targeting_parameters(
+        msg, cam_id, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
+        target_latitude, target_longitude, target_altitude);
 }
 
-inline void pack_set_capture_parameters(message &msg, bool pic, bool vid) {
+inline void pack_set_cam_optics_and_control_parameters(
+    message &msg, char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_capture_parameters(msg, pic, vid);
+    pack_cam_optics_and_control_parameters(msg, stream_name, cam_id, zoom, fov, crop_mode);
 }
 
-inline void pack_set_lens_parameters(message &msg, uint8_t lens_id) {
+inline void pack_set_sensor_parameters(
+    message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_lens_parameters(msg, lens_id);
-}
-
-inline void pack_set_cam_euler_parameters(message &msg, uint8_t cam, uint8_t is_delta, float yaw, float pitch, float roll) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_euler_parameters(msg, cam, is_delta, yaw, pitch, roll);
-}
-
-inline void pack_set_cam_zoom_parameters(message &msg, uint8_t cam, int8_t zoom) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_zoom_parameters(msg, cam, zoom);
-}
-
-inline void pack_set_cam_lock_flags_parameters(message &msg, uint8_t cam, uint8_t flags) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_lock_flags_parameters(msg, cam, flags);
-}
-
-inline void pack_set_cam_control_mode_parameters(message &msg, uint8_t cam, uint8_t mode) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_control_mode_parameters(msg, cam, mode);
-}
-
-inline void pack_set_cam_crop_mode_parameters(message &msg, uint8_t cam, uint8_t mode) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_crop_mode_parameters(msg, cam, mode);
-}
-
-inline void pack_set_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_fov_parameters(msg, cam, fov);
-}
-
-inline void pack_set_cam_target_parameters(message &msg, uint8_t cam, float x, float y, float t_lat, float t_lon, float t_alt) {
-    msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_target_parameters(msg, cam, x, y, t_lat, t_lon, t_alt);
-}
-
-inline void pack_set_cam_sensor_parameters(message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
-    msg.version = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_cam_sensor_parameters(msg, ae, ag, target_brightness, exposure_value, gain_value);
+    pack_sensor_parameters(msg, ae, ag, target_brightness, exposure_value, gain_value);
 }
 
 inline void pack_set_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
@@ -728,20 +623,10 @@ inline void unpack_system_status_parameters(message &raw_msg, system_status_para
     memcpy((void *)&params.error, (void *)&raw_msg.data[1], sizeof(uint8_t));
 }
 
-inline void unpack_general_settings_parameters(message &raw_msg, general_settings_parameters &params) {
+inline void unpack_ai_parameters(message &raw_msg, ai_parameters &params) {
     uint8_t offset = 0;
-    memcpy((void *)&params.camera_width, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&params.camera_height, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&params.roi_width, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&params.roi_height, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    offset += sizeof(uint16_t);
-    memcpy((void *)&params.camera_fps, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&params.run_ai, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
+    memcpy((void *)&params.run_ai, (void *)&raw_msg.data[offset], sizeof(bool));
+    offset += sizeof(bool);
     memcpy((void *)&params.crop_model_name, (void *)&raw_msg.data[offset], 16);
     offset += 16;
     memcpy((void *)&params.var_model_name, (void *)&raw_msg.data[offset], 16);
@@ -783,15 +668,17 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
 }
 
 inline void unpack_capture_parameters(message &raw_msg, capture_parameters &params) {
-    uint16_t offset    = 0;
-    uint8_t cap_flags = 0;
-    memcpy(&cap_flags, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    uint16_t offset = 0;
+    uint8_t cap_flags;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&cap_flags, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.cap_single_image = static_cast<bool>(cap_flags & CAP_FLAG_SINGLE_IMAGE);
+    params.record_video     = static_cast<bool>(cap_flags & CAP_FLAG_VIDEO);
     offset += sizeof(uint8_t);
-    memcpy(&params.images_captured, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    memcpy((void *)&params.images_captured, (void *)&raw_msg.data[offset], sizeof(uint16_t));
     offset += sizeof(uint16_t);
-    memcpy(&params.videos_captured, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.cap_single_image = cap_flags & CAP_FLAG_SINGLE_IMAGE;
-    params.record_video     = cap_flags & CAP_FLAG_VIDEO;
+    memcpy((void *)&params.videos_captured, (void *)&raw_msg.data[offset], sizeof(uint16_t));
 }
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
@@ -865,45 +752,54 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     params.distance = static_cast<float>(mrad) / 1000.0f;
 }
 
-inline void unpack_lens_parameters(message &raw_msg, lens_parameters &params) {
-    memcpy((void *)&params.lens_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
-}
-
-inline void unpack_cam_euler_parameters(message &raw_msg, cam_euler_parameters &params) {
-    int32_t mrad;
+inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_parameters &params) {
     uint16_t offset = 0;
+    int32_t mrad;
+    int16_t offs_int;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&params.is_delta, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
+    memcpy((void *)&params.euler_delta, (void *)&raw_msg.data[offset], sizeof(bool));
+    offset += sizeof(bool);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw  = static_cast<float>(mrad) / 1000.0f;
-    offset     += sizeof(int32_t);
+    params.yaw = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch  = static_cast<float>(mrad) / 1000.0f;
-    offset       += sizeof(int32_t);
+    params.pitch = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.roll = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.lock_flags, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&offs_int, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.x_offset = static_cast<float>(offs_int) / S16_MAX_F;
+    offset += sizeof(int16_t);
+    memcpy((void *)&offs_int, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.y_offset = static_cast<float>(offs_int) / S16_MAX_F;
+    offset += sizeof(int16_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.target_latitude = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.target_longitude = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.target_altitude = static_cast<float>(mrad) / 1000.0f;
 }
 
-inline void unpack_cam_zoom_parameters(message &raw_msg, cam_zoom_parameters &params) {
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.zoom, (void *)&raw_msg.data[1], sizeof(int8_t));
-}
-
-inline void unpack_cam_lock_flags_parameters(message &raw_msg, cam_lock_flags_parameters &params) {
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.flags, (void *)&raw_msg.data[1], sizeof(uint8_t));
-}
-
-inline void unpack_cam_control_mode_parameters(message &raw_msg, cam_control_mode_parameters &params) {
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.mode, (void *)&raw_msg.data[1], sizeof(uint8_t));
-}
-
-inline void unpack_cam_crop_mode_parameters(message &raw_msg, cam_crop_mode_parameters &params) {
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.mode, (void *)&raw_msg.data[1], sizeof(uint8_t));
+inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optics_and_control_parameters &params) {
+    uint16_t offset = 0;
+    int32_t mrad;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.zoom, (void *)&raw_msg.data[offset], sizeof(int8_t));
+    offset += sizeof(int8_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.fov = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.crop_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters &params) {
@@ -931,39 +827,7 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
     params.y      = static_cast<float>(y) / S16_MAX_F;
 }
 
-inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &params) {
-    int16_t mrad;
-    uint16_t offset = 0;
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    params.fov = static_cast<float>(mrad) / 1000.0f;
-}
-
-inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters &params) {
-    int32_t mrad;
-    int32_t mm;
-    uint16_t offset = 0;
-    int16_t offs;
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&offs, (void *)&raw_msg.data[offset], sizeof(int16_t));
-    params.x = static_cast<float>(offs) / S16_MAX_F;
-    offset += sizeof(int16_t);
-    memcpy((void *)&offs, (void *)&raw_msg.data[offset], sizeof(int16_t));
-    params.y = static_cast<float>(offs) / S16_MAX_F;
-    offset += sizeof(int16_t);
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.t_latitude  = static_cast<float>(mrad) / 1000000.0f;
-    offset            += sizeof(int32_t);
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.t_longitude  = static_cast<float>(mrad) / 1000000.0f;
-    offset             += sizeof(int32_t);
-    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.t_altitude = static_cast<float>(mm) / 1000.0f;
-}
-
-inline void unpack_cam_sensor_parameters(message &raw_msg, cam_sensor_parameters &params) {
+inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params) {
     uint8_t offset = 0;
     memcpy((void *)&params.ae, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
