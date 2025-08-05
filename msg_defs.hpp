@@ -432,11 +432,13 @@ inline void pack_cam_optics_and_control_parameters(
 }
 
 inline void pack_cam_offset_parameters(
-    message &msg, uint8_t cam, float x, float y, float yaw_abs = 0, float pitch_abs = 0, float yaw_rel = 0, float pitch_rel = 0) {
+    message &msg, const char *stream_name, uint8_t cam, float x, float y, float yaw_abs = 0, float pitch_abs = 0, float yaw_rel = 0, float pitch_rel = 0) {
     msg.param_type = CAM_OFFSET;
     uint16_t offset = 0;
     int16_t offs_int;
     int32_t mrad;
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset   += sizeof(uint8_t);
     offs_int  = static_cast<int16_t>(x * S16_MAX_F);
@@ -535,9 +537,9 @@ inline void pack_get_detected_roi_all(message &msg) {
 /*
     Convenience function for CAM_OFFSET. Specify the camera index and offset from center.
 */
-inline void pack_get_cam_offset_parameters(message &msg, uint8_t cam, float x, float y) {
-    pack_get_parameters(msg, CAM_OFFSET);
-    pack_cam_offset_parameters(msg, cam, x, y);
+inline void pack_get_cam_offset_parameters(message &msg, const char *stream_name, uint8_t cam, float x, float y) {
+    pack_get_parameters(msg, CAM_OFFSET, stream_name, cam);
+    pack_get_cam_offset_parameters(msg, stream_name, cam, x, y);
 }
 
 /*
@@ -815,6 +817,8 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
     int16_t x, y;
     int32_t mrad;
     uint16_t offset = 0;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&x, (void *)&raw_msg.data[offset], sizeof(int16_t));
