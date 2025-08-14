@@ -179,11 +179,10 @@ struct cam_offset_parameters {
 };
 
 struct sensor_parameters {
-    uint8_t  ae; // Auto Exposure
-    uint8_t  ag; // Auto Gain
-    uint8_t  target_brightness;
-    uint32_t exposure_value;
-    uint32_t gain_value;
+    uint32_t min_exposure;
+    uint32_t max_exposure;
+    uint32_t min_gain;
+    uint32_t max_gain;
 };
 
 struct cam_depth_estimation_parameters {
@@ -461,18 +460,16 @@ inline void pack_cam_offset_parameters(
 }
 
 inline void pack_sensor_parameters(
-    message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain) {
     msg.param_type = SENSOR;
     uint16_t offset = 0;
-    memcpy((void *)&msg.data[offset], &ae, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &ag, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &target_brightness, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &exposure_value, sizeof(uint32_t));
+    memcpy((void *)&msg.data[offset], &min_exposure, sizeof(uint32_t));
     offset += sizeof(uint32_t);
-    memcpy((void *)&msg.data[offset], &gain_value, sizeof(uint32_t));
+    memcpy((void *)&msg.data[offset], &max_exposure, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&msg.data[offset], &min_gain, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&msg.data[offset], &max_gain, sizeof(uint32_t));
 }
 
 inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
@@ -604,11 +601,11 @@ inline void pack_set_cam_optics_and_control_parameters(
 }
 
 inline void pack_set_sensor_parameters(
-    message &msg, uint8_t ae, uint8_t ag, uint8_t target_brightness, uint32_t exposure_value, uint32_t gain_value) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_sensor_parameters(msg, ae, ag, target_brightness, exposure_value, gain_value);
+    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain);
 }
 
 inline void pack_set_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
@@ -842,15 +839,13 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
 
 inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params) {
     uint8_t offset = 0;
-    memcpy((void *)&params.ae, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&params.ag, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&params.target_brightness, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&params.exposure_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    memcpy((void *)&params.min_exposure, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     offset += sizeof(uint32_t);
-    memcpy((void *)&params.gain_value, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    memcpy((void *)&params.max_exposure, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&params.min_gain, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy((void *)&params.max_gain, (void *)&raw_msg.data[offset], sizeof(uint32_t));
 }
 
 inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_estimation_parameters &params) {
