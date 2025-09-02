@@ -472,10 +472,12 @@ inline void pack_sensor_parameters(
     memcpy((void *)&msg.data[offset], &max_gain, sizeof(uint32_t));
 }
 
-inline void pack_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
+inline void pack_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
     msg.param_type = CAM_DEPTH_ESTIMATION;
     uint8_t offset = 0;
     int32_t mm;
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &depth_estimation_mode, sizeof(uint8_t));
@@ -608,10 +610,10 @@ inline void pack_set_sensor_parameters(
     pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain);
 }
 
-inline void pack_set_cam_depth_estimation_parameters(message &msg, uint8_t cam_id, uint8_t depth_estimation_mode) {
+inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode) {
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_cam_depth_estimation_parameters(msg, cam_id, depth_estimation_mode, 0.0f);
+    pack_cam_depth_estimation_parameters(msg, stream_name, cam_id, depth_estimation_mode, 0.0f);
 }
 
 
@@ -851,6 +853,8 @@ inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params
 inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_estimation_parameters &params) {
     uint8_t offset = 0;
     int32_t mm;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.depth_estimation_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
@@ -1108,3 +1112,4 @@ struct crc8 {
     bool reflect_out = false;
 };
 #endif // MSG_DEFS_HPP
+
