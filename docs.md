@@ -937,6 +937,7 @@ Message for control of the camera hardware.
 | max_exposure | uint32_t | (1,40000\] | (1,40000\] |
 | min_gain | uint32_t | (1000,51000\] | (1000,51000\] |
 | max_gain | uint32_t | (1000,51000\] | (1000,51000\] |
+| target_brightness | float | (-12,12\] | (-12,12\] |
 
 ### Set behavior
 
@@ -957,6 +958,10 @@ The minimum gain value that the system will use for the automatic gain functiona
 ##### max_gain
 
 The maximum gain value that the system will use for the automatic gain functionality.
+
+### target_brightness
+
+The brightness that the automatic exposure functionality will target.
 
 ### Get behavior
 
