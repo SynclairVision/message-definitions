@@ -933,50 +933,35 @@ Message for control of the camera hardware.
 
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--:|:--:|:--:|:--:|
-| ae | uint8_t | 0,1 | 0,1 |
-| ag | uint8_t | 0,1 | 0,1 |
-| target_brightness | uint8_t | (0,255) | (0,255) |
-| exposure_value | uint32_t | (0,40000\] | (0,40000\] |
-| gain_value | uint32_t | (0,50000\] | (0,50000\] |
+| min_exposure | uint32_t | (1,40000\] | (1,40000\] |
+| max_exposure | uint32_t | (1,40000\] | (1,40000\] |
+| min_gain | uint32_t | (1000,51000\] | (1000,51000\] |
+| max_gain | uint32_t | (1000,51000\] | (1000,51000\] |
+| target_brightness | float | (-12,12\] | (-12,12\] |
 
 ### Set behavior
 
-If automatic exposure is set to true when sending this message the
-system will automatically modify the exposure which might result in the
-change made becoming undone.
+The system uses automatic exposure and automatic gain but only within the range defined by the user. Manually setting them is done by setting the min and max values to the same value. The possible ranges, for example exposure of 0-40000, are based on capabilities of the IMX412 sensor for now.
 
-##### automatic exposure (ae)
+##### min_exposure 
 
-Sets whether the system should automatically adjust the exposure of the
-camera, with 0 being false. While any non-zero value will resolve to
-interpreting the data as true, it is recommended to stick to 1 meaning
-true.
+The minimum exposure value that the system will use for the automatic exposure functionality.
 
-##### automatic gain (ag)
+##### max_exposure
 
-Sets whether the system should automatically adjust the gain of the
-camera, with 0 being false. While any non-zero value will resolve to
-interpreting the data as true, it is recommended to stick to 1 meaning
-true.
+The maximum exposure value that the system will use for the automatic exposure functionality.
 
-##### target brightness
+##### min_gain
 
-The targeted brightness of the image, used for automatic exposure
-and gain calculations, 0 completely dark and 255 entirely white.
+The minimum gain value that the system will use for the automatic gain functionality.
 
-##### exposure value
+##### max_gain
 
-The value to the the exposure to. 40000 is set as the limit in this
-documentation, but the actual max depends on the fps. The exposure is
-measured in μs and should not exceed the frame time. If the fps is
-set to 30 that translates to a max exposure of
-$\frac{1}{30} \cdot 10^6 = 33333$.
+The maximum gain value that the system will use for the automatic gain functionality.
 
-##### gain value
+### target_brightness
 
-The gain to set for the camera sensor. While 50000 is set as the maximum
-in this documentation the actual max depends heavily on the brightness
-of the image.
+The brightness that the automatic exposure functionality will target.
 
 ### Get behavior
 
