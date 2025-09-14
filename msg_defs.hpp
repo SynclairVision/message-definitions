@@ -461,9 +461,10 @@ inline void pack_cam_offset_parameters(
 }
 
 inline void pack_sensor_parameters(
-    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness) {
     msg.param_type = SENSOR;
     uint16_t offset = 0;
+    int32_t mm;
     memcpy((void *)&msg.data[offset], &min_exposure, sizeof(uint32_t));
     offset += sizeof(uint32_t);
     memcpy((void *)&msg.data[offset], &max_exposure, sizeof(uint32_t));
@@ -607,11 +608,10 @@ inline void pack_set_cam_optics_and_control_parameters(
 }
 
 inline void pack_set_sensor_parameters(
-    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain) {
-
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness) {
     msg.version      = VERSION;
-    msg.message_type = SET_PARAMETERS;
-    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain);
+    msg.message_type = SET_PARAMETERS;  
+    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain, target_brightness);
 }
 
 inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode) {
@@ -844,6 +844,7 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
 
 inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params) {
     uint8_t offset = 0;
+    int32_t mm;
     memcpy((void *)&params.min_exposure, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     offset += sizeof(uint32_t);
     memcpy((void *)&params.max_exposure, (void *)&raw_msg.data[offset], sizeof(uint32_t));
