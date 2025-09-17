@@ -44,7 +44,7 @@ enum PARAM_TYPE : uint8_t {
 
 enum MESSAGE_TYPE : uint8_t {
     EMPTY,
-    QUIT,
+    QUIT = 255,
     GET_PARAMETERS,
     SET_PARAMETERS,
     CURRENT_PARAMETERS,
@@ -1119,4 +1119,5 @@ struct crc8 {
     bool reflect_out = false;
 };
 #endif // MSG_DEFS_HPP
+
 
