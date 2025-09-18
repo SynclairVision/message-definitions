@@ -44,7 +44,6 @@ enum PARAM_TYPE : uint8_t {
 
 enum MESSAGE_TYPE : uint8_t {
     EMPTY,
-    QUIT = 255,
     GET_PARAMETERS,
     SET_PARAMETERS,
     CURRENT_PARAMETERS,
@@ -53,6 +52,7 @@ enum MESSAGE_TYPE : uint8_t {
     DATA_ERROR,
     FORBIDDEN,
     UNKNOWN,
+    QUIT = 255,
 };
 
 
