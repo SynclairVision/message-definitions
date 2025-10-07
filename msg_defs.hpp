@@ -40,6 +40,7 @@ enum PARAM_TYPE : uint8_t {
     CAM_OFFSET,
     SENSOR,
     CAM_DEPTH_ESTIMATION,
+    SINGLE_TARGET_TRACKING,
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -191,6 +192,18 @@ struct cam_depth_estimation_parameters {
     uint8_t cam_id;
     uint8_t depth_estimation_mode;
     float   depth;
+};
+
+struct single_target_tracking_parameters {
+    uint8_t enabled;
+    uint8_t command;
+    bounding_box target_bbox;
+    uint8_t cam_id;
+    uint8_t detection_id;
+    float yaw_abs;
+    float pitch_abs;
+    float yaw_rel;
+    float pitch_rel;
 };
 
 /*
@@ -479,7 +492,7 @@ inline void pack_sensor_parameters(
 
 inline void pack_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
     msg.param_type = CAM_DEPTH_ESTIMATION;
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int32_t mm;
     memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
     offset += STREAM_NAME_SIZE;
@@ -489,6 +502,35 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
     offset += sizeof(uint8_t);
     mm = static_cast<int32_t>(depth * 1000.0f);
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+}
+
+inline void pack_single_target_tracking_parameters(
+    message &msg, uint8_t enabled, uint8_t command, bounding_box target_bbox, uint8_t cam_id, uint8_t detection_id,
+    float yaw_abs = 0, float pitch_abs = 0, float yaw_rel = 0, float pitch_rel = 0) {
+    msg.param_type = SINGLE_TARGET_TRACKING;
+    uint16_t offset = 0;
+    int32_t mrad;
+    memcpy((void *)&msg.data[offset], &enabled, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &command, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &target_bbox, sizeof(bounding_box));
+    offset += sizeof(bounding_box);
+    memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &detection_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    mrad = static_cast<int32_t>(yaw_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(pitch_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(yaw_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(pitch_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 /*
@@ -618,6 +660,13 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
     msg.version = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_depth_estimation_parameters(msg, stream_name, cam_id, depth_estimation_mode, 0.0f);
+}
+
+inline void pack_set_single_target_tracking_parameters(
+    message &msg, uint8_t enabled, uint8_t command, bounding_box target_bbox, uint8_t cam_id, uint8_t detection_id) {
+    msg.version      = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_single_target_tracking_parameters(msg, enabled, command, target_bbox, cam_id, detection_id);
 }
 
 /*
@@ -868,6 +917,32 @@ inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_e
     offset += sizeof(uint8_t);
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.depth = static_cast<float>(mm) / 1000.0f;
+}
+
+inline void unpack_single_target_tracking_parameters(message &raw_msg, single_target_tracking_parameters &params) {
+    uint8_t offset = 0;
+    int32_t mrad;
+    memcpy((void *)&params.enabled, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.target_bbox, (void *)&raw_msg.data[offset], sizeof(bounding_box));
+    offset += sizeof(bounding_box);
+    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.detection_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_abs  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_abs  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_rel  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
 }
 
 // CHECK_SUM stuff
