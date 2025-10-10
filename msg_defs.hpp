@@ -195,7 +195,6 @@ struct cam_depth_estimation_parameters {
 };
 
 struct single_target_tracking_parameters {
-    uint8_t enabled;
     uint8_t command;
     char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
@@ -508,13 +507,11 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
 }
 
 inline void pack_single_target_tracking_parameters(
-    message &msg, uint8_t enabled, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&msg.data[offset], &enabled, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &command, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
@@ -674,11 +671,11 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 }
 
 inline void pack_set_single_target_tracking_parameters(
-    message &msg, uint8_t enabled, uint8_t command, const char *target_bbox, uint8_t cam_id, uint8_t detection_id,
+    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, uint8_t detection_id,
     float x_offset, float y_offset, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_single_target_tracking_parameters(msg, enabled, command, target_bbox, cam_id, detection_id,
+    pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, detection_id,
                                            x_offset, y_offset, zoom_level, yaw_abs, pitch_abs, yaw_rel, pitch_rel);
 }
 
@@ -935,8 +932,6 @@ inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_e
 inline void unpack_single_target_tracking_parameters(message &raw_msg, single_target_tracking_parameters &params) {
     uint8_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&params.enabled, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
     memcpy((void *)&params.command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
