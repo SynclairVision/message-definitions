@@ -593,7 +593,7 @@ inline void pack_get_detected_roi_all(message &msg) {
 */
 inline void pack_get_cam_offset_parameters(message &msg, const char *stream_name, uint8_t cam, float x, float y) {
     pack_get_parameters(msg, CAM_OFFSET, stream_name, cam);
-    pack_get_cam_offset_parameters(msg, stream_name, cam, x, y);
+    pack_cam_offset_parameters(msg, stream_name, cam, x, y);
 }
 
 /*
