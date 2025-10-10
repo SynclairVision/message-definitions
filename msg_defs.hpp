@@ -675,8 +675,8 @@ inline void pack_set_single_target_tracking_parameters(
     float x_offset, float y_offset, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, detection_id,
-                                           x_offset, y_offset, zoom_level, yaw_abs, pitch_abs, yaw_rel, pitch_rel);
+    pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
+        detection_id, zoom_level, yaw_abs, pitch_abs, yaw_rel, pitch_rel);
 }
 
 /*
