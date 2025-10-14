@@ -671,8 +671,8 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 }
 
 inline void pack_set_single_target_tracking_parameters(
-    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, uint8_t detection_id,
-    float x_offset, float y_offset, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
+    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    uint8_t detection_id, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
