@@ -4,8 +4,7 @@ This page contains documentation on the communication with Synclair Vision's sof
 
 ## General workflow
 
-The file msg_defs.hpp contains all necessary helper functions to pack messages that can then be sent over a network connection.
-It is recommended to have msg_defs.hpp open while reading this documentation.
+The file msg_defs.hpp contains all necessary helper functions to pack messages that can then be sent over a network connection. It is recommended to have msg_defs.hpp open while reading this documentation.
 
 # Base message structure
 
@@ -18,27 +17,26 @@ It is recommended to have msg_defs.hpp open while reading this documentation.
 |     data     |  \[uint8_t\]  | Arguments or data for specific parameter type |
 | checksum     |  \[uint8_t\]  | Checksum of the message |
 
-#
-
 ## Message types
 
 This table contains the possible values in the message_type field of a
 message. The values are provided in the table, but are also available in
-the MESSAGE_TYPE enum in the msg_def.hpp file with the corresponding
+the MESSAGE_TYPE enum in the msg_defs.hpp file with the corresponding
 name for convenience.
 
 | **Name** | **Value** | **Description** |
 |:--------------------|:-----|:-----------------------------------------|
 | EMPTY | 0 | Indicates that the message is empty |
-| QUIT | 1 | Instructs DigiView to stop execution |
-| GET_PARAMETERS | 2 | Indicates that the message is a data request |
-| SET_PARAMETERS | 3 | Indicates that the message has data for DigiView to set |
-| CURRENT_PARAMETERS | 4 | Response flag set by DigiView indicating that the message contains current parameters used by the camera |
+| GET_PARAMETERS | 1 | Indicates that the message is a data request |
+| SET_PARAMETERS | 2 | Indicates that the message has data for DigiView to set |
+| CURRENT_PARAMETERS | 3 | Response flag set by DigiView indicating that the message contains current parameters used by the camera |
+| GET_INTERVAL | 4 | Indicates that the message is a request to set up periodic sending of a specific parameter type |
 | ACKNOWLEDGEMENT | 5 | Indicates a succesful SET request |
 | CHECKSUM_ERROR | 6 | The check sum of the previous message did not match the check sum that was sent |
 | DATA_ERROR | 7 | DigiView could not interpret the data received |
 | FORBIDDEN | 8 | The sender does not have permission to perform the requested action(s) |
 | UNKNOWN | 9 | The parameter or message type supplied is unknown to DigiView |
+| QUIT | 255 | Instructs DigiView to close the connection |
 
 ## Parameter types
 
@@ -53,29 +51,52 @@ An asterisk means a specific operation is not yet implemented.
 | **Name** | **Value** | **Message type** | **Description** |
 |:-------------------|:-----|:-----------|:---------------------------|
 | SYSTEM_STATUS | 0 | GET | Returns whether the system is currently running |
-| GENERAL_SETTINGS | 1 | GET & SET | General settings for the system |
-| VIDEO_OUTPUT | 2 | GET & SET | Information regarding the video output |
-| CAPTURE* | 3 | GET & SET | Message for controlling system recording |
-| DETECTION | 4 | GET & SET | Message containing AI post processing parameters |
-| DETECTED_ROI | 5 | GET | Retrieve information of specific detections |
-| LENS | 6 | GET & SET | Control for which lens parameters to use when doing undistortion calculations |
-| CAM_EULER | 7 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to the world |
-| CAM_ZOOM | 8 | GET & SET | Handles user-controlled cameras' zoom |
-| CAM_LOCK_FLAGS | 9 | GET & SET | Handles user-controlled cameras' locking settings |
-| CAM_CONTROL_MODE | 10 | GET & SET | Handles user-controlled cameras' control mode |
-| CAM_CROP_MODE | 11 | GET & SET | Handles user-controlled cameras' way of cropping its output image |
-| CAM_OFFSET | 12 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to center of picture |
-| CAM_FOV | 13 | GET* & SET | Handles field of view of the user-controlled cameras |
-| CAM_TARGET | 14 | GET & SET | Handles user-controlled cameras' direction in the geographic coordinate system lat/lon + altitude |
-| CAM_SENSOR | 15 | GET & SET | Control for the image sensor's settings |
-| CAM_DEPTH_ESTIMATION | 16 | GET & SET | Control for the depth estimation unit |
+| AI | 1 | GET & SET | AI processing parameters |
+| MODEL | 2 | GET | Model information |
+| VIDEO_OUTPUT | 3 | GET & SET | Information regarding the video output |
+| CAPTURE | 4 | GET & SET | Message for controlling system recording |
+| DETECTION | 5 | GET & SET | Message containing AI post processing parameters |
+| DETECTED_ROI | 6 | GET | Retrieve information of specific detections |
+| CAM_TARGETING | 7 | GET & SET | Handles user-controlled cameras targeting including euler angles and coordinates |
+| CAM_OPTICS_AND_CONTROL | 8 | GET & SET | Handles user-controlled cameras' zoom, FOV, and crop mode |
+| CAM_OFFSET | 9 | GET | Retrieve directional info relative to the center of the picture |
+| SENSOR | 10 | GET & SET | Control for the image sensor's settings |
+| CAM_DEPTH_ESTIMATION | 11 | GET & SET | Control for the depth estimation unit |
+| SINGLE_TARGET_TRACKING | 12 | GET & SET | Single target tracking parameters |
 |  |  |  |  |
 
 # Messages
 
 This section will describe each message listed under [Parameter types](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#parameter-types) in detail. Each subsection is for a separate message where all data-fields and, if any exists, any unexpected behaviors are explained. Each subsection is named after the message's corresponding parameter name.
 
+## Common behavior
+
+### stream_name
+
+In messages where a stream_name field is present, the field is used to
+specify which video stream the message is referring to. The stream_name is a
+string of max length 8 characters. If the stream_name does not match an existing
+stream, the operation is ignored. Each stream carries its own set of
+parameters. So, if you are watching the output of stream "stream" and you wish to know the size of that stream, you must send a GET VIDEO_OUTPUT request with stream_name set to "stream".
+
+### cam_id
+
+In messages where a cam_id field is present, the field is used to
+specify which user controllable camera the message is referring to. It is usually paired with a stream_name field to identify the camera uniquely. The cam_id is a uint8_t and valid values are
+\[0, num_user_views - 1\] where num_user_views is the number of user controllable cameras
+which can be read from the VIDEO_OUTPUT message. So, if you are watching the output of stream "stream" and you wish to know the zoom level of the top left camera on that stream, you must send a GET CAM_OPTICS_AND_CONTROL request with stream_name set to "stream" and cam_id set to 0.
+
+### GET_INTERVAL
+
+The GET_INTERVAL message can be used to set up periodic sending of a specific parameter type. The interval is specified in milliseconds and the minimum allowed interval is 100 ms. If a GET_INTERVAL message is sent with an interval lower than 100 ms, the request is ignored. If a GET_INTERVAL message is sent with an interval of 0 ms, any previously set periodic sending of that parameter type is cancelled.
+
+When a GET_INTERVAL message is sent, DigiView will reply with the requested parameter type at the specified interval until a new GET_INTERVAL message is sent with the same parameter type and an interval of 0 ms.
+
+Currently work in progress.
+
 ## SYSTEM_STATUS
+
+Message for retrieving the current system status.
 
 ### Data field
 
@@ -101,69 +122,36 @@ listed below.
 
 The error field is currently unused and will always return 0.
 
-## GENERAL_SETTINGS
+## AI
+
+Message for high-level control of the AI processing.
 
 ### Data field
 
-The general settings message contains the following fields:
-
+The AI message contains the following fields:
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--------------:|:------------:|:-----------------------:|:-----------------------:|
-| camera_width | uint16_t | depends on camera resolution | '' |
-| camera_height | uint16_t | depends on camera resolution | '' |
-| roi_width | uint16_t | $\leq$ camera_width | '' |
-| roi_height | uint16_t | $\leq$ camera_height | '' |
-| camera_fps | uint8_t | \[1,30\] | \[1,30\] |
-| mount_yaw | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| mount_pitch | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| mount_roll | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
-| run_ai | uint8_t | \[0,1\] | \[0,1\] |
+| ai_enabled | bool | true, false | true, false |
 | crop_model_name | char[16] | n/a | n/a |
 | var_model_name | char[16] | n/a | n/a |
 
 ### Set behavior
+The ai_enabled field can be set to true or false to enable or disable
+AI processing. If the field is set to true, but no models are
+specified, the system will not be able to perform any AI processing.
 
-All fields are optional and can be set independently of each other. Any change
-requires a system restart in order to take effect.
+Crop model is the model used for initial detection or "scanning" of objects, while
+var model is the model used for verification or "tracking" of objects once they have been detected.
 
-##### camera_width and camera_height
-
-The width and height of the camera sensor. Refer to the sensor's datasheet for
-valid values.
-
-##### roi_width and roi_height
-
-The width and height of the region of interest (ROI) of the camera sensor. The
-ROI is the area of the sensor that is used for image processing. The ROI must
-be smaller than or equal to the camera sensor's width and height.
-
-##### camera_fps
-
-The frames per second of the camera sensor.
-
-##### mount_yaw, mount_pitch, and mount_roll
-
-The yaw, pitch, and roll of the camera in relation to the internal IMU.
-
-##### run_ai
-
-A flag to enable or disable the AI processing.
-
-##### crop_model_name and var_model_name
-
-The names of the models used for the system's scanning and tracking, respectively.
+The names of the models must match exactly with the names returned by the MODEL message.
 
 ### Get behavior
-
-All fields will return the current values used by the system, with one exception
-being the model names.
-
-##### crop_model_name and var_model_name
-
-When requested, the system will respond with one model_parameters message for each
-model available. Refer to the model_parameters message for more information.
+The ai_enabled field will return whether AI processing is currently enabled or disabled.
+The crop_model_name and var_model_name fields will return the names of the currently set models.
 
 ## MODEL
+
+Message carrying information about available models.
 
 ### Data field
 
@@ -180,10 +168,11 @@ Ignored.
 ### Get behavior
 
 The model message will return one message for each model available. The model name
-is a string containing the name of the model. This can then be used in GENERAL_SETTINGS
-to set the model used for the system's scanning and tracking.
+is a string containing the name of the model. This can then be used in the AI message to set the models used for detection and verification.
 
 ## VIDEO_OUTPUT
+
+Message for controlling the video output resolution and layout.
 
 ### Data field
 
@@ -192,6 +181,7 @@ operations and one for set operations.
 
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--:|:--:|:--:|:--:|
+| stream_name | char[8] | see below | see below |
 | width | uint16_t | \[640,1920\] | \[640,1920\] |
 | height | uint16_t | \[480,1080\] | \[480,1080\] |
 | fps* | uint8_t | ignored | ignored |
@@ -214,6 +204,10 @@ regarding the different cameras. Its fields are shown below.
 
 ### Set behavior
 
+##### stream_name
+
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
+
 ##### width and height
 
 If a width \> 1920 or height \> 1080 is set the arguments are clamped to
@@ -232,13 +226,13 @@ is used. If the argument is larger than the max overlay mode (currently
 
 | **layout_mode value** | **User camera layout** |
 |:--:|:---|
-| 0 | 1 square camera |
-| 1 | 2 square cameras stacked on top of each other |
-| 2 | 2 panoramic cameras stacked on top of each other |
-| 3 | 2 square cameras side by side on top of one panoramic camera |
-| 4 | 4 square cameras |
-| 5 | 3 square cameras on top of one panoramic camera |
-| 6 | Debug camera, downscaled full view of the physical camera. There are no input controls available in this mode. |
+| 0 | 1 camera |
+| 1 | 2 cameras stacked on top of each other |
+| 2 | 2 cameras side by side |
+| 3 | 3 cameras, 2 on top, 1 below|
+| 4 | 4 cameras in a 2x2 grid |
+| 5 | 4 cameras, 3 on top, 1 below |
+| 6 | debug view, shows source frame from sensor |
 
 ##### detection overlay mode
 
@@ -256,10 +250,11 @@ made. The currently available modes are listed below.
 | 4 | Shows a row of detections on the top of the frame, does not cover user-controllable cameras. Number of detections shown depend on the output resolution. |
 | 5 | Shows a row of detections on the bottom of the frame. |
 
-Each detection camera is 120x120 pixels, so to calculate the number of
-detections shown the following formula is applied.
+Each detection camera is square, and the side length in pixels can be
+found in the single_detection_size field. The number of detection cameras
+shown can be calculated using the following formula:
 
-$$n\_{detections} = \lfloor \frac{\mathrm{limiting \quad pixel \quad length}}{120} \rfloor$$
+$$n\_{detections} = \lfloor \frac{\mathrm{limiting \quad pixel \quad length}}{\mathrm{single\_detection\_size}} \rfloor$$
 
 The limiting pixel length is the output resolution width (height) for
 row (column) layouts.
@@ -276,22 +271,19 @@ Unused.
 
 ##### layout
 
-Contains the current layout mode and number of active user-controlled cameras, see table under [layout](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#layout). The mode value will be located in the 4 least significant bits, and the number of active user-controlled cameras currently in use will be located in the 4 most significant bits.
-
-To extract number of views and layout mode:
-```
-video_output_parameters p = ...;
-int mode = p.layout_mode & 0x0f;
-int num_views = (p.layout_mode & 0xf0) >> 4;
-```
+Contains the current layout mode, see table under [layout](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#layout).
 
 ##### detection overlay mode
 
 Contains the current detection overlay, see table under [detection overlay mode](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#detection-overlay-mode).
 
+##### num_user_views
+
+Indicates the number of user-controllable camera views currently active. This value is derived from the layout mode, see [layout](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#layout-1).
+
 ##### views
 
-Is an array of length 4 containing the bounding boxes of each of the user-controllable cameras in pixels. The positions are given by their top-left corner and their width and height. If there are less than 4 user-controllable cameras available the unused array index/indices will still contain information, albeit either undefined or outdated. The number of active cameras can be extracted from the layout, see [layout](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#layout-1).
+Is an array of length 4 containing the bounding boxes of each of the user-controllable cameras in pixels. The positions are given by their top-left corner and their width and height. If there are less than 4 user-controllable cameras available the unused array index/indices will still contain information, albeit either undefined or outdated.
 
 ##### detection overlay box
 
@@ -309,15 +301,37 @@ index.
 
 ## CAPTURE
 
-Currently not implemented
+The capture message contains parameters modifying the internal
+handling of capturing images and video streams.
 
 ### Data field
 
-n/a
+| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
+|:--:|:--:|:--:|:--:|
+| stream_name | char[8] | see below | see below |
+| cap_single_image | bool | true, false | true, false |
+| record_video | bool | true, false | true, false |
+| images_captured | uint16_t | n/a | n/a |
+| videos_captured | uint16_t | n/a | n/a |
 
-### Behavior
+### Set behavior
 
-n/a
+##### stream_name
+
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
+
+##### cap single image
+
+If set to true, the system will capture a single image when the capture message is received. If set to false, no image will be captured.
+
+##### record video
+
+If set to true, the system will start recording video from the specified stream. If set to false, the system will stop recording video from the specified stream. If the system is already recording video from the specified stream when a request to start recording is received, no action is taken.
+
+### Get behavior
+
+The get version of the message will return with all fields containing
+the current values used by the system.
 
 ## DETECTION
 
@@ -331,12 +345,12 @@ presented.
 |:--:|:--:|:--:|:--:|
 | mode | uint8_t | \[0,255\] | \[0,255\] |
 | sorting_mode | uint8_t | \[0,2\] | \[0,2\] |
-| crop_confidence_threshold | float | \[0.0,0.99) | \[0.0,0.99) |
-| var_confidence_threshold | float | \[0.0,0.99) | \[0.0,0.99) |
+| crop_confidence_threshold | float | \[0.0,0.99\) | \[0.0,0.99\) |
+| var_confidence_threshold | float | \[0.0,0.99\) | \[0.0,0.99\) |
 | crop_box_limit | uint16_t | \[10,500\] | \[10,500\] |
 | var_box_limit | uint16_t | \[10,500\] | \[10,500\] |
-| crop_box_overlap | float | \[0.0,0.99) | \[0.0,0.99) |
-| var_box_overlap | float | \[0.0,0.99) | \[0.0,0.99) |
+| crop_box_overlap | float | \[0.0,0.99\) | \[0.0,0.99\) |
+| var_box_overlap | float | \[0.0,0.99\) | \[0.0,0.99\) |
 | creation_score_scale | uint8_t | \[0,254\],255 | \[0,254\] |
 | bonus_detection_scale | uint8_t | \[0,254\],255 | \[0,254\] |
 | bonus_redetection_scale | uint8_t | \[0,254\],255 | \[0,254\] |
@@ -512,501 +526,240 @@ implemented and always returns 0.
 The distance to the object from the camera (drone) in meters. Currently
 not implemented and always returns 0.
 
-## CAM_EULER
+## CAM_TARGETING
 
-Message for user-controllable cameras' positioning relative to true
-north.
+Message for user-controllable cameras' targeting information.
 
 ### Data field
 
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--------------:|:------------:|:-----------------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|    is_delta    |   uint8_t    |           0,1           |           0,1           |
-|      yaw       |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
-|     pitch      |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
-|      roll      |    float     |     \[-1.57,1.57\]      |     \[-1.57,1.57\]      |
+| stream_name | char[8] | see below | see below |
+| cam_id | uint8_t | \[0,3\] | \[0,3\] |
+| targeting_mode | uint8_t | \[0,2\] | \[0,2\] |
+| euler_delta | bool | true, false | true, false |
+| yaw | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
+| pitch | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| roll | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| lock_flags | uint8_t | \[0,4\] | \[0,4\] |
+| x_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
+| y_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
+| target_latitude | float | \[-90.0,90.0\] | | \[-90.0,90.0\] |
+| target_longitude | float | \[-180.0,180.0\) | | \[-180.0,180.0\) |
+| target_altitude | float | \[-1000.0,10000.0\] | \[-1000.0,10000.0\] | \[-1000.0,10000.0\] |
 
 ### Set behavior
 
+##### stream name
+
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
+
 ##### cam id
 
-Dictates which user-controlled camera is updated with the message.
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
 
-##### is delta
+##### targeting mode
 
-Boolean which decides if the angle sent is to be interpreted as a global
-direction or a change to the current aim. 0 indicates that the angle
-should be taken as a global direction. While any non-zero value will
-resolve to interpreting the data as a change, it is recommended to stick
-to 1 translating to true.
+Sets how the camera is to be targeted. The possible modes are listed
+below. If the set mode is larger than the maximum (currently 3) the mode is not changed.
+| **targeting_mode value** | **Targeting mode** |
+|:------------------------:|:------------------:|
+| 0 | Directional, the camera is aimed using global euler angles. |
+| 1 | Coordinal, the camera is aimed using global coordinates. |
+| 2 | Detection, the camera is aimed at a specific detection. |
+| 3 | Single target tracking, the camera is aimed at the object being tracked by the single target tracking system. See [SINGLE_TARGET_TRACKING](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#single-target-tracking). |
 
-##### yaw
+##### euler delta
 
-The updated yaw in radians.
+If true, the yaw, pitch, and roll values are treated as deltas (changes) rather than absolute positions.
+##### yaw, pitch, roll
 
-##### pitch
+The euler angles in radians (using Tait-Bryan formalism) used to aim the camera. Roll is currently ignored.
 
-The updated pitch in radians.
+##### lock flags
 
-##### roll
+Controls which degrees of freedom are locked in place. If a direction is
+not locked the camera will follow the system in that direction. 3 LSB
+are relevant, control locking with yaw, pitch and roll in that order.
+For example, if the lock_flags field is set to 0b00000011, the camera
+will stabilize pitch and roll, but look in the system's forward direction.
 
-The updated roll in radians (currently ignored).
+##### x offset, y offset
 
-## CAM_ZOOM
+Instructs the camera to offset its aim by a fraction of the view. The
+values are unitless and in the range \[-1.0,1.0\]. For example, setting
+x_offset to 0.5 will move the camera's aim to the right by half the
+view's width, while setting y_offset to -0.5 will move the aim down by
+half the view's height.
 
-Controls the (digital) zoom of a user-controlled camera by modifying the
-FOV captured by the camera.
+##### target latitude, target longitude, target altitude
 
-### Data field
+The global coordinates used to aim the camera. Latitude is in the range
+\[-90.0,90.0\], longitude is in the range \[-180.0,180.0\) and
+altitude is the altitude of the target relative to the system in meters.
+These fields are only used if the targeting mode is set to coordinal.
 
+### Get behavior
+
+When getting the CAM_TARGETING message all fields will be filled with
+the current values used by the stream and camera specified by the
+stream_name and cam_id fields.
+
+## CAM_OPTICS_AND_CONTROL
+
+Message for user-controllable cameras' optics and control information.
+
+### Data fields
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--------------:|:------------:|:-----------------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|      zoom      |    int8_t    |      \[-127,127\]       |           n/a           |
+| stream_name | char[8] | see below | see below |
+| cam_id | uint8_t | \[0,3\] | \[0,3\] |
+| zoom | int8_t | \[-127,127\] | n/a |
+| fov | float | \[0.0,180.0\] | n/a |
+| crop_mode | uint8_t | \[0,1\] | n/a |
 
-### SET behavior
+### Set behavior
+
+##### stream name
+
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
 
 ##### cam id
 
-The id of the user-controlled camera to update.
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
 
 ##### zoom
 
-Unitless value to zoom in or out. Positive values zoom in, negative zoom out.
-Larger values will result in a larger zoom factor.
-
-### GET behavior
-
-##### cam id
-
-The id of the user-controlled camera to get the zoom for.
-
-##### zoom
-
-Undefined, use CAM_FOV to get the current zoom level.
-
-## CAM_LOCK_FLAGS
-
-Controls which degrees of freedom are locked in place.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|     flags      |   uint8_t    |         \[0,4\]         |         \[0,4\]         |
-
-### Set behavior
-
-##### cam id
-
-The id of the user-controlled camera to set the locked direction for.
-
-##### flags
-
-Which degrees of freedom to lock in place. If a direction is not locked
-the camera will follow the system in that direction. Only the first 3
-bits are relevant, if the bit is 1 the direction is locked. For example,
-if only roll and pitch is set to 1 the camera will look in the flight
-direction of the drone.
-
-| **Bit number** | **Locked direction** |
-|:--------------:|:--------------------:|
-|       1        |         roll         |
-|       2        |        pitch         |
-|       3        |         yaw          |
-
-
-### Get behavior
-
-When getting the cam flags the cam_id field needs to contain a valid id,
-otherwise the flags returned will be undefined.
-
-## CAM_CONTROL_MODE
-
-Decides how the software gimbal for a user-controlled camera behaves.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|      mode      |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-
-### Set behavior
-
-##### cam id
-
-Sets which user-controlled camera to change control mode for.
-
-##### mode
-
-Sets the camera to be controlled in one of the following 4 ways:
-
-| **mode value** |        **Control type**         |
-|:--------------:|:-------------------------------:|
-|       0        | Pilot view, not yet implemented |
-|       1        |       Directional control       |
-|       2        |        Coordial control         |
-|       3        |              Pass               |
-
-Camera control modes
-
-### Get behavior
-
-When getting the control mode the cam_id field needs to contain a valid
-id, otherwise the control mode returned will be undefined.
-
-## CAM_CROP_MODE
-
-Handles the way the cropping of a user-controlled camera is performed.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|      mode      |   uint8_t    |         \[0,4\]         |         \[0,4\]         |
-
-### Set behavior
-
-##### cam id
-
-Sets which user-controlled camera the message is aimed at.
-
-##### mode
-
-Which cropping mode to use. See table below for available modes.
-
-| **mode value** | **Type of cropping** |
-|:--:|:--:|
-| 0 | Deprecated. Crops a rectangular section of the image. |
-| 1 | Crops a cartesian sector of the image, resulting in a square output. Default. |
-| 2 | Crops a panoramic view. Default. |
-| 3 | Deprecated. Undistorts the cropped portion. |
-| 4 | Debug view, downscales the full 4K image to the output resolution. |
-
-If the mode is not one of the values found in the table above the resulting output image for
-the user-controlled camera with id cam_id will be full black.
-
-### Get behavior
-
-When getting the cropping mode the cam_id field needs to contain a valid
-id, otherwise the crop mode returned will be undefined.
-
-## CAM_OFFSET
-
-Utility for getting the euler angle (in Tait-Bryan formalism) for a
-pixel in a user-controlled camera that is not the center. In the set
-version the cameras direction is also updated to the offset of that
-pixel.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|       x        |    float     |      \[-1.0,1.0\]       |      \[-1.0,1.0\]       |
-|       y        |    float     |      \[-1.0,1.0\]       |      \[-1.0,1.0\]       |
-|   frame_rel    |   uint8_t    |           n/a           |           0,1           |
-|      yaw       |    float     |           n/a           |     \[-3.14,3.14\]      |
-|     pitch      |    float     |           n/a           |     \[-3.14,3.14\]      |
-
-### Set behavior
-
-Using this message as a setter will move the view of the camera with id
-cam_id to the pixel requested. Note that x & y are NOT the pixel values
-in the cameras frame but rather the normalized coordinates in the x-y
-plane of the frame. -1, -1 is the top left corner, 1, 1 is the bottom right.
-
-##### cam id
-
-Sets the user-controllable camera's id to set offset for. If cam id is
-outside the valid set arguments the message will be ignored.
-
-##### x
-
-The normalized horizontal distance ((pixel x coord) - (image width / 2))
-/ image width) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of yaw. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior.
-
-##### y
-
-The normalized vertical distance ((pixel y coord) - (image height / 2))
-/ image height) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of pitch. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior.
-
-### Get behavior
-
-This message's get version will return the euler angle of the requested
-pixel, either in relation to the frame or in relation to the global
-coordinate system.
-
-##### cam id
-
-Id of the user-controlled camera to receive data from.
-
-##### x
-
-The normalized horizontal distance ((pixel x coord) - (image width / 2))
-/ image width) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of yaw. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior.
-
-##### y
-
-The normalized vertical distance ((pixel y coord) - (image height / 2))
-/ image height) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of pitch. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior.
-
-##### frame_rel
-
-Flag for whether to return the angles in the cameras coordinate system
-or the global coordinate system. 0 for the global coordinate system, 1
-for the system's coordinate system.
-
-##### yaw
-
-Return value of the yaw euler angle (in Tait-Bryan formalism), either in
-the cameras coordinates or the global coordinates. See frame_rel.
-
-##### pitch
-
-Return value of the pitch euler angle (in Tait-Bryan formalism), either
-in the cameras coordinates or the global coordinates. See frame_rel.
-
-## CAM_FOV
-
-Data relating to the field of view of a user-controllable camera.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** |
-|:--------------:|:------------:|:-----------------------:|
-|     cam_id     |   uint8_t    |         \[0,3\]         |
-|      fov       |    float     |      \[0.1,3.14\]       |
-
-### Set behavior
-
-##### cam id
-
-Sets the user-controllable camera's id to set fov for. If cam id is
-outside the valid set arguments the message will be ignored.
+Sets the zoom level of the camera. The valid range is \[-127,127\], where 0 is no zoom, positive values zoom in, and negative values zoom out.
 
 ##### fov
 
-The new fov to set in radians. Note that the fov passed in this message
-directly changes the horizontal fov, the vertical fov is dynamically
-calculated to maintain the aspect ratio of the camera. While it is
-possible to send fovs outside the valid interval and they will be
-accepted, doing so might result in undefined behavior.
+Sets the field of view (FOV) of the camera in radians. The valid range is \[0.1, 3.14\] radians. Values outside this range are ignored.
 
-## CAM_TARGET
+##### crop mode
 
-Message for GPS targeting. If the system is unable to
-acquire its own GPS location or altitude, the results of this message
-will be undefined.
+Sets the crop mode of the camera. The valid values are:
+| **crop_mode value** | **Crop mode** |
+|:-------------------:|:------------------:|
+| 1 | Cartesian, the output is rectified (no distortion) |
+| 2 | Panoramic, the output is in a panoramic format |
 
-### Data field
+### Get behavior
+
+When getting the CAM_OPTICS_AND_CONTROL message all fields will be filled with
+the current values used by the stream and camera specified by the
+stream_name and cam_id fields.
+
+## CAM_OFFSET
+
+Message useful for getting directions to objects seen in the user-controllable
+cameras.
+
+### Data fields
 
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--------------:|:------------:|:-----------------------:|:-----------------------:|
+|   stream_name  |   char[8]   |         see below       |         see below       |
 |     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
-|       x        |    float     |      \[-1.0,1.0\]       |      \[-1.0,1.0\]       |
-|       y        |    float     |      \[-1.0,1.0\]       |      \[-1.0,1.0\]       |
-|   t_latitude   |    float     |     \[-90.0,90.0\]      |     \[-90.0,90.0\]      |
-|  t_longitude   |    float     |    \[-180.0,180.0\]     |    \[-180.0,180.0\]     |
-|   t_altitude   |    float     |           any           |           any           |
+|       x        |    float     |     \[-1.0,1.0\]       |     \[-1.0,1.0\]       |
+|       y        |    float     |     \[-1.0,1.0\]       |     \[-1.0,1.0\]       |
+|    yaw_abs     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
+|   pitch_abs    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
+|    yaw_rel     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
+|   pitch_rel    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
 
 ### Set behavior
-
-When using this message to set, one can either set x and y or latitude,
-longitude, and altitude. If x and y are set, the system will calculate
-the corresponding latitude, longitude, and altitude of the pixel in the
-user-controlled camera's frame and update the camera's target to that
-coordinate. If latitude, longitude, and altitude are set, the system will
-update the camera's target to that coordinate.
-
-##### cam id
-
-Sets the user-controllable camera's id to set the target for. If cam id
-is outside the valid set arguments the message will be ignored.
-
-##### x
-
-The normalized horizontal distance ((pixel x coord) - (image width / 2))
-/ image width) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of yaw. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior. -1 is the left edge of the frame, 1 is
-the right edge.
-
-##### y
-
-The normalized vertical distance ((pixel y coord) - (image height / 2))
-/ image height) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of pitch. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior. -1 is the top edge of the frame, 1 is
-the bottom edge.
-
-##### latitude
-
-The targeted latitude IFF both x and y are 0.
-
-##### longitude
-
-The targeted longitude IFF both x and y are 0.
-
-##### altitude
-
-The targeted altitude IFF both x and y are 0.
-
-### Get behavior
-
-When using this message to get the system will return the targeted
-latitude, longitude, and altitude, calculated based of the pixel
-supplied in the x and y arguments. IFF both the x and y arguments are
-set to 0 the message will instead return the current targeted coodinates
-of the camera. If the camera is not currently tracking a coordinate the
-returned values will be either out of date or undefined.
-
-##### cam id
-
-Sets the user-controllable camera's id to set the target for. If cam id
-is outside the valid set arguments the message will be ignored.
-
-##### x
-
-The normalized horizontal distance ((pixel x coord) - (image width / 2))
-/ image width) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of yaw. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior. -1 is the left edge of the frame, 1 is
-the right edge.
-
-##### y
-
-The normalized vertical distance ((pixel y coord) - (image height / 2))
-/ image height) from the center point of the user-controlled cameras
-image, used to set the new aim vector in terms of pitch. While values
-outside the valid set arguments (i.e. requesting a pixel outside the
-user-controlled camera's frame) will work, using the message this way is
-technically undefined behavior. -1 is the top edge of the frame, 1 is
-the bottom edge.
-
-##### latitude
-
-The targeted latitude IFF both x and y are 0. Out of date or undefined
-if the camera is not currently locked to a coordinate.
-
-##### longitude
-
-The targeted longitude IFF both x and y are 0. Out of date or undefined
-if the camera is not currently locked to a coordinate.
-
-##### altitude
-
-The targeted altitude IFF both x and y are 0. Out of date or undefined
-if the camera is not currently locked to a coordinate.
-
-## CAM_SENSOR
-
-Message for control of the camera hardware.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--:|:--:|:--:|:--:|
-| min_exposure | uint32_t | (1,40000\] | (1,40000\] |
-| max_exposure | uint32_t | (1,40000\] | (1,40000\] |
-| min_gain | uint32_t | (1000,51000\] | (1000,51000\] |
-| max_gain | uint32_t | (1000,51000\] | (1000,51000\] |
-| target_brightness | float | (-12,12\] | (-12,12\] |
-
-### Set behavior
-
-The system uses automatic exposure and automatic gain but only within the range defined by the user. Manually setting them is done by setting the min and max values to the same value. The possible ranges, for example exposure of 0-40000, are based on capabilities of the IMX412 sensor for now.
-
-##### min_exposure 
-
-The minimum exposure value that the system will use for the automatic exposure functionality.
-
-##### max_exposure
-
-The maximum exposure value that the system will use for the automatic exposure functionality.
-
-##### min_gain
-
-The minimum gain value that the system will use for the automatic gain functionality.
-
-##### max_gain
-
-The maximum gain value that the system will use for the automatic gain functionality.
-
-### target_brightness
-
-The brightness that the automatic exposure functionality will target.
-
-### Get behavior
-
-Using this message's getter will simply return the values currently used
-by the system. See the set behavior for each field's meaning.
-
-## CAM_DEPTH_ESTIMATION
-
-Message for control of the depth estimation system.
-
-### Data field
-
-| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
-|:--------------:|:------------:|:-----------------------:|:-----------------------:|
-| cam_id | uint8_t | \[0,3\] | \[0,3\] |
-| depth_estimation_mode | uint8_t | \[0,1\] | \[0,1\] |
-| depth | float | \[0.0, 100.0\] | \[0.0, 100.0\] |
-
-### Set behavior
-
-##### cam id
-
-The user-controllable camera's id to set the depth estimation for.
-
-##### depth estimation mode
-
-Sets the depth estimation mode. To be implemented.
-
-##### depth
 
 Ignored.
 
 ### Get behavior
 
+Specifying an offset in the range \[-1.0,1.0\] for x and y will return
+the corresponding yaw and pitch angles in both absolute (in relation to true north)
+and relative (in relation to the center axis of the camera) terms. The x
+and y offsets are unitless and represent a fraction of the view. For example,
+an x offset of 0.5 would indicate that the object is located halfway across
+the camera's view in the horizontal direction. The returned yaw and pitch
+angles are in radians.
+
+## SENSOR
+
+Message for controlling the image sensor's settings. Currently disabled.
+
+## CAM_DEPTH_ESTIMATION
+
+Message for controlling the depth estimation unit. Currently disabled.
+
+## SINGLE_TARGET_TRACKING
+
+Message for controlling the single target tracking unit.
+
+### Data fields
+
+| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
+|:--------------:|:------------:|:-----------------------:|:-----------------------:|
+| command | uint8_t | \[0,4\] | \[0,4\] |
+| stream_name | char[8] | see below | see below |
+| cam_id | uint8_t | \[0,3\] | \[0,3\] |
+| x_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
+| y_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
+| detection_id | uint8_t | \[0,255\] | \[0,255\] |
+| zoom_level | uint16_t | \[0,65535\] | \[0,65535\] |
+| yaw_abs | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
+| pitch_abs | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| yaw_rel | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
+| pitch_rel | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+
+### Set behavior
+
+##### command
+
+Sets the command for the single target tracking system. The possible commands are listed below. If the set command is larger than the maximum (currently 4) the command is not changed.
+| **command value** | **Command** |
+|:-----------------:|:-----------:|
+| 0 | Disable single target tracking. |
+| 1 | Set target to specific direction |
+| 2 | Set target to specific detection id. |
+| 3 | Nudge the target by a small amount. |
+| 4 | No operation |
+
+##### stream name
+
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
+
 ##### cam id
 
-The user-controllable camera's id to get the depth estimation for.
+See [Common behavior](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#common-behavior).
 
-##### depth estimation mode
+##### x offset, y offset
 
-The depth estimation mode.
+When command is set to 1, these fields are used to specify the target direction. The values are unitless and in the range \[-1.0,1.0\]. For example, setting x_offset to 0.5 will initiate tracking of an object located to the right by half the view's width, while setting y_offset to -0.5 will initiate tracking of an object located down by half the view's height.
 
-##### depth
+When command is set to 3, these fields are used to nudge the current target direction by a small amount. The values are unitless and in the range \[-1.0,1.0\]. For example, setting x_offset to 0.1 will nudge the target direction to the right by 10% of the view's width, while setting y_offset to -0.1 will nudge the target direction down by 10% of the view's height.
 
-The estimated depth in meters of the center point of the camera. To be implemented.
+##### detection id
+
+When command is set to 2, this field is used to specify the detection id to track. The valid range is \[0,255\]. If the specified detection does not exist, the command is ignored.
+
+##### zoom level
+
+Sets the zoom level of the camera used for single target tracking. The valid range is \[0,10\].
+A zoom of 0 makes the system use the biggest possible tracking box, while a zoom of 10 makes the system use the smallest possible tracking box.
+
+##### yaw, pitch (absolute)
+
+The yaw and pitch euler angles in radians (using Tait-Bryan formalism) in relation to true north.
+Used when command is set to 1 and designates the target direction.
+
+##### yaw, pitch (relative)
+
+Unused for set.
+
+### Get behavior
+
+When getting the SINGLE_TARGET_TRACKING message all fields will be filled with the current tracking state, as well as the current target direction.
+
+Yaw and pitch (absolute and relative) indicate the current target direction. Absolute values are in relation to true north, while relative values are in relation to the system's forward direction.
 
 # Supported MAVLINK messages
 Both PX4 and Ardupilot are currently supported.
@@ -1048,3 +801,7 @@ DigiView needs a high rate of attitude messages to work properly. Make sure that
 | 531  | Command | [CAMERA_ZOOM](https://mavlink.io/en/messages/common.html#MAV_CMD_SET_CAMERA_ZOOM) |
 | 2000 | Command | [IMAGE_START_CAPTURE](https://mavlink.io/en/messages/common.html#MAV_CMD_IMAGE_START_CAPTURE)* |
 | 2001 | Command | [IMAGE_STOP_CAPTURE](https://mavlink.io/en/messages/common.html#MAV_CMD_IMAGE_STOP_CAPTURE)* |
+
+### Synclair Vision MAVLink Dialect
+
+Coming soon.

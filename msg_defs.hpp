@@ -48,6 +48,7 @@ enum MESSAGE_TYPE : uint8_t {
     GET_PARAMETERS,
     SET_PARAMETERS,
     CURRENT_PARAMETERS,
+    GET_INTERVAL,
     ACKNOWLEDGEMENT,
     CHECKSUM_ERROR,
     DATA_ERROR,
@@ -55,7 +56,6 @@ enum MESSAGE_TYPE : uint8_t {
     UNKNOWN,
     QUIT = 255,
 };
-
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -100,6 +100,7 @@ struct video_output_parameters {
     uint8_t      fps;
     uint8_t      layout_mode;
     uint8_t      detection_overlay_mode;
+    uint8_t      num_user_views;
     bounding_box views[4];
     bounding_box detection_overlay_box;
     uint16_t     single_detection_size;
@@ -127,7 +128,6 @@ struct detection_parameters {
     uint8_t  bonus_redetection_scale;
     uint8_t  missed_detection_penalty;
     uint8_t  missed_redetection_penalty;
-
 };
 
 struct detected_roi_parameters {
@@ -257,7 +257,7 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
 
 inline void pack_video_output_parameters(
     message &msg, const char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
-    bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
+    uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint16_t offset = 0;
@@ -273,10 +273,11 @@ inline void pack_video_output_parameters(
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &detection_overlay_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &num_user_views, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
     if (views != nullptr) {
-        uint8_t num_views = (layout_mode & 0xf0) >> 4;
-        if (num_views > 4) num_views = 4;
-        for (uint8_t i = 0; i < num_views; i++) {
+        if (num_user_views > 4) num_user_views = 4;
+        for (uint8_t i = 0; i < num_user_views; i++) {
             memcpy((void *)&msg.data[offset], &views[i].x, sizeof(uint16_t));
             offset += sizeof(uint16_t);
             memcpy((void *)&msg.data[offset], &views[i].y, sizeof(uint16_t));
@@ -717,10 +718,11 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     memcpy((void *)&params.layout_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.detection_overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset            += sizeof(uint8_t);
-    uint8_t num_views  = (params.layout_mode & 0xf0) >> 4;
-    if (num_views > 4) num_views = 4;
-    for (uint8_t i = 0; i < num_views; i++) {
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.num_user_views, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    if (params.num_user_views > 4) params.num_user_views = 4;
+    for (uint8_t i = 0; i < params.num_user_views; i++) {
         memcpy((void *)&params.views[i].x, (void *)&raw_msg.data[offset], sizeof(uint16_t));
         offset += sizeof(uint16_t);
         memcpy((void *)&params.views[i].y, (void *)&raw_msg.data[offset], sizeof(uint16_t));
