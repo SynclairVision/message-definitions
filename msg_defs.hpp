@@ -48,6 +48,7 @@ enum MESSAGE_TYPE : uint8_t {
     GET_PARAMETERS,
     SET_PARAMETERS,
     CURRENT_PARAMETERS,
+    GET_INTERVAL,
     ACKNOWLEDGEMENT,
     CHECKSUM_ERROR,
     DATA_ERROR,
@@ -55,7 +56,6 @@ enum MESSAGE_TYPE : uint8_t {
     UNKNOWN,
     QUIT = 255,
 };
-
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -101,6 +101,7 @@ struct video_output_parameters {
     uint8_t      fps;
     uint8_t      layout_mode;
     uint8_t      detection_overlay_mode;
+    uint8_t      num_user_views;
     bounding_box views[4];
     bounding_box detection_overlay_box;
     uint16_t     single_detection_size;
@@ -128,7 +129,6 @@ struct detection_parameters {
     uint8_t  bonus_redetection_scale;
     uint8_t  missed_detection_penalty;
     uint8_t  missed_redetection_penalty;
-
 };
 
 struct detected_roi_parameters {
@@ -196,11 +196,13 @@ struct cam_depth_estimation_parameters {
 };
 
 struct single_target_tracking_parameters {
-    uint8_t enabled;
     uint8_t command;
-    bounding_box target_bbox;
+    char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
+    float   x_offset;
+    float   y_offset;
     uint8_t detection_id;
+    uint16_t zoom_level;
     float yaw_abs;
     float pitch_abs;
     float yaw_rel;
@@ -262,7 +264,7 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
 
 inline void pack_video_output_parameters(
     message &msg, const char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
-    bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
+    uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint16_t offset = 0;
@@ -278,10 +280,11 @@ inline void pack_video_output_parameters(
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &detection_overlay_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &num_user_views, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
     if (views != nullptr) {
-        uint8_t num_views = (layout_mode & 0xf0) >> 4;
-        if (num_views > 4) num_views = 4;
-        for (uint8_t i = 0; i < num_views; i++) {
+        if (num_user_views > 4) num_user_views = 4;
+        for (uint8_t i = 0; i < num_user_views; i++) {
             memcpy((void *)&msg.data[offset], &views[i].x, sizeof(uint16_t));
             offset += sizeof(uint16_t);
             memcpy((void *)&msg.data[offset], &views[i].y, sizeof(uint16_t));
@@ -512,21 +515,27 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
 }
 
 inline void pack_single_target_tracking_parameters(
-    message &msg, uint8_t enabled, uint8_t command, bounding_box target_bbox, uint8_t cam_id, uint8_t detection_id,
-    float yaw_abs = 0, float pitch_abs = 0, float yaw_rel = 0, float pitch_rel = 0) {
+    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    uint8_t detection_id, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&msg.data[offset], &enabled, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &command, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &target_bbox, sizeof(bounding_box));
-    offset += sizeof(bounding_box);
+    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    int16_t offs_int = static_cast<int16_t>(x_offset * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    offs_int = static_cast<int16_t>(y_offset * S16_MAX_F);
+    memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
+    offset += sizeof(int16_t);
     memcpy((void *)&msg.data[offset], &detection_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &zoom_level, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
     mrad = static_cast<int32_t>(yaw_abs * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
@@ -592,7 +601,7 @@ inline void pack_get_detected_roi_all(message &msg) {
 */
 inline void pack_get_cam_offset_parameters(message &msg, const char *stream_name, uint8_t cam, float x, float y) {
     pack_get_parameters(msg, CAM_OFFSET, stream_name, cam);
-    pack_get_cam_offset_parameters(msg, stream_name, cam, x, y);
+    pack_cam_offset_parameters(msg, stream_name, cam, x, y);
 }
 
 /*
@@ -670,10 +679,12 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 }
 
 inline void pack_set_single_target_tracking_parameters(
-    message &msg, uint8_t enabled, uint8_t command, bounding_box target_bbox, uint8_t cam_id, uint8_t detection_id) {
+    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    uint8_t detection_id, uint16_t zoom_level, float yaw_abs, float pitch_abs, float yaw_rel, float pitch_rel) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_single_target_tracking_parameters(msg, enabled, command, target_bbox, cam_id, detection_id);
+    pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
+        detection_id, zoom_level, yaw_abs, pitch_abs, yaw_rel, pitch_rel);
 }
 
 /*
@@ -720,10 +731,11 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     memcpy((void *)&params.layout_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.detection_overlay_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset            += sizeof(uint8_t);
-    uint8_t num_views  = (params.layout_mode & 0xf0) >> 4;
-    if (num_views > 4) num_views = 4;
-    for (uint8_t i = 0; i < num_views; i++) {
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.num_user_views, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    if (params.num_user_views > 4) params.num_user_views = 4;
+    for (uint8_t i = 0; i < params.num_user_views; i++) {
         memcpy((void *)&params.views[i].x, (void *)&raw_msg.data[offset], sizeof(uint16_t));
         offset += sizeof(uint16_t);
         memcpy((void *)&params.views[i].y, (void *)&raw_msg.data[offset], sizeof(uint16_t));
@@ -931,20 +943,41 @@ inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_e
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.depth = static_cast<float>(mm) / 1000.0f;
 }
+/**
+struct single_target_tracking_parameters {
+    uint8_t command;
+    char    stream_name[STREAM_NAME_SIZE];
+    uint8_t cam_id;
+    float   x_offset;
+    float   y_offset;
+    uint8_t detection_id;
+    uint16_t zoom_level;
+    float yaw_abs;
+    float pitch_abs;
+    float yaw_rel;
+    float pitch_rel;
+};
 
+ */
 inline void unpack_single_target_tracking_parameters(message &raw_msg, single_target_tracking_parameters &params) {
     uint8_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&params.enabled, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
+    int16_t offs_int;
     memcpy((void *)&params.command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&params.target_bbox, (void *)&raw_msg.data[offset], sizeof(bounding_box));
-    offset += sizeof(bounding_box);
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&offs_int, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.x_offset = static_cast<float>(offs_int) / S16_MAX_F;
+    offset += sizeof(int16_t);
+    memcpy((void *)&offs_int, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.y_offset = static_cast<float>(offs_int) / S16_MAX_F;
     memcpy((void *)&params.detection_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
+    memcpy((void *)&params.zoom_level, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    offset += sizeof(uint16_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.yaw_abs  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
@@ -956,10 +989,10 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
+
 }
 
 // CHECK_SUM stuff
-
 enum CRC8TYPE{
     AUTOSAR,
     BLUETOOTH,
