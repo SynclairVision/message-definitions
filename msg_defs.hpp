@@ -905,7 +905,7 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
 }
 
 inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params) {
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int32_t mm;
     memcpy((void *)&params.min_exposure, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     offset += sizeof(uint32_t);
