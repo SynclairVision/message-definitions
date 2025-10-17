@@ -85,6 +85,7 @@ The system status messages contains the following fields:
 |:--------------:|:------------:|:-------------------:|
 |     status     |   uint8_t    |       \[0,3\]       |
 |     error      |   uint8_t    |          0          |
+|  jetson_temp   |    float     |      \[0,105\]      |
 
 ### Behavior
 
