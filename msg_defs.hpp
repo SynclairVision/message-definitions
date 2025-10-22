@@ -81,6 +81,7 @@ struct bounding_box {
 struct system_status_parameters {
     uint8_t status;
     uint8_t error;
+    float   jetson_temp;
 };
 
 struct ai_parameters {
@@ -234,10 +235,16 @@ inline message deserialize_message(char *buffer) {
     For each parameter type there is one pack function.
 ------------------------------------------------------------------------------------------------------------------------
 */
-inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t error) {
+inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t error, float jetson_temp) {
     msg.param_type = SYSTEM_STATUS;
-    msg.data[0]    = status;
-    msg.data[1]    = error;
+    uint16_t offset = 0;
+    int32_t mrad;
+    memcpy((void *)&msg.data[offset], &status, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &error, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    mrad = static_cast<int32_t>(jetson_temp * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 inline void pack_ai_parameters(message &msg, bool run_ai, const char *crop_model_name, const char *var_model_name) {
@@ -688,8 +695,14 @@ inline void pack_set_single_target_tracking_parameters(
 ------------------------------------------------------------------------------------------------------------------------
 */
 inline void unpack_system_status_parameters(message &raw_msg, system_status_parameters &params) {
-    memcpy((void *)&params.status, (void *)&raw_msg.data[0], sizeof(uint8_t));
-    memcpy((void *)&params.error, (void *)&raw_msg.data[1], sizeof(uint8_t));
+    uint8_t offset = 0;
+    int32_t mrad;
+    memcpy((void *)&params.status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.error, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.jetson_temp  = static_cast<float>(mrad) / 1000.0f;
 }
 
 inline void unpack_ai_parameters(message &raw_msg, ai_parameters &params) {
@@ -904,7 +917,7 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
 }
 
 inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params) {
-    uint8_t offset = 0;
+    uint16_t offset = 0;
     int32_t mm;
     memcpy((void *)&params.min_exposure, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     offset += sizeof(uint32_t);
