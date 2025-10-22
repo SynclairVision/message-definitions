@@ -48,7 +48,6 @@ enum MESSAGE_TYPE : uint8_t {
     GET_PARAMETERS,
     SET_PARAMETERS,
     CURRENT_PARAMETERS,
-    GET_INTERVAL,
     ACKNOWLEDGEMENT,
     CHECKSUM_ERROR,
     DATA_ERROR,
@@ -70,6 +69,7 @@ struct message {
     uint8_t  version;
     uint8_t  message_type;
     uint8_t  param_type;
+    uint32_t interval_ms;
     uint8_t  data[PARAMCOUNT];
     uint8_t  checksum;
 };
