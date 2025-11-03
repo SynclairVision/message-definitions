@@ -69,7 +69,7 @@ struct message {
     uint8_t  version;
     uint8_t  message_type;
     uint8_t  param_type;
-    uint32_t interval_ms = 0;
+    uint32_t interval_ms;
     uint8_t  data[PARAMCOUNT];
     uint8_t  checksum;
 };
