@@ -379,36 +379,36 @@ inline void pack_detected_roi_parameters(
     float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
     msg.param_type = DETECTED_ROI;
     uint16_t offset = 0;
-    int32_t mdeg;
+    int32_t mrad;
     memcpy((void *)&msg.data[offset], &index, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &score, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &total_detections, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    mdeg    = static_cast<int32_t>(yaw_abs * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(yaw_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(pitch_abs * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(pitch_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(yaw_rel * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(yaw_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(pitch_rel * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(pitch_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
-    mdeg    = static_cast<int32_t>(lat * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(lat * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
-    mdeg    = static_cast<int32_t>(lon * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(lon * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
-    mdeg    = static_cast<int32_t>(alt * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(alt * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
-    mdeg    = static_cast<int32_t>(dist * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(dist * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 inline void pack_lens_parameters(message &msg, uint8_t lens_id) {
@@ -418,20 +418,20 @@ inline void pack_lens_parameters(message &msg, uint8_t lens_id) {
 
 inline void pack_cam_euler_parameters(message &msg, uint8_t cam, uint8_t is_delta, float yaw, float pitch, float roll) {
     msg.param_type = CAM_EULER;
-    int32_t mdeg;
+    int32_t mrad;
     uint16_t offset = 0;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &is_delta, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    mdeg    = static_cast<int32_t>(yaw * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(pitch * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(roll * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(roll * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 inline void pack_cam_zoom_parameters(message &msg, uint8_t cam, int8_t zoom) {
@@ -463,7 +463,7 @@ inline void pack_cam_offset_parameters(
     msg.param_type = CAM_OFFSET;
     uint16_t offset = 0;
     int16_t offs_int;
-    int32_t mdeg;
+    int32_t mrad;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset   += sizeof(uint8_t);
     offs_int  = static_cast<int16_t>(x * S16_MAX_F);
@@ -472,33 +472,33 @@ inline void pack_cam_offset_parameters(
     offs_int  = static_cast<int16_t>(y * S16_MAX_F);
     memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
     offset += sizeof(int16_t);
-    mdeg    = static_cast<int32_t>(yaw_abs * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(yaw_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(pitch_abs * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(pitch_abs * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(yaw_rel * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(yaw_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(pitch_rel * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(pitch_rel * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 inline void pack_cam_fov_parameters(message &msg, uint8_t cam, float fov) {
     msg.param_type = CAM_FOV;
-    int16_t mdeg;
+    int16_t mrad;
     uint16_t offset = 0;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    mdeg    = static_cast<int16_t>(fov * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int16_t));
+    mrad    = static_cast<int16_t>(fov * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int16_t));
 }
 
 inline void pack_cam_target_parameters(message &msg, uint8_t cam, float x, float y, float t_lat, float t_lon, float t_alt) {
     msg.param_type = CAM_TARGET;
     uint16_t offset = 0;
-    int32_t mdeg;
+    int32_t mrad;
     int16_t offs;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -508,14 +508,14 @@ inline void pack_cam_target_parameters(message &msg, uint8_t cam, float x, float
     offs    = static_cast<int16_t>(y * S16_MAX_F);
     memcpy((void *)&msg.data[offset], &offs, sizeof(int16_t));
     offset += sizeof(int16_t);
-    mdeg    = static_cast<int32_t>(t_lat * 1000000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(t_lat * 1000000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(t_lon * 1000000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(t_lon * 1000000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mdeg    = static_cast<int32_t>(t_alt * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mdeg, sizeof(int32_t));
+    mrad    = static_cast<int32_t>(t_alt * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
 
@@ -835,36 +835,36 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
 
 inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parameters &params) {
     uint16_t offset = 0;
-    int32_t mdeg;
+    int32_t mrad;
     memcpy(&params.index, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.score, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.total_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_abs  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_abs  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_abs  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_abs  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_rel  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_rel  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_rel  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.latitude  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.latitude  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.longitude  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.longitude  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.altitude  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.altitude  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(float);
-    memcpy(&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.distance = static_cast<float>(mdeg) / 1000.0f;
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.distance = static_cast<float>(mrad) / 1000.0f;
 }
 
 inline void unpack_lens_parameters(message &raw_msg, lens_parameters &params) {
@@ -872,20 +872,20 @@ inline void unpack_lens_parameters(message &raw_msg, lens_parameters &params) {
 }
 
 inline void unpack_cam_euler_parameters(message &raw_msg, cam_euler_parameters &params) {
-    int32_t mdeg;
+    int32_t mrad;
     uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.is_delta, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw  = static_cast<float>(mrad) / 1000.0f;
     offset     += sizeof(int32_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch  = static_cast<float>(mrad) / 1000.0f;
     offset       += sizeof(int32_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.roll = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.roll = static_cast<float>(mrad) / 1000.0f;
 }
 
 inline void unpack_cam_zoom_parameters(message &raw_msg, cam_zoom_parameters &params) {
@@ -910,7 +910,7 @@ inline void unpack_cam_crop_mode_parameters(message &raw_msg, cam_crop_mode_para
 
 inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters &params) {
     int16_t x, y;
-    int32_t mdeg;
+    int32_t mrad;
     uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -918,32 +918,32 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
     offset += sizeof(int16_t);
     memcpy((void *)&y, (void *)&raw_msg.data[offset], sizeof(int16_t));
     offset += sizeof(int16_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_abs    = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_abs    = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_abs  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_abs  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_rel    = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.yaw_rel    = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_rel  = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
     params.x      = static_cast<float>(x) / S16_MAX_F;
     params.y      = static_cast<float>(y) / S16_MAX_F;
 }
 
 inline void unpack_cam_fov_parameters(message &raw_msg, cam_fov_parameters &params) {
-    int16_t mdeg;
+    int16_t mrad;
     uint16_t offset = 0;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    params.fov = static_cast<float>(mdeg) / 1000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    params.fov = static_cast<float>(mrad) / 1000.0f;
 }
 
 inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters &params) {
-    int32_t mdeg;
+    int32_t mrad;
     int32_t mm;
     uint16_t offset = 0;
     int16_t offs;
@@ -955,11 +955,11 @@ inline void unpack_cam_target_parameters(message &raw_msg, cam_target_parameters
     memcpy((void *)&offs, (void *)&raw_msg.data[offset], sizeof(int16_t));
     params.y = static_cast<float>(offs) / S16_MAX_F;
     offset += sizeof(int16_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.t_latitude  = static_cast<float>(mdeg) / 1000000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.t_latitude  = static_cast<float>(mrad) / 1000000.0f;
     offset            += sizeof(int32_t);
-    memcpy((void *)&mdeg, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.t_longitude  = static_cast<float>(mdeg) / 1000000.0f;
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.t_longitude  = static_cast<float>(mrad) / 1000000.0f;
     offset             += sizeof(int32_t);
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.t_altitude = static_cast<float>(mm) / 1000.0f;
@@ -1240,5 +1240,4 @@ struct crc8 {
     bool reflect_out = false;
 };
 #endif // MSG_DEFS_HPP
-
 
