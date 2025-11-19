@@ -974,6 +974,7 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     offset += sizeof(int16_t);
     memcpy((void *)&offs_int, (void *)&raw_msg.data[offset], sizeof(int16_t));
     params.y_offset = static_cast<float>(offs_int) / S16_MAX_F;
+    offset += sizeof(int16_t);
     memcpy((void *)&params.detection_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.zoom_level, (void *)&raw_msg.data[offset], sizeof(uint16_t));
