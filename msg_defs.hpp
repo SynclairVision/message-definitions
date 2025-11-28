@@ -371,16 +371,16 @@ inline void pack_detected_roi_parameters(
     offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(pitch_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(lat * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(lon * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(alt * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(dist * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
@@ -418,9 +418,6 @@ inline void pack_cam_targeting_parameters(
     offs_int = static_cast<int16_t>(y_offset * S16_MAX_F);
     memcpy((void *)&msg.data[offset], &offs_int, sizeof(int16_t));
     offset += sizeof(int16_t);
-    mrad    = static_cast<int32_t>(target_latitude * 1000.0f);
-    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
     mrad = static_cast<int32_t>(target_latitude * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
@@ -883,7 +880,7 @@ inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters
     uint16_t offset = 0;
     memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
     offset += STREAM_NAME_SIZE;
-    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[0], sizeof(uint8_t));
+    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&x, (void *)&raw_msg.data[offset], sizeof(int16_t));
     offset += sizeof(int16_t);
