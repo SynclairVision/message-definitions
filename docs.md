@@ -133,20 +133,20 @@ The AI message contains the following fields:
 | **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
 |:--------------:|:------------:|:-----------------------:|:-----------------------:|
 | ai_enabled | bool | true, false | true, false |
-| scan_model_name | char[16] | n/a | n/a |
 | track_model_name | char[16] | n/a | n/a |
+| scan_model_name | char[16] | n/a | n/a |
 
 ### Set behavior
 The ai_enabled field can be set to true or false to enable or disable
 AI processing. If the field is set to true, but no models are
 specified, the system will not be able to perform any AI processing.
 
-Scan model is the model used for initial detection or "scanning" of objects, while track model is the model used for verification or "tracking" of objects once they have been detected.
+Scan model is the model used for initial detection or "scanning" of objects, while scan model is the model used for verification or "tracking" of objects once they have been detected.
 
 The names of the models must match exactly with the names returned by the MODEL message.
 
 ### Get behavior
-The ai_enabled field will return whether AI processing is currently enabled or disabled. The scan_model_name and track_model_name fields will return the names of the currently set models.
+The ai_enabled field will return whether AI processing is currently enabled or disabled. The track_model_name and scan_model_name fields will return the names of the currently set models.
 
 ## MODEL
 
@@ -344,12 +344,12 @@ presented.
 |:--:|:--:|:--:|:--:|
 | mode | uint8_t | \[0,255\] | \[0,255\] |
 | sorting_mode | uint8_t | \[0,2\] | \[0,2\] |
-| scan_confidence_threshold | float | \[0.0,0.99\) | \[0.0,0.99\) |
 | track_confidence_threshold | float | \[0.0,0.99\) | \[0.0,0.99\) |
-| scan_box_limit | uint16_t | \[10,500\] | \[10,500\] |
+| scan_confidence_threshold | float | \[0.0,0.99\) | \[0.0,0.99\) |
 | track_box_limit | uint16_t | \[10,500\] | \[10,500\] |
-| scan_box_overlap | float | \[0.0,0.99\) | \[0.0,0.99\) |
+| scan_box_limit | uint16_t | \[10,500\] | \[10,500\] |
 | track_box_overlap | float | \[0.0,0.99\) | \[0.0,0.99\) |
+| scan_box_overlap | float | \[0.0,0.99\) | \[0.0,0.99\) |
 | creation_score_scale | uint8_t | \[0,254\],255 | \[0,254\] |
 | bonus_detection_scale | uint8_t | \[0,254\],255 | \[0,254\] |
 | bonus_redetection_scale | uint8_t | \[0,254\],255 | \[0,254\] |
@@ -378,7 +378,7 @@ detections are shown in the output. The possible sorting modes are found below. 
 Sets the threshold for considering detections while tracking a detected
 object. If outside the valid range, the previous value is kept.
 
-##### track confidence threshold
+##### scan confidence threshold
 
 Sets the threshold for considering detections when scanning for new
 objects. If outside the valid range, the previous value is kept.
@@ -387,7 +387,7 @@ objects. If outside the valid range, the previous value is kept.
 
 Deprecated.
 
-##### track box limit
+##### scan box limit
 
 Deprecated.
 
@@ -396,7 +396,7 @@ Sets the max allowed overlap between detection bounding boxes while
 tracking an object. If outside the valid range the previous value is
 kept.
 
-##### track box overlap
+##### scan box overlap
 
 Sets the max allowed overlap between detection bounding boxes while
 scanning for new object. If outside the valid range the previous value
@@ -637,7 +637,7 @@ Sets the field of view (FOV) of the camera in radians. The valid range is \[0.1,
 ##### crop mode
 
 Sets the crop mode of the camera. The valid values are:
-| **scan_mode value** | **Crop mode** |
+| **crop_mode value** | **Crop mode** |
 |:-------------------:|:------------------:|
 | 1 | Cartesian, the output is rectified (no distortion) |
 | 2 | Panoramic, the output is in a panoramic format |
