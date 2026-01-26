@@ -444,8 +444,9 @@ Detected ROI contains information specific to one detection.
 |      index       |   uint8_t    |   \[0,253\], 254, 255   |
 |      score       |   uint8_t    |           n/a           |
 | total_detections |   uint8_t    |           n/a           |
-|     yaw_abs      |    float     |           n/a           |
-|    pitch_abs     |    float     |           n/a           |
+|     yaw_global      |    float     |           n/a           |
+|    pitch_global     |    float     |           n/a           |
+| rel_frame_of_reference |   uint8_t    |        0, 1, 2         |
 |     yaw_rel      |    float     |           n/a           |
 |    pitch_rel     |    float     |           n/a           |
 |     latitude     |    float     |           n/a           |
@@ -486,15 +487,26 @@ The assigned score of the object.
 
 The number detections for which information has been sent.
 
-##### yaw (absolute)
+##### yaw (global)
 
 The yaw euler angle in radians (using Tait-Bryan formalism) in relation to true
 north.
 
-##### pitch (absolute)
+##### pitch (global)
 
 The pitch euler angle in radians (using Tait-Bryan formalism) in relation to true
 north.
+
+##### rel frame of reference
+
+Indicates the frame of reference for the relative yaw and pitch
+angles. The possible values are listed below.
+
+| **Value** |       **Frame of reference**        |
+|:---------:|:----------------------------------:|
+|     0     | Global frame, same as yaw_global and pitch_global   |
+|     1     | Autopilot heading frame, relative to the system's current heading |
+|     2     | Camera frame, relative to the camera's center axis   |
 
 ##### yaw (relative)
 
@@ -661,8 +673,8 @@ cameras.
 |     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
 |       x        |    float     |     \[-1.0,1.0\]       |     \[-1.0,1.0\]       |
 |       y        |    float     |     \[-1.0,1.0\]       |     \[-1.0,1.0\]       |
-|    yaw_abs     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
-|   pitch_abs    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
+|    yaw_global     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
+|   pitch_global    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
 |    yaw_rel     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
 |   pitch_rel    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
 
@@ -703,8 +715,9 @@ Message for controlling the single target tracking unit.
 | y_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
 | detection_id | uint8_t | \[0,255\] | \[0,255\] |
 | zoom_level | uint16_t | \[0,65535\] | \[0,65535\] |
-| yaw_abs | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| pitch_abs | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| yaw_global | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
+| pitch_global | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| rel_frame_of_reference | uint8_t | 0,1,2 | 0,1,2 |
 | yaw_rel | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
 | pitch_rel | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
 
@@ -744,10 +757,21 @@ When command is set to 2, this field is used to specify the detection id to trac
 Sets the zoom level of the camera used for single target tracking. The valid range is \[0,10\].
 A zoom of 0 makes the system use the biggest possible tracking box, while a zoom of 10 makes the system use the smallest possible tracking box.
 
-##### yaw, pitch (absolute)
+##### yaw, pitch (global)
 
 The yaw and pitch euler angles in radians (using Tait-Bryan formalism) in relation to true north.
 Used when command is set to 1 and designates the target direction.
+
+##### rel frame of reference
+
+Indicates the frame of reference for the relative yaw and pitch
+angles. The possible values are listed below.
+
+| **Value** |       **Frame of reference**        |
+|:---------:|:----------------------------------:|
+|     0     | Global frame, same as yaw_global and pitch_global   |
+|     1     | Autopilot heading frame, relative to the system's current heading |
+|     2     | Camera frame, relative to the camera's center axis   |
 
 ##### yaw, pitch (relative)
 
@@ -757,7 +781,7 @@ Unused for set.
 
 When getting the SINGLE_TARGET_TRACKING message all fields will be filled with the current tracking state, as well as the current target direction.
 
-Yaw and pitch (absolute and relative) indicate the current target direction. Absolute values are in relation to true north, while relative values are in relation to the system's forward direction.
+Yaw and pitch (global and relative) indicate the current target direction. Absolute values are in relation to true north, while relative values are set according to the frame of reference.
 
 # Supported MAVLINK messages
 Both PX4 and Ardupilot are currently supported.
