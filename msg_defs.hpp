@@ -573,7 +573,7 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, const char *st
 */
 inline void pack_get_detected_roi(message &msg, uint8_t index, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, DETECTED_ROI);
-    pack_detected_roi_parameters(msg, 0, index, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_detected_roi_parameters(msg, 0, index, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -581,7 +581,7 @@ inline void pack_get_detected_roi(message &msg, uint8_t index, uint8_t rel_frame
 */
 inline void pack_get_detected_roi_visible(message &msg, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, DETECTED_ROI);
-    pack_detected_roi_parameters(msg, 0, 254, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_detected_roi_parameters(msg, 0, 254, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -589,7 +589,7 @@ inline void pack_get_detected_roi_visible(message &msg, uint8_t rel_frame_of_ref
 */
 inline void pack_get_detected_roi_all(message &msg, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, DETECTED_ROI);
-    pack_detected_roi_parameters(msg, 0, 255, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_detected_roi_parameters(msg, 0, 255, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
