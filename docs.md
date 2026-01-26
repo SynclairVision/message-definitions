@@ -715,6 +715,7 @@ Message for controlling the single target tracking unit.
 | y_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
 | detection_id | uint8_t | \[0,255\] | \[0,255\] |
 | zoom_level | uint16_t | \[0,65535\] | \[0,65535\] |
+| confidence | float | n/a | \[0.0,1.0\] |
 | yaw_global | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
 | pitch_global | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
 | rel_frame_of_reference | uint8_t | 0,1,2 | 0,1,2 |
@@ -757,6 +758,10 @@ When command is set to 2, this field is used to specify the detection id to trac
 Sets the zoom level of the camera used for single target tracking. The valid range is \[0,10\].
 A zoom of 0 makes the system use the biggest possible tracking box, while a zoom of 10 makes the system use the smallest possible tracking box.
 
+##### confidence
+
+Unused for set.
+
 ##### yaw, pitch (global)
 
 The yaw and pitch euler angles in radians (using Tait-Bryan formalism) in relation to true north.
@@ -780,6 +785,8 @@ Unused for set.
 ### Get behavior
 
 When getting the SINGLE_TARGET_TRACKING message all fields will be filled with the current tracking state, as well as the current target direction.
+
+Confidence indicates the system's confidence in the current target, in the range \[0.0,1.0\]. Currently only set to 1.0 when tracking a valid detection, and 0.0 otherwise.
 
 Yaw and pitch (global and relative) indicate the current target direction. Absolute values are in relation to true north, while relative values are set according to the frame of reference.
 
