@@ -41,6 +41,7 @@ enum PARAM_TYPE : uint8_t {
     SENSOR,
     CAM_DEPTH_ESTIMATION,
     SINGLE_TARGET_TRACKING,
+    CALIBRATION,
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -208,6 +209,12 @@ struct single_target_tracking_parameters {
     uint8_t rel_frame_of_reference;
     float yaw_rel;
     float pitch_rel;
+};
+
+struct calibration_parameters {
+    uint8_t cam_id;
+    uint8_t calib_command;
+    uint8_t calib_status;
 };
 
 /*
@@ -551,6 +558,16 @@ inline void pack_single_target_tracking_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
+inline void pack_calibration_parameters(message &msg, uint8_t cam_id, uint8_t calib_command, uint8_t calib_status) {
+    msg.param_type = CALIBRATION;
+    uint16_t offset = 0;
+    memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &calib_command, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &calib_status, sizeof(uint8_t));
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     GET PACKING FUNCTIONS
@@ -687,6 +704,12 @@ inline void pack_set_single_target_tracking_parameters(
     msg.message_type = SET_PARAMETERS;
     pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
         detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel);
+}
+
+inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, uint8_t calib_command) {
+    msg.version      = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_calibration_parameters(msg, cam_id, calib_command, 0);
 }
 
 /*
@@ -980,6 +1003,15 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
+}
+
+inline void unpack_calibration_parameters(message &raw_msg, calibration_parameters &params) {
+    uint8_t offset = 0;
+    memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.calib_command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.calib_status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 // CHECK_SUM stuff
