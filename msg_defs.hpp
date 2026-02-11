@@ -363,7 +363,7 @@ inline void pack_detected_roi_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
     msg.param_type = DETECTED_ROI;
-    int16_t offset = 0;
+    uint16_t offset = 0;
     int32_t mrad;
     memcpy((void *)&msg.data[offset], &index, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -599,7 +599,7 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, const char *st
 */
 inline void pack_get_detected_roi(message &msg, uint8_t index, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, DETECTED_ROI);
-    pack_detected_roi_parameters(msg, 0, index, -1, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_detected_roi_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -607,7 +607,7 @@ inline void pack_get_detected_roi(message &msg, uint8_t index, uint8_t rel_frame
 */
 inline void pack_get_detected_roi_visible(message &msg, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, DETECTED_ROI);
-    pack_detected_roi_parameters(msg, 0, 254, -1, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_detected_roi_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -615,7 +615,7 @@ inline void pack_get_detected_roi_visible(message &msg, uint8_t rel_frame_of_ref
 */
 inline void pack_get_detected_roi_all(message &msg, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, DETECTED_ROI);
-    pack_detected_roi_parameters(msg, 0, 255, -1, 0, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_detected_roi_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -834,8 +834,8 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     offset += sizeof(uint8_t);
     memcpy(&params.total_detections, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&params.type, (void *)&raw_msg.data[offset], sizeof(uint16_t));
-    offset += sizeof(uint16_t);
+    memcpy(&params.type, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    offset += sizeof(int16_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.yaw_global  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
