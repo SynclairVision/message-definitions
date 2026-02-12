@@ -464,15 +464,10 @@ found in the total detections field.
 
 ##### index
 
-Dictates which detection(s) to receive information about. There are 2
-special indicies reserved for multi-detection requests. These are as
-follows:
+Dictates which detection(s) to receive information about. There is 1
+special index reserved for multi-detection requests. That is the following:
 
-1.  index=254: The system will reply with all detections currently
-    visible in the output overlay. The information regarding each
-    detection will be sent as a separate message.
-
-2.  index=255: The system will reply with all currently known
+.  index=255: The system will reply with all currently known
     detections. The information regarding each detection will be sent as
     a separate message.
 
