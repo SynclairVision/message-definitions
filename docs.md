@@ -441,7 +441,7 @@ Detected ROI contains information specific to one detection.
 
 |  **Field name**  | **Datatype** | **Valid SET arguments** |
 |:----------------:|:------------:|:-----------------------:|
-|      index       |   uint8_t    |   \[0,253\], 254, 255   |
+|      index       |   uint8_t    |   \[0,254\], 255   |
 |      score       |   uint8_t    |           n/a           |
 | total_detections |   uint8_t    |           n/a           |
 |     yaw_global      |    float     |           n/a           |
@@ -514,17 +514,14 @@ The pitch euler angle in radians in relation to the center axis of the camera.
 ##### latitude
 
 The latitude of the object within the range \[-90.0, 90.0\].
-Currently not implemented and always returns 0.
 
 ##### longitude
 
-The longitude of the object \[-180.0, 180.0). Currently not
-implemented and always returns 0.
+The longitude of the object \[-180.0, 180.0).
 
 ##### altitude
 
-The altitude of the object in meters above sea level. Currently not
-implemented and always returns 0.
+The altitude of the object in meters above sea level.
 
 ##### distance
 
