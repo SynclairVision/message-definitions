@@ -42,6 +42,7 @@ enum PARAM_TYPE : uint8_t {
     CAM_DEPTH_ESTIMATION,
     SINGLE_TARGET_TRACKING,
     CALIBRATION,
+    NAVIGATION,
 };
 
 enum MESSAGE_TYPE : uint8_t {
@@ -216,6 +217,10 @@ struct calibration_parameters {
     uint8_t cam_id;
     uint8_t calib_command;
     uint8_t calib_status;
+};
+
+struct navigation_parameters {
+    float altitude;
 };
 
 /*
@@ -571,6 +576,14 @@ inline void pack_calibration_parameters(message &msg, uint8_t cam_id, uint8_t ca
     memcpy((void *)&msg.data[offset], &calib_status, sizeof(uint8_t));
 }
 
+inline void pack_navigation_parameters(message &msg, float altitude) {
+    msg.param_type = NAVIGATION;
+    uint16_t offset = 0;
+    int32_t mm;
+    mm = static_cast<int32_t>(altitude * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     GET PACKING FUNCTIONS
@@ -624,6 +637,10 @@ inline void pack_get_detected_roi_all(message &msg, uint8_t rel_frame_of_referen
 inline void pack_get_cam_offset_parameters(message &msg, const char *stream_name, uint8_t cam, float x, float y) {
     pack_get_parameters(msg, CAM_OFFSET, stream_name, cam);
     pack_cam_offset_parameters(msg, stream_name, cam, x, y);
+}
+
+inline void pack_get_navigation_parameters(message &msg) {
+    pack_get_parameters(msg, NAVIGATION);
 }
 
 /*
@@ -1017,6 +1034,13 @@ inline void unpack_calibration_parameters(message &raw_msg, calibration_paramete
     memcpy((void *)&params.calib_command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&params.calib_status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+}
+
+inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters &params) {
+    uint8_t offset = 0;
+    int32_t mm;
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.altitude = static_cast<float>(mm) / 1000.0f;
 }
 
 // CHECK_SUM stuff
