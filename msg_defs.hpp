@@ -145,6 +145,9 @@ struct detected_roi_parameters {
     float   longitude;
     float   altitude;
     float   distance;
+    // Appended field (v0 payload extension): stable tracker id for this detection.
+    // Older senders may leave this at 0.
+    uint16_t track_id;
 };
 
 struct cam_targeting_parameters {
@@ -161,6 +164,9 @@ struct cam_targeting_parameters {
     float   target_latitude;
     float   target_longitude;
     float   target_altitude;
+    // Appended field (v0 payload extension): locked detection id for DETECTION mode.
+    // -1 means no detection lock.
+    int16_t detection_id;
 };
 
 struct cam_optics_and_control_parameters {
@@ -366,7 +372,7 @@ inline void pack_detection_parameters(
 
 inline void pack_detected_roi_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
+    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, uint16_t track_id = 0) {
     msg.param_type = DETECTED_ROI;
     uint16_t offset = 0;
     int32_t mrad;
@@ -403,12 +409,15 @@ inline void pack_detected_roi_parameters(
     offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(dist * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    // Keep this field appended for backward compatibility with older receivers.
+    memcpy((void *)&msg.data[offset], &track_id, sizeof(uint16_t));
 }
 
 inline void pack_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude) {
+    float target_longitude, float target_altitude, int16_t detection_id = -1) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
@@ -446,6 +455,8 @@ inline void pack_cam_targeting_parameters(
     offset += sizeof(int32_t);
     mrad = static_cast<int32_t>(target_altitude * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &detection_id, sizeof(int16_t));
 }
 
 inline void pack_cam_optics_and_control_parameters(
@@ -686,13 +697,13 @@ inline void pack_set_detection_parameters(
 inline void pack_set_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude) {
+    float target_longitude, float target_altitude, int16_t detection_id = -1) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_targeting_parameters(
         msg, stream_name, cam_id, targeting_mode, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
-        target_latitude, target_longitude, target_altitude);
+        target_latitude, target_longitude, target_altitude, detection_id);
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
@@ -878,6 +889,10 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.distance = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    params.track_id = 0;
+    // Appended optional field: tolerant parsing for older payloads.
+    memcpy(&params.track_id, (void *)&raw_msg.data[offset], sizeof(uint16_t));
 }
 
 inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_parameters &params) {
@@ -917,6 +932,10 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.target_altitude = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    params.detection_id = -1;
+    // Appended optional field: tolerant parsing for older payloads.
+    memcpy((void *)&params.detection_id, (void *)&raw_msg.data[offset], sizeof(int16_t));
 }
 
 inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optics_and_control_parameters &params) {
