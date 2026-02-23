@@ -63,6 +63,7 @@ An asterisk means a specific operation is not yet implemented.
 | SENSOR | 10 | GET & SET | Control for the image sensor's settings |
 | CAM_DEPTH_ESTIMATION | 11 | GET & SET | Control for the depth estimation unit |
 | SINGLE_TARGET_TRACKING | 12 | GET & SET | Single target tracking parameters |
+| NAVIGATION | 14 | GET | Retrieve navigation info |
 |  |  |  |  |
 
 # Messages
@@ -788,6 +789,20 @@ When getting the SINGLE_TARGET_TRACKING message all fields will be filled with t
 Confidence indicates the system's confidence in the current target, in the range \[0.0,1.0\]. Currently only set to 1.0 when tracking a valid detection, and 0.0 otherwise.
 
 Yaw and pitch (global and relative) indicate the current target direction. Absolute values are in relation to true north, while relative values are set according to the frame of reference.
+
+## NAVIGATION
+
+Message for retrieving navigation altitude (GET-only).
+
+### Data fields
+
+| **Field name** | **Datatype** | **Valid GET arguments** |
+|:--------------:|:------------:|:-----------------------:|
+| altitude | float | n/a |
+
+### Get behavior
+
+A GET NAVIGATION request returns altitude in meters in the response. 
 
 # Supported MAVLINK messages
 Both PX4 and Ardupilot are currently supported.
