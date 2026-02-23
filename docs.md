@@ -453,6 +453,7 @@ Detected ROI contains information specific to one detection.
 |    longitude     |    float     |           n/a           |
 |     altitude     |    float     |           n/a           |
 |     distance     |    float     |           n/a           |
+|     track_id     |   uint16_t   |           n/a           |
 
 ### Behavior
 
@@ -527,6 +528,12 @@ The altitude of the object in meters above sea level.
 
 The distance to the object from the camera (drone) in meters. Currently
 not implemented and always returns 0.
+
+##### track_id
+
+Stable tracker id for the detection. This field is appended at the end of
+the DETECTED_ROI payload for backward compatibility. New clients should use
+this id when sending SINGLE_TARGET_TRACKING command 2 (set target detection).
 
 ## CAM_TARGETING
 
