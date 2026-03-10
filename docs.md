@@ -486,12 +486,12 @@ The number detections for which information has been sent.
 
 ##### yaw (global)
 
-The yaw euler angle in radians (using Tait-Bryan formalism) in relation to true
+The yaw euler angle in degrees (using Tait-Bryan formalism) in relation to true
 north.
 
 ##### pitch (global)
 
-The pitch euler angle in radians (using Tait-Bryan formalism) in relation to true
+The pitch euler angle in degrees (using Tait-Bryan formalism) in relation to true
 north.
 
 ##### rel frame of reference
@@ -507,11 +507,11 @@ angles. The possible values are listed below.
 
 ##### yaw (relative)
 
-The yaw euler angle in radians in relation to the center axis of the camera.
+The yaw euler angle in degrees in relation to the center axis of the camera.
 
 ##### pitch (relative)
 
-The pitch euler angle in radians in relation to the center axis of the camera.
+The pitch euler angle in degrees in relation to the center axis of the camera.
 
 ##### latitude
 
@@ -548,10 +548,10 @@ Message for user-controllable cameras' targeting information.
 | cam_id | uint8_t | \[0,3\] | \[0,3\] |
 | targeting_mode | uint8_t | \[0,2\] | \[0,2\] |
 | euler_delta | bool | true, false | true, false |
-| yaw | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| pitch | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
-| roll | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
-| lock_flags | uint8_t | \[0,4\] | \[0,4\] |
+| yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
+| roll | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
+| lock_flags | uint8_t | \[0,7\] | \[0,7\] |
 | x_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
 | y_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
 | target_latitude | float | \[-90.0,90.0\] | | \[-90.0,90.0\] |
@@ -584,15 +584,20 @@ below. If the set mode is larger than the maximum (currently 3) the mode is not 
 If true, the yaw, pitch, and roll values are treated as deltas (changes) rather than absolute positions.
 ##### yaw, pitch, roll
 
-The euler angles in radians (using Tait-Bryan formalism) used to aim the camera. Roll is currently ignored.
+The euler angles in degrees (using Tait-Bryan
+formalism) used to aim the camera. Roll is currently
+ignored.
 
 ##### lock flags
 
-Controls which degrees of freedom are locked in place. If a direction is
-not locked the camera will follow the system in that direction. 3 LSB
-are relevant, control locking with yaw, pitch and roll in that order.
-For example, if the lock_flags field is set to 0b00000011, the camera
-will stabilize pitch and roll, but look in the system's forward direction.
+`lock_flags` is a 3-bit combinable mask where 0x01 = yaw, 0x02 = pitch,
+and 0x04 = roll. Public values are 0x00..0x07 (0..7).
+
+A set bit means that axis is locked/stabilized to the global frame. A
+cleared bit means that axis follows the system frame.
+
+For example, if the lock_flags field is set to 0b00000011, yaw and pitch
+are locked while roll is unlocked.
 
 ##### x offset, y offset
 
@@ -644,7 +649,7 @@ Sets the zoom level of the camera. The valid range is \[-127,127\], where 0 is n
 
 ##### fov
 
-Sets the field of view (FOV) of the camera in radians. The valid range is \[0.1, 3.14\] radians. Values outside this range are ignored.
+Sets the field of view (FOV) of the camera in degrees. The valid range is \[5.73, 180.0\] degrees. Values outside this range is ignored.
 
 ##### crop mode
 
@@ -673,10 +678,10 @@ cameras.
 |     cam_id     |   uint8_t    |         \[0,3\]         |         \[0,3\]         |
 |       x        |    float     |     \[-1.0,1.0\]       |     \[-1.0,1.0\]       |
 |       y        |    float     |     \[-1.0,1.0\]       |     \[-1.0,1.0\]       |
-|    yaw_global     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
-|   pitch_global    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
-|    yaw_rel     |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
-|   pitch_rel    |    float     |     \[-3.14,3.14\]      |     \[-3.14,3.14\]      |
+|    yaw_global     |    float     |     \[-180.0,180.0\]      |     \[-180.0,180.0\]      |
+|   pitch_global    |    float     |     \[-180.0,180.0\]      |     \[-180.0,180.0\]      |
+|    yaw_rel     |    float     |     \[-180.0,180.0\]      |     \[-180.0,180.0\]      |
+|   pitch_rel    |    float     |     \[-180.0,180.0\]      |     \[-180.0,180.0\]      |
 
 ### Set behavior
 
@@ -690,7 +695,7 @@ and relative (in relation to the center axis of the camera) terms. The x
 and y offsets are unitless and represent a fraction of the view. For example,
 an x offset of 0.5 would indicate that the object is located halfway across
 the camera's view in the horizontal direction. The returned yaw and pitch
-angles are in radians.
+angles are in degrees.
 
 ## SENSOR
 
@@ -716,11 +721,11 @@ Message for controlling the single target tracking unit.
 | detection_id | uint8_t | \[0,255\] | \[0,255\] |
 | zoom_level | uint16_t | \[0,65535\] | \[0,65535\] |
 | confidence | float | n/a | \[0.0,1.0\] |
-| yaw_global | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| pitch_global | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| yaw_global | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| pitch_global | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
 | rel_frame_of_reference | uint8_t | 0,1,2 | 0,1,2 |
-| yaw_rel | float | \[-3.14,3.14\] | \[-3.14,3.14\] |
-| pitch_rel | float | \[-1.57,1.57\] | \[-1.57,1.57\] |
+| yaw_rel | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| pitch_rel | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
 
 ### Set behavior
 
@@ -764,8 +769,9 @@ Unused for set.
 
 ##### yaw, pitch (global)
 
-The yaw and pitch euler angles in radians (using Tait-Bryan formalism) in relation to true north.
-Used when command is set to 1 and designates the target direction.
+The yaw and pitch euler angles in degrees (using
+Tait-Bryan formalism) in relation to true north. Used when command is set to 1 and designates the target
+direction.
 
 ##### rel frame of reference
 
