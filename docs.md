@@ -50,7 +50,7 @@ An asterisk means a specific operation is not yet implemented.
 
 | **Name** | **Value** | **Message type** | **Description** |
 |:-------------------|:-----|:-----------|:---------------------------|
-| SYSTEM_STATUS | 0 | GET | Returns whether the system is currently running |
+| SYSTEM_STATUS | 0 | GET & SET | Returns and sets application status |
 | AI | 1 | GET & SET | AI processing parameters |
 | MODEL | 2 | GET | Model information |
 | VIDEO_OUTPUT | 3 | GET & SET | Information regarding the video output |
@@ -63,8 +63,8 @@ An asterisk means a specific operation is not yet implemented.
 | SENSOR | 10 | GET & SET | Control for the image sensor's settings |
 | CAM_DEPTH_ESTIMATION | 11 | GET & SET | Control for the depth estimation unit |
 | SINGLE_TARGET_TRACKING | 12 | GET & SET | Single target tracking parameters |
+| CALIBRATION | 13 | GET & SET | Calibration command and progress state |
 | NAVIGATION | 14 | GET | Retrieve navigation info |
-|  |  |  |  |
 
 # Messages
 
@@ -105,7 +105,7 @@ The system status messages contains the following fields:
 
 | **Field name** | **Datatype** | **Valid arguments** |
 |:--------------:|:------------:|:-------------------:|
-|     status     |   uint8_t    |       \[0,3\]       |
+|     status     |   uint8_t    |       \[0,4\]       |
 |     error      |   uint8_t    |          0          |
 |  jetson_temp   |    float     |      \[0,105\]      |
 
@@ -115,12 +115,16 @@ The returned values indicate the systems current operational status
 indicated by the value in the *status* field. The possibilities are
 listed below.
 
-| **Value** |         **Meaning**         |
-|:---------:|:----------------------------|
-|     0     | System is idle              |
-|     1     | System is running           |
-|     2     | System finished execution   |
-|     3     | System encountered an error |
+| **Value** | **Enum symbol** | **Meaning** |
+|:---------:|:----------------|:------------|
+|     0     | `app_status::STARTUP` | Startup sequence |
+|     1     | `app_status::LOADING` | Loading data and services |
+|     2     | `app_status::RUNNING` | Normal operation |
+|     3     | `app_status::ERROR` | Error state |
+|     4     | `app_status::HALT` | Halted by command |
+
+For SET requests, the same enum values are used. Current clients use
+`app_status::HALT` to halt and `app_status::LOADING` to resume.
 
 The error field is currently unused and will always return 0.
 
@@ -185,7 +189,7 @@ operations and one for set operations.
 | width | uint16_t | \[640,1920\] | \[640,1920\] |
 | height | uint16_t | \[480,1080\] | \[480,1080\] |
 | fps* | uint8_t | ignored | ignored |
-| layout_mode | uint8_t | \[0,6\] |  \[1,4\](4 MSB), \[0,6\](4 LSB) |
+| layout_mode | uint8_t | \[0,6\] | \[1,4\] (4 MSB user view count), \[0,6\] (4 LSB layout id) |
 | detection_overlay_mode | uint8_t | \[0,5\] | \[0,5\] |
 | views | \[bounding_box\] | n/a | See table below |
 | detection_overlay_box | bounding_box | n/a | See table below |
@@ -546,7 +550,7 @@ Message for user-controllable cameras' targeting information.
 |:--------------:|:------------:|:-----------------------:|:-----------------------:|
 | stream_name | char[8] | see below | see below |
 | cam_id | uint8_t | \[0,3\] | \[0,3\] |
-| targeting_mode | uint8_t | \[0,2\] | \[0,2\] |
+| targeting_mode | uint8_t | \[0,3\] | \[0,3\] |
 | euler_delta | bool | true, false | true, false |
 | yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
 | pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
@@ -572,12 +576,12 @@ See [Common behavior](https://github.com/SynclairVision/message-definitions/blob
 
 Sets how the camera is to be targeted. The possible modes are listed
 below. If the set mode is larger than the maximum (currently 3) the mode is not changed.
-| **targeting_mode value** | **Targeting mode** |
-|:------------------------:|:------------------:|
-| 0 | Directional, the camera is aimed using global euler angles. |
-| 1 | Coordinal, the camera is aimed using global coordinates. |
-| 2 | Detection, the camera is aimed at a specific detection. |
-| 3 | Single target tracking, the camera is aimed at the object being tracked by the single target tracking system. See [SINGLE_TARGET_TRACKING](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#single-target-tracking). |
+| **targeting_mode value** | **Enum symbol** | **Targeting mode** |
+|:------------------------:|:----------------|:------------------:|
+| 0 | `View::DIRECTIONAL` | Directional, the camera is aimed using global euler angles. |
+| 1 | `View::COORDINAL` | Coordinal, the camera is aimed using global coordinates. |
+| 2 | `View::DETECTION` | Detection, the camera is aimed at a specific detection. |
+| 3 | `View::SINGLE_TARGET_TRACKING` | Single target tracking, the camera is aimed at the object being tracked by the single target tracking system. See [SINGLE_TARGET_TRACKING](https://github.com/SynclairVision/message-definitions/blob/main/docs.md#single-target-tracking). |
 
 ##### euler delta
 
@@ -705,6 +709,50 @@ Message for controlling the image sensor's settings. Currently disabled.
 
 Message for controlling the depth estimation unit. Currently disabled.
 
+## CALIBRATION
+
+Message for controlling camera calibration and reading calibration progress.
+
+### Data fields
+
+| **Field name** | **Datatype** | **Valid SET arguments** | **Valid GET arguments** |
+|:--------------:|:------------:|:-----------------------:|:-----------------------:|
+| cam_id | uint8_t | \[0,3\] | \[0,3\] |
+| calib_command | uint8_t | \[0,3\] | \[0,3\] |
+| calib_status | uint8_t | ignored | \[0,7\] |
+
+### Set behavior
+
+##### calib command
+
+Sets the requested calibration operation. The values are defined in `public_enums.hpp` as `calibration_command`:
+
+| **calib_command value** | **Enum symbol** | **Meaning** |
+|:-----------------------:|:----------------|:------------|
+| 0 | `CALIBRATION_CMD_NONE` | No operation |
+| 1 | `CALIBRATION_CMD_START_ALL` | Start 6DOF and magnetometer calibration |
+| 2 | `CALIBRATION_CMD_START_6DOF` | Start 6DOF calibration only |
+| 3 | `CALIBRATION_CMD_START_MAG` | Start magnetometer calibration only |
+
+##### calib status
+
+Ignored on SET.
+
+### Get behavior
+
+`calib_status` reports calibration progress as defined in `public_enums.hpp` (`calibration_status`):
+
+| **calib_status value** | **Enum symbol** | **Meaning** |
+|:----------------------:|:----------------|:------------|
+| 0 | `CALIBRATION_STATUS_NOT_STARTED` | Calibration inactive |
+| 1 | `CALIBRATION_STATUS_6DOF_X_POS` | Hold +X orientation |
+| 2 | `CALIBRATION_STATUS_6DOF_X_NEG` | Hold -X orientation |
+| 3 | `CALIBRATION_STATUS_6DOF_Y_POS` | Hold +Y orientation |
+| 4 | `CALIBRATION_STATUS_6DOF_Y_NEG` | Hold -Y orientation |
+| 5 | `CALIBRATION_STATUS_6DOF_Z_POS` | Hold +Z orientation |
+| 6 | `CALIBRATION_STATUS_6DOF_Z_NEG` | Hold -Z orientation |
+| 7 | `CALIBRATION_STATUS_MAG_IN_PROGRESS` | Magnetometer calibration running |
+
 ## SINGLE_TARGET_TRACKING
 
 Message for controlling the single target tracking unit.
@@ -732,13 +780,13 @@ Message for controlling the single target tracking unit.
 ##### command
 
 Sets the command for the single target tracking system. The possible commands are listed below. If the set command is larger than the maximum (currently 4) the command is not changed.
-| **command value** | **Command** |
-|:-----------------:|:-----------:|
-| 0 | Disable single target tracking. |
-| 1 | Set target to specific direction |
-| 2 | Set target to specific detection id. |
-| 3 | Nudge the target by a small amount. |
-| 4 | No operation |
+| **command value** | **Enum symbol** | **Command** |
+|:-----------------:|:----------------|:------------|
+| 0 | `CMD_OFF` | Disable single target tracking. |
+| 1 | `CMD_SET_TARGET_VECTOR` | Set target to specific direction |
+| 2 | `CMD_SET_TARGET_DETECTION` | Set target to specific detection id. |
+| 3 | `CMD_NUDGE` | Nudge the target by a small amount. |
+| 4 | `CMD_NONE` | No operation |
 
 ##### stream name
 

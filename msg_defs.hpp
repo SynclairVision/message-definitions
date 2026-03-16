@@ -8,6 +8,8 @@
 #include <inttypes.h>
 #include <stdint.h>
 
+#include "digiview_commons/public_enums.hpp"
+
 static constexpr uint32_t PARAMCOUNT            = 64;
 static constexpr uint32_t VERSION               = 0x00;
 
@@ -18,6 +20,22 @@ static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
 static constexpr uint32_t STREAM_NAME_SIZE      = 8;
+
+template <typename EnumType>
+inline uint8_t enum_to_u8(EnumType value) {
+    return static_cast<uint8_t>(value);
+}
+
+template <typename EnumType>
+inline EnumType u8_to_enum(uint8_t value) {
+    return static_cast<EnumType>(value);
+}
+
+static_assert(sizeof(app_status) == sizeof(uint8_t), "app_status must stay uint8_t-sized");
+static_assert(sizeof(View::TargetingMode) == sizeof(uint8_t), "View::TargetingMode must stay uint8_t-sized");
+static_assert(sizeof(single_target_tracker_command) == sizeof(uint8_t), "single_target_tracker_command must stay uint8_t-sized");
+static_assert(sizeof(calibration_command) == sizeof(uint8_t), "calibration_command must stay uint8_t-sized");
+static_assert(sizeof(calibration_status) == sizeof(uint8_t), "calibration_status must stay uint8_t-sized");
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -81,7 +99,7 @@ struct bounding_box {
 };
 
 struct system_status_parameters {
-    uint8_t status;
+    app_status status;
     uint8_t error;
     float   jetson_temp;
 };
@@ -153,7 +171,7 @@ struct detected_roi_parameters {
 struct cam_targeting_parameters {
     char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
-    uint8_t targeting_mode;
+    View::TargetingMode targeting_mode;
     bool    euler_delta;
     float   yaw;
     float   pitch;
@@ -204,7 +222,7 @@ struct cam_depth_estimation_parameters {
 };
 
 struct single_target_tracking_parameters {
-    uint8_t command;
+    single_target_tracker_command command;
     char    stream_name[STREAM_NAME_SIZE];
     uint8_t cam_id;
     float   x_offset;
@@ -221,8 +239,8 @@ struct single_target_tracking_parameters {
 
 struct calibration_parameters {
     uint8_t cam_id;
-    uint8_t calib_command;
-    uint8_t calib_status;
+    calibration_command calib_command;
+    calibration_status calib_status;
 };
 
 struct navigation_parameters {
@@ -255,11 +273,12 @@ inline message deserialize_message(char *buffer) {
     For each parameter type there is one pack function.
 ------------------------------------------------------------------------------------------------------------------------
 */
-inline void pack_system_status_parameters(message &msg, uint8_t status, uint8_t error, float jetson_temp) {
+inline void pack_system_status_parameters(message &msg, app_status status, uint8_t error, float jetson_temp) {
     msg.param_type = SYSTEM_STATUS;
     uint16_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&msg.data[offset], &status, sizeof(uint8_t));
+    uint8_t status_wire = enum_to_u8(status);
+    memcpy((void *)&msg.data[offset], &status_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &error, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -415,7 +434,7 @@ inline void pack_detected_roi_parameters(
 }
 
 inline void pack_cam_targeting_parameters(
-    message &msg, const char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude, int16_t detection_id = -1) {
     msg.param_type = CAM_TARGETING;
@@ -426,8 +445,9 @@ inline void pack_cam_targeting_parameters(
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(cam_id);
-    memcpy((void *)&msg.data[offset], &targeting_mode, sizeof(uint8_t));
-    offset += sizeof(targeting_mode);
+    uint8_t targeting_mode_wire = enum_to_u8(targeting_mode);
+    memcpy((void *)&msg.data[offset], &targeting_mode_wire, sizeof(uint8_t));
+    offset += sizeof(targeting_mode_wire);
     memcpy((void *)&msg.data[offset], &euler_delta, sizeof(bool));
     offset += sizeof(euler_delta);
     mrad = static_cast<int32_t>(yaw * 1000.0f);
@@ -536,14 +556,15 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
 }
 
 inline void pack_single_target_tracking_parameters(
-    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel) {
 
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&msg.data[offset], &command, sizeof(uint8_t));
+    uint8_t command_wire = enum_to_u8(command);
+    memcpy((void *)&msg.data[offset], &command_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
     offset += STREAM_NAME_SIZE;
@@ -577,14 +598,16 @@ inline void pack_single_target_tracking_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-inline void pack_calibration_parameters(message &msg, uint8_t cam_id, uint8_t calib_command, uint8_t calib_status) {
+inline void pack_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command, calibration_status calib_status) {
     msg.param_type = CALIBRATION;
     uint16_t offset = 0;
+    uint8_t calib_command_wire = enum_to_u8(calib_command);
+    uint8_t calib_status_wire = enum_to_u8(calib_status);
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &calib_command, sizeof(uint8_t));
+    memcpy((void *)&msg.data[offset], &calib_command_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &calib_status, sizeof(uint8_t));
+    memcpy((void *)&msg.data[offset], &calib_status_wire, sizeof(uint8_t));
 }
 
 inline void pack_navigation_parameters(message &msg, float altitude) {
@@ -695,7 +718,7 @@ inline void pack_set_detection_parameters(
 }
 
 inline void pack_set_cam_targeting_parameters(
-    message &msg, const char *stream_name, uint8_t cam_id, uint8_t targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude, int16_t detection_id = -1) {
 
@@ -728,7 +751,7 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 }
 
 inline void pack_set_single_target_tracking_parameters(
-    message &msg, uint8_t command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel) {
     msg.version      = VERSION;
@@ -737,10 +760,10 @@ inline void pack_set_single_target_tracking_parameters(
         detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel);
 }
 
-inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, uint8_t calib_command) {
+inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_calibration_parameters(msg, cam_id, calib_command, 0);
+    pack_calibration_parameters(msg, cam_id, calib_command, CALIBRATION_STATUS_NOT_STARTED);
 }
 
 /*
@@ -753,7 +776,9 @@ inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, uint8_
 inline void unpack_system_status_parameters(message &raw_msg, system_status_parameters &params) {
     uint8_t offset = 0;
     int32_t mrad;
-    memcpy((void *)&params.status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    uint8_t status_wire;
+    memcpy((void *)&status_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.status = u8_to_enum<app_status>(status_wire);
     offset += sizeof(uint8_t);
     memcpy((void *)&params.error, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -899,11 +924,13 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     uint16_t offset = 0;
     int32_t mrad;
     int16_t offs_int;
+    uint8_t targeting_mode_wire;
     memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&params.targeting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    memcpy((void *)&targeting_mode_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.targeting_mode = u8_to_enum<View::TargetingMode>(targeting_mode_wire);
     offset += sizeof(uint8_t);
     memcpy((void *)&params.euler_delta, (void *)&raw_msg.data[offset], sizeof(bool));
     offset += sizeof(bool);
@@ -1012,7 +1039,9 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     uint8_t offset = 0;
     int32_t mrad;
     int16_t offs_int;
-    memcpy((void *)&params.command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    uint8_t command_wire;
+    memcpy((void *)&command_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.command = u8_to_enum<single_target_tracker_command>(command_wire);
     offset += sizeof(uint8_t);
     memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
     offset += STREAM_NAME_SIZE;
@@ -1048,11 +1077,15 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
 
 inline void unpack_calibration_parameters(message &raw_msg, calibration_parameters &params) {
     uint8_t offset = 0;
+    uint8_t calib_command_wire;
+    uint8_t calib_status_wire;
     memcpy((void *)&params.cam_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&params.calib_command, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    memcpy((void *)&calib_command_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.calib_command = u8_to_enum<calibration_command>(calib_command_wire);
     offset += sizeof(uint8_t);
-    memcpy((void *)&params.calib_status, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    memcpy((void *)&calib_status_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    params.calib_status = u8_to_enum<calibration_status>(calib_status_wire);
 }
 
 inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters &params) {
