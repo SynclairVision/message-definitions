@@ -1342,5 +1342,11 @@ struct crc8 {
     bool reflect_in = false;
     bool reflect_out = false;
 };
+
+inline void add_checksum_for_digiview_message(message& msg) {
+    crc8 checksum_generator(CRC8TYPE::BLUETOOTH);
+    msg.checksum = checksum_generator.crc(reinterpret_cast<uint8_t *>(&msg), offsetof(message, checksum));
+}
+
 #endif // MSG_DEFS_HPP
 
