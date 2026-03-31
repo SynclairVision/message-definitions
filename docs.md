@@ -57,7 +57,7 @@ An asterisk means a specific operation is not yet implemented.
 | VIDEO_OUTPUT | 2 | GET & SET | Information regarding the video output |
 | CAPTURE* | 3 | GET & SET | Message for controlling system recording |
 | DETECTION | 4 | GET & SET | Message containing AI post processing parameters |
-| DETECTED_ROI | 5 | GET | Retrieve information of specific detections |
+| TRACKED_DETECTION | 5 | GET | Retrieve information of specific detections |
 | LENS | 6 | GET & SET | Control for which lens parameters to use when doing undistortion calculations |
 | CAM_EULER | 7 | GET & SET | Handles user-controlled cameras' direction in euler angles relative to the world |
 | CAM_ZOOM | 8 | GET & SET | Handles user-controlled cameras' zoom |
@@ -421,7 +421,7 @@ object. If set to 255 the previous value is kept.
 The get version of the message will return with all fields containing
 the current values used by the system.
 
-## DETECTED_ROI
+## TRACKED_DETECTION
 
 Detected ROI contains information specific to one detection.
 

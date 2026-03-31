@@ -34,7 +34,7 @@ enum PARAM_TYPE : uint8_t {
     VIDEO_OUTPUT,
     CAPTURE,
     DETECTION,
-    DETECTED_ROI,
+    TRACKED_DETECTION,
     LENS,
     CAM_EULER,
     CAM_ZOOM,
@@ -140,7 +140,7 @@ struct detection_parameters {
 
 };
 
-struct detected_roi_parameters {
+struct tracked_detection_parameters {
     uint8_t index;
     uint8_t score;
     uint8_t total_detections;
@@ -152,6 +152,8 @@ struct detected_roi_parameters {
     float   longitude;
     float   altitude;
     float   distance;
+    float   width;
+    float   height;
 };
 
 struct lens_parameters {
@@ -374,10 +376,10 @@ inline void pack_detection_parameters(
     memcpy((void *)&msg.data[offset], &missed_redetection_penalty, sizeof(uint8_t));
 }
 
-inline void pack_detected_roi_parameters(
+inline void pack_tracked_detection_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, float yaw_abs, float pitch_abs,
-    float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist) {
-    msg.param_type = DETECTED_ROI;
+    float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height) {
+    msg.param_type = TRACKED_DETECTION;
     uint16_t offset = 0;
     int32_t mrad;
     memcpy((void *)&msg.data[offset], &index, sizeof(uint8_t));
@@ -408,6 +410,12 @@ inline void pack_detected_roi_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(float);
     mrad    = static_cast<int32_t>(dist * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(float);
+    mrad    = static_cast<int32_t>(width * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(float);
+    mrad    = static_cast<int32_t>(height * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
@@ -573,26 +581,26 @@ inline void pack_get_video_output_parameters(message &msg, char *stream_name) {
 }
 
 /*
-    Convenience function for DETECTED_ROI. Specify the index of the detection to get.
+    Convenience function for TRACKED_DETECTION. Specify the index of the detection to get.
 */
-inline void pack_get_detected_roi(message &msg, uint8_t index) {
-    pack_get_parameters(msg, DETECTED_ROI);
+inline void pack_get_tracked_detection(message &msg, uint8_t index) {
+    pack_get_parameters(msg, TRACKED_DETECTION);
     msg.data[0] = index;
 }
 
 /*
-    Convenience function for DETECTED_ROI. Get all detections that are visible on screen.
+    Convenience function for TRACKED_DETECTION. Get all detections that are visible on screen.
 */
-inline void pack_get_detected_roi_visible(message &msg) {
-    pack_get_parameters(msg, DETECTED_ROI);
+inline void pack_get_tracked_detection_visible(message &msg) {
+    pack_get_parameters(msg, TRACKED_DETECTION);
     msg.data[0] = 254;
 }
 
 /*
-    Convenience function for DETECTED_ROI. Get all detections.
+    Convenience function for TRACKED_DETECTION. Get all detections.
 */
-inline void pack_get_detected_roi_all(message &msg) {
-    pack_get_parameters(msg, DETECTED_ROI);
+inline void pack_get_tracked_detection_all(message &msg) {
+    pack_get_parameters(msg, TRACKED_DETECTION);
     msg.data[0] = 255;
 }
 
@@ -833,7 +841,7 @@ inline void unpack_detection_parameters(message &raw_msg, detection_parameters &
     memcpy(&params.missed_redetection_penalty, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
-inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parameters &params) {
+inline void unpack_tracked_detection_parameters(message &raw_msg, tracked_detection_parameters &params) {
     uint16_t offset = 0;
     int32_t mrad;
     memcpy(&params.index, (void *)&raw_msg.data[offset], sizeof(uint8_t));
@@ -865,6 +873,12 @@ inline void unpack_detected_roi_parameters(message &raw_msg, detected_roi_parame
     offset += sizeof(float);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.distance = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(float);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.width = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(float);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.height = static_cast<float>(mrad) / 1000.0f;
 }
 
 inline void unpack_lens_parameters(message &raw_msg, lens_parameters &params) {
