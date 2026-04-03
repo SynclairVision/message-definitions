@@ -93,6 +93,12 @@ Many camera-related messages include `cam_id`.
 - Valid values are typically `0 .. num_user_views - 1`.
 - `num_user_views` is returned by `VIDEO_OUTPUT`.
 
+### Enum and flag value names
+
+Some fields use symbolic enum or bit-flag names in code. Those names come from
+`digiview_commons/public_enums.hpp`, which is included by `msg_defs.hpp`.
+This document lists the customer-facing values you need for integration.
+
 ### Angles and FOV in DigiView 0.6
 
 In current DigiView 0.6 behavior, the customer-facing native protocol uses **degrees** for returned and requested angles in the message groups that expose angle values.
