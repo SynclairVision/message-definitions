@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mavlink>
+  <version>2</version>
+  <!-- 
+  Datum denna fil är skriven:
+  2026-01-27
+
+  Baserat på dev-1.0 branchen av message-definitions:
+  https://github.com/SynclairVision/message-definitions/tree/dev-1.0
+
+  commit version:
+  9fb55714b6fa8b2d42e043fd312d92b1b1507fae
+  -->
+
+  <enums>
+    <enum name="SV_APP_STATUS">
+      <description>DigiView application status (app_status).</description>
+      <entry value="0" name="SV_APP_STATUS_STARTUP">Startup sequence has begun.</entry>
+      <entry value="1" name="SV_APP_STATUS_LOADING">Application is loading.</entry>
+      <entry value="2" name="SV_APP_STATUS_RUNNING">Application is running.</entry>
+      <entry value="3" name="SV_APP_STATUS_ERROR">Application entered an error state.</entry>
+      <entry value="4" name="SV_APP_STATUS_HALT">Application is halted.</entry>
+    </enum>
+
+    <enum name="SV_TARGETING_MODE">
+      <description>Camera targeting mode (View::TargetingMode).</description>
+      <entry value="0" name="SV_TARGETING_MODE_DIRECTIONAL">Target by yaw, pitch, and roll.</entry>
+      <entry value="1" name="SV_TARGETING_MODE_COORDINAL">Target by latitude, longitude, and altitude.</entry>
+      <entry value="2" name="SV_TARGETING_MODE_DETECTION">Target by detection id.</entry>
+      <entry value="3" name="SV_TARGETING_MODE_SINGLE_TARGET_TRACKING">Use single target tracking output.</entry>
+      <entry value="4" name="SV_TARGETING_MODE_NUM_TARGETING_MODES">Enum count sentinel.</entry>
+    </enum>
+
+    <enum name="SV_CROP_MODE">
+      <description>Camera crop mode (View::CropMode).</description>
+      <entry value="0" name="SV_CROP_MODE_NONE">No crop mode override.</entry>
+      <entry value="1" name="SV_CROP_MODE_CARTESIAN">Cartesian crop mode.</entry>
+      <entry value="2" name="SV_CROP_MODE_PANORAMA">Panorama crop mode.</entry>
+      <entry value="3" name="SV_CROP_MODE_LUSTIGA_HUSET">Lustiga huset crop mode.</entry>
+      <entry value="4" name="SV_CROP_MODE_FULL_FRAME">Full-frame crop mode.</entry>
+    </enum>
+
+    <enum name="SV_LAYOUT_ID">
+      <description>Video layout mode (Layout::ID).</description>
+      <entry value="0" name="SV_LAYOUT_ID_LAYOUT_1">Single user view.</entry>
+      <entry value="1" name="SV_LAYOUT_ID_LAYOUT_2_STK">Two stacked user views.</entry>
+      <entry value="2" name="SV_LAYOUT_ID_LAYOUT_2_SBS">Two side-by-side user views.</entry>
+      <entry value="3" name="SV_LAYOUT_ID_LAYOUT_2_SBS_1_STK">Three-view side-by-side plus stacked layout.</entry>
+      <entry value="4" name="SV_LAYOUT_ID_LAYOUT_4">Four-view grid layout.</entry>
+      <entry value="5" name="SV_LAYOUT_ID_LAYOUT_3_SBS_1_STK">Three side-by-side plus one stacked layout.</entry>
+      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_DEBUG">Debug layout.</entry>
+      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_MAX">Max layout sentinel (same as debug).</entry>
+    </enum>
+
+    <enum name="SV_LAYOUT_DET_OVERLAY_MODE">
+      <description>Detection overlay layout mode (Layout::DetOverlayMode).</description>
+      <entry value="0" name="SV_LAYOUT_DET_OVERLAY_NONE">No detection overlay.</entry>
+      <entry value="1" name="SV_LAYOUT_DET_OVERLAY_SINGLE_TOP_RIGHT">Single overlay in top-right.</entry>
+      <entry value="2" name="SV_LAYOUT_DET_OVERLAY_COLUMN_RIGHT">Overlay column on right side.</entry>
+      <entry value="3" name="SV_LAYOUT_DET_OVERLAY_COLUMN_LEFT">Overlay column on left side.</entry>
+      <entry value="4" name="SV_LAYOUT_DET_OVERLAY_ROW_TOP">Overlay row on top side.</entry>
+      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_ROW_BOTTOM">Overlay row on bottom side.</entry>
+      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_MAX">Max overlay sentinel (same as row bottom).</entry>
+    </enum>
+
+    <enum name="SV_SINGLE_TARGET_TRACKER_COMMAND">
+      <description>Single target tracker command (single_target_tracker_command).</description>
+      <entry value="0" name="SV_STT_CMD_OFF">Disable single target tracking.</entry>
+      <entry value="1" name="SV_STT_CMD_SET_TARGET_VECTOR">Set target from offsets and angles.</entry>
+      <entry value="2" name="SV_STT_CMD_SET_TARGET_DETECTION">Set target from detection id.</entry>
+      <entry value="3" name="SV_STT_CMD_NUDGE">Nudge active target.</entry>
+      <entry value="4" name="SV_STT_CMD_NONE">No-op command.</entry>
+    </enum>
+
+    <enum name="SV_CALIBRATION_COMMAND">
+      <description>Calibration command (calibration_command).</description>
+      <entry value="0" name="SV_CALIBRATION_CMD_NONE">No calibration action.</entry>
+      <entry value="1" name="SV_CALIBRATION_CMD_START_ALL">Start full calibration.</entry>
+      <entry value="2" name="SV_CALIBRATION_CMD_START_6DOF">Start 6DoF calibration.</entry>
+      <entry value="3" name="SV_CALIBRATION_CMD_START_MAG">Start magnetometer calibration.</entry>
+      <entry value="4" name="SV_CALIBRATION_CMD_NUM_CMDS">Enum count sentinel.</entry>
+    </enum>
+
+    <enum name="SV_CALIBRATION_STATUS">
+      <description>Calibration status (calibration_status).</description>
+      <entry value="0" name="SV_CALIBRATION_STATUS_NOT_STARTED">Calibration not started.</entry>
+      <entry value="1" name="SV_CALIBRATION_STATUS_6DOF_X_POS">Hold +X orientation.</entry>
+      <entry value="2" name="SV_CALIBRATION_STATUS_6DOF_X_NEG">Hold -X orientation.</entry>
+      <entry value="3" name="SV_CALIBRATION_STATUS_6DOF_Y_POS">Hold +Y orientation.</entry>
+      <entry value="4" name="SV_CALIBRATION_STATUS_6DOF_Y_NEG">Hold -Y orientation.</entry>
+      <entry value="5" name="SV_CALIBRATION_STATUS_6DOF_Z_POS">Hold +Z orientation.</entry>
+      <entry value="6" name="SV_CALIBRATION_STATUS_6DOF_Z_NEG">Hold -Z orientation.</entry>
+      <entry value="7" name="SV_CALIBRATION_STATUS_MAG_IN_PROGRESS">Magnetometer calibration in progress.</entry>
+      <entry value="8" name="SV_CALIBRATION_STATUS_NUM_STATUSES">Enum count sentinel.</entry>
+    </enum>
+  </enums>
+
+  <messages>
+        <message id="40000" name="SYSTEM_STATUS_PARAMETERS">
+            <description>High-level system state and Jetson temperature.</description>
+
+            <field type="uint8_t" name="status" enum="SV_APP_STATUS">Application status.</field>
+            <field type="uint8_t" name="error">Reserved error code (currently 0).</field>
+            <field type="float"   name="jetson_temp">Jetson module temperature in °C.</field>
+        </message>
+
+        <message id="40001" name="AI_PARAMETERS">
+            <description>Controls AI processing and reports active models.</description>
+            
+            <field type="uint8_t"  name="run_ai">1 if AI processing is enabled, 0 otherwise.</field>
+            <field type="char[16]" name="track_model_name">Name of the verification / tracking model.</field>
+            <field type="char[16]" name="scan_model_name">Name of the crop (detection) model.</field>
+        </message>
+
+        <message id="40002" name="MODEL_PARAMETERS">
+            <description>Available AI model name.</description>
+            <field type="char[16]" name="model_name">Model identifier used by AI settings.</field>
+        </message>
+
+        <message id="40003" name="VIDEO_OUTPUT_PARAMETERS">
+            <description>Output resolution, layout and detection overlay geometry.</description>
+
+            <field type="char[8]"      name="stream_name">Stream name.</field>
+
+            <field type="uint16_t"     name="width">Total output width in pixels.</field>
+            <field type="uint16_t"     name="height">Total output height in pixels.</field>
+
+            <field type="uint8_t"      name="fps">Unused / reserved FPS field.</field>
+            <field type="uint8_t"      name="layout_mode" enum="SV_LAYOUT_ID">User camera layout.</field>
+            <field type="uint8_t"      name="detection_overlay_mode" enum="SV_LAYOUT_DET_OVERLAY_MODE">Detection overlay layout.</field>
+            <field type="uint8_t"      name="num_user_views">Number of active user-controllable views.</field>
+
+            <!-- views[4] bounding boxes -->
+            <field type="uint16_t[4]"  name="views_x">User view x positions (top-left) in pixels.</field>
+            <field type="uint16_t[4]"  name="views_y">User view y positions (top-left) in pixels.</field>
+            <field type="uint16_t[4]"  name="views_w">User view widths in pixels.</field>
+            <field type="uint16_t[4]"  name="views_h">User view heights in pixels.</field>
+
+            <!-- detection_overlay_box -->
+            <field type="uint16_t"     name="detection_overlay_x">Detection overlay x (top-left) in pixels.</field>
+            <field type="uint16_t"     name="detection_overlay_y">Detection overlay y (top-left) in pixels.</field>
+            <field type="uint16_t"     name="detection_overlay_w">Detection overlay width in pixels.</field>
+            <field type="uint16_t"     name="detection_overlay_h">Detection overlay height in pixels.</field>
+            
+            <field type="uint16_t"     name="single_detection_size">Side length of square detection views in pixels.</field>
+        </message>
+
+        <message id="40004" name="CAPTURE_PARAMETERS">
+            <description>Capture of still images and video per stream.</description>
+
+            <field type="char[8]" name="stream_name">Stream name.</field>
+
+            <field type="uint8_t" name="cap_single_image">1 to capture a single still image.</field>
+            <field type="uint8_t" name="record_video">1 to start/continue video recording, 0 to stop.</field>
+
+            <field type="uint16_t" name="images_captured">Number of images captured so far.</field>
+            <field type="uint16_t" name="videos_captured">Number of videos captured so far.</field>
+        </message>
+
+        <message id="40005" name="DETECTION_PARAMETERS">
+            <description>DETECTION_PARAMETERS</description>
+
+            <field type="uint8_t" name="mode">Reserved/unused mode field.</field>
+            <field type="uint8_t" name="sorting_mode">Detection sorting strategy.</field>
+
+            <field type="float"   name="track_confidence_threshold">Score threshold when tracking existing objects.</field>
+            <field type="float"   name="scan_confidence_threshold">Score threshold when scanning for new objects.</field>
+            <field type="float"   name="track_box_overlap">Max allowed overlap between crop tracking boxes.</field>
+            <field type="float"   name="scan_box_overlap">Max allowed overlap between var scan boxes.</field>
+
+            <field type="uint8_t" name="creation_score_scale">Initial score scaling of new detections (255 keeps old value).</field>
+            <field type="uint8_t" name="bonus_detection_scale">Score bonus when found again during scanning (255 keeps old value).</field>
+            <field type="uint8_t" name="bonus_redetection_scale">Score bonus when found again during tracking (255 keeps old value).</field>
+            <field type="uint8_t" name="missed_detection_penalty">Score penalty when expected but not detected during scanning.</field>
+            <field type="uint8_t" name="missed_redetection_penalty">Score penalty when expected but not detected during tracking.</field>
+        </message>
+
+        <message id="40006" name="DETECTED_ROI_PARAMETERS">
+            <description>Information about a specific detection or group of detections.</description>
+
+            <field type="uint8_t" name="index">Requested or returned detection index (254/255 are special values).</field>
+            <field type="uint8_t" name="score">Detection score.</field>
+            <field type="uint8_t" name="total_detections">Number of detections returned across messages.</field>
+
+            <field type="int16_t" name="type">Detection class.</field>
+
+            <field type="float"   name="yaw_global">Global yaw in degrees (Tait-Bryan, vs true north).</field>
+            <field type="float"   name="pitch_global">Global pitch in degrees (vs true north).</field>
+            
+            <field type="uint8_t" name="rel_frame_of_reference">Indicates the frame of reference for the relative yaw and pitch angles.</field>
+
+            <field type="float"   name="yaw_rel">Relative yaw in degrees (vs camera center axis).</field>
+            <field type="float"   name="pitch_rel">Relative pitch in degrees (vs camera center axis).</field>
+            <field type="float"   name="latitude">Detection latitude, currently 0 if not implemented.</field>
+            <field type="float"   name="longitude">Detection longitude, currently 0 if not implemented.</field>
+            <field type="float"   name="altitude">Detection altitude (m), currently 0 if not implemented.</field>
+            <field type="float"   name="distance">Distance to object in meters, currently 0 if not implemented.</field>
+            <field type="float"   name="width">Estimated object width in meters.</field>
+            <field type="float"   name="height">Estimated object height in meters.</field>
+
+            <extensions/>
+            <field type="uint16_t" name="track_id">Stable tracker id for this detection.</field>
+        </message>
+
+        <message id="40007" name="CAM_TARGETING_PARAMETERS">
+            <description>User camera targeting by angles, coordinates or detection.</description>
+
+            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+
+            <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
+            <field type="uint8_t" name="targeting_mode" enum="SV_TARGETING_MODE">Camera targeting mode.</field>
+            <field type="uint8_t" name="euler_delta">1 if yaw/pitch/roll are deltas, 0 if absolute.</field>
+
+            <field type="float"   name="yaw">Yaw in degrees (global frame, Tait-Bryan).</field>
+            <field type="float"   name="pitch">Pitch in degrees (global frame, Tait-Bryan).</field>
+            <field type="float"   name="roll">Roll in degrees (currently ignored).</field>
+
+            <field type="uint8_t" name="lock_flags">3-bit combinable yaw/pitch/roll lock mask: 0x01=yaw, 0x02=pitch, 0x04=roll; set bit=locked/stabilized to global frame, clear bit=follows system frame.</field>
+
+            <field type="float"   name="x_offset">Horizontal offset in view, [-1.0, 1.0].</field>
+            <field type="float"   name="y_offset">Vertical offset in view, [-1.0, 1.0].</field>
+            <field type="float"   name="target_latitude">Target latitude if using coordinal mode.</field>
+            <field type="float"   name="target_longitude">Target longitude if using coordinal mode.</field>
+            <field type="float"   name="target_altitude">Target altitude (m) if using coordinal mode.</field>
+
+            <extensions/>
+            <field type="int16_t" name="detection_id">Detection id for DETECTION targeting mode; -1 clears lock.</field>
+        </message>
+
+        <message id="40008" name="CAM_OPTICS_AND_CONTROL_PARAMETERS">
+            <description>Optical controls for user cameras, including zoom and FOV.</description>
+
+            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
+            <field type="int8_t"  name="zoom">Zoom control, -127..127 (negative=zoom out, positive=zoom in).</field>
+            <field type="float"   name="fov">Field of view in degrees (typical range ~[1, 180.0]).</field>
+            <field type="uint8_t" name="crop_mode" enum="SV_CROP_MODE">Crop mode.</field>
+        </message>
+
+        <message id="40009" name="CAM_OFFSET_PARAMETERS">
+            <description>Maps normalized offsets in the view to yaw/pitch directions.</description>
+
+            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+
+            <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
+
+            <field type="float"   name="x">Horizontal offset in view, [-1.0, 1.0].</field>
+            <field type="float"   name="y">Vertical offset in view, [-1.0, 1.0].</field>
+            <field type="float"   name="yaw_global">Global yaw in degrees (vs true north).</field>
+            <field type="float"   name="pitch_global">Global pitch in degrees (vs true north).</field>
+            <field type="float"   name="yaw_rel">Relative yaw in degrees (vs camera center axis).</field>
+            <field type="float"   name="pitch_rel">Relative pitch in degrees (vs camera center axis).</field>
+        </message>
+
+        <message id="40010" name="SENSOR_PARAMETERS">
+            <description>Image sensor exposure, gain and target brightness.</description>
+
+            <field type="uint32_t" name="min_exposure">Minimum allowed exposure time.</field>
+            <field type="uint32_t" name="max_exposure">Maximum allowed exposure time.</field>
+            <field type="uint32_t" name="min_gain">Minimum sensor gain.</field>
+            <field type="uint32_t" name="max_gain">Maximum sensor gain.</field>
+
+            <field type="float"    name="target_brightness">Target brightness level.</field>
+        </message>
+
+        <message id="40011" name="CAM_DEPTH_ESTIMATION_PARAMETERS">
+            <description>Depth estimation configuration per camera.</description>
+
+            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+
+            <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
+            <field type="uint8_t" name="depth_estimation_mode">Depth estimation mode.</field>
+
+            <field type="float"   name="depth">Depth value / parameter (implementation-specific).</field>
+            
+        </message>
+
+        <message id="40012" name="SINGLE_TARGET_TRACKING_PARAMETERS">
+            <description>Single target tracking control and current state.</description>
+
+            <field type="uint8_t"  name="command" enum="SV_SINGLE_TARGET_TRACKER_COMMAND">Tracking command.</field>
+
+            <field type="char[8]"  name="stream_name">Stream name (max 8 characters).</field>
+
+            <field type="uint8_t"  name="cam_id">Camera index on the stream.</field>
+
+            <field type="float"   name="x_offset">Normalized horizontal offset [-1.0, 1.0].</field>
+            <field type="float"   name="y_offset">Normalized vertical offset [-1.0, 1.0].</field>
+
+            <field type="uint8_t"  name="detection_id">Detection ID to follow when relevant.</field>
+            <field type="uint16_t" name="zoom_level">Tracking zoom level (0 = widest, higher = tighter).</field>
+
+            <field type="float"   name="confidence">System's confidence in the current target.</field>
+
+            <field type="float"   name="yaw_global">Global yaw of target in degrees.</field>
+            <field type="float"   name="pitch_global">Global pitch of target in degrees.</field>
+            <field type="uint8_t"  name="rel_frame_of_reference">Indicates the frame of reference for the relative yaw and pitch
+angles.</field>
+            <field type="float"   name="yaw_rel">Relative yaw of target in degrees.</field>
+            <field type="float"   name="pitch_rel">Relative pitch of target in degrees.</field>
+        </message>
+
+        <message id="40013" name="CALIBRATION_PARAMETERS">
+            <description>Camera calibration command and status.</description>
+
+            <field type="uint8_t" name="cam_id">Camera index.</field>
+            <field type="uint8_t" name="calib_command" enum="SV_CALIBRATION_COMMAND">Calibration command.</field>
+            <field type="uint8_t" name="calib_status" enum="SV_CALIBRATION_STATUS">Calibration status.</field>
+        </message>
+
+        <message id="40014" name="NAVIGATION_PARAMETERS">
+            <description>Navigation parameters.</description>
+
+            <field type="float" name="altitude">Navigation altitude in meters.</field>
+        </message>
+
+    </messages>
+</mavlink>
