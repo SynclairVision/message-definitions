@@ -17,6 +17,15 @@ You will also find:
 
 Generated MAVLink code is intentionally not stored in this repository; it is typically generated and versioned in the consuming project.
 
+## CMake integration
+
+CMake-based projects can include this repository with `add_subdirectory(...)`.
+When included, the build generates DigiView MAVLink C headers in your build tree using the vendored MAVLink submodule.
+
+Before configuring CMake, initialize submodules (for example):
+
+`git submodule update --init --recursive`
+
 ## MAVLink bindings generation guidance
 
 Integrators who need language-specific MAVLink bindings can generate them from **`sv_mavlink_dialect.xml`** using `mavgen`, either with the manual flow below or with the helper script **`generate_sv_mavlink_bindings.sh`**.
