@@ -76,17 +76,54 @@ file(READ "${ALL_XML_PATH}" ALL_XML_CONTENT)
 
 string(REGEX MATCH "<include>[ \t\r\n]*sv_mavlink_dialect\\.xml[ \t\r\n]*</include>" HAS_SV_INCLUDE "${ALL_XML_CONTENT}")
 if(NOT HAS_SV_INCLUDE)
-    string(FIND "${ALL_XML_CONTENT}" "</mavlink>" CLOSE_TAG_INDEX)
-    if(CLOSE_TAG_INDEX EQUAL -1)
-        message(FATAL_ERROR "Unable to patch ${ALL_XML_PATH}: closing </mavlink> tag not found")
+    set(SV_INCLUDE_LINE "  <include>sv_mavlink_dialect.xml</include>")
+    set(INSERTION_DONE FALSE)
+
+    # Prefer insertion after the last existing include.
+    string(FIND "${ALL_XML_CONTENT}" "</include>" LAST_INCLUDE_CLOSE_INDEX REVERSE)
+    if(NOT LAST_INCLUDE_CLOSE_INDEX EQUAL -1)
+        string(LENGTH "</include>" INCLUDE_CLOSE_LENGTH)
+        math(EXPR INSERT_INDEX "${LAST_INCLUDE_CLOSE_INDEX} + ${INCLUDE_CLOSE_LENGTH}")
+        set(INSERTION_DONE TRUE)
+    else()
+        # If there are no includes, insert after <version> when present.
+        string(FIND "${ALL_XML_CONTENT}" "</version>" VERSION_CLOSE_INDEX)
+        if(NOT VERSION_CLOSE_INDEX EQUAL -1)
+            string(LENGTH "</version>" VERSION_CLOSE_LENGTH)
+            math(EXPR INSERT_INDEX "${VERSION_CLOSE_INDEX} + ${VERSION_CLOSE_LENGTH}")
+            set(INSERTION_DONE TRUE)
+        else()
+            # Final fallback: insert immediately after opening <mavlink> tag.
+            string(REGEX MATCH "<mavlink[^>]*>" MAVLINK_OPEN_TAG "${ALL_XML_CONTENT}")
+            if(MAVLINK_OPEN_TAG)
+                string(FIND "${ALL_XML_CONTENT}" "${MAVLINK_OPEN_TAG}" MAVLINK_OPEN_TAG_INDEX)
+                string(LENGTH "${MAVLINK_OPEN_TAG}" MAVLINK_OPEN_TAG_LENGTH)
+                math(EXPR INSERT_INDEX "${MAVLINK_OPEN_TAG_INDEX} + ${MAVLINK_OPEN_TAG_LENGTH}")
+                set(INSERTION_DONE TRUE)
+            endif()
+        endif()
     endif()
 
-    string(REPLACE
-        "</mavlink>"
-        "  <include>sv_mavlink_dialect.xml</include>\n</mavlink>"
-        PATCHED_ALL_XML_CONTENT
-        "${ALL_XML_CONTENT}"
-    )
+    if(NOT INSERTION_DONE)
+        message(FATAL_ERROR "Unable to patch ${ALL_XML_PATH}: no valid insertion anchor found")
+    endif()
+
+    string(LENGTH "${ALL_XML_CONTENT}" ALL_XML_LENGTH)
+    math(EXPR SUFFIX_LENGTH "${ALL_XML_LENGTH} - ${INSERT_INDEX}")
+
+    if(INSERT_INDEX GREATER 0)
+        string(SUBSTRING "${ALL_XML_CONTENT}" 0 ${INSERT_INDEX} ALL_XML_PREFIX)
+    else()
+        set(ALL_XML_PREFIX "")
+    endif()
+
+    if(SUFFIX_LENGTH GREATER 0)
+        string(SUBSTRING "${ALL_XML_CONTENT}" ${INSERT_INDEX} ${SUFFIX_LENGTH} ALL_XML_SUFFIX)
+    else()
+        set(ALL_XML_SUFFIX "")
+    endif()
+
+    set(PATCHED_ALL_XML_CONTENT "${ALL_XML_PREFIX}\n${SV_INCLUDE_LINE}${ALL_XML_SUFFIX}")
 
     file(WRITE "${ALL_XML_PATH}" "${PATCHED_ALL_XML_CONTENT}")
 endif()
