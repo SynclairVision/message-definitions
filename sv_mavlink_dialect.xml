@@ -15,83 +15,181 @@
   <enums>
     <enum name="SV_APP_STATUS">
       <description>DigiView application status (app_status).</description>
-      <entry value="0" name="SV_APP_STATUS_STARTUP">Startup sequence has begun.</entry>
-      <entry value="1" name="SV_APP_STATUS_LOADING">Application is loading.</entry>
-      <entry value="2" name="SV_APP_STATUS_RUNNING">Application is running.</entry>
-      <entry value="3" name="SV_APP_STATUS_ERROR">Application entered an error state.</entry>
-      <entry value="4" name="SV_APP_STATUS_HALT">Application is halted.</entry>
+      <entry value="0" name="SV_APP_STATUS_STARTUP">
+        <description>Startup sequence has begun.</description>
+      </entry>
+      <entry value="1" name="SV_APP_STATUS_LOADING">
+        <description>Application is loading.</description>
+      </entry>
+      <entry value="2" name="SV_APP_STATUS_RUNNING">
+        <description>Application is running.</description>
+      </entry>
+      <entry value="3" name="SV_APP_STATUS_ERROR">
+        <description>Application entered an error state.</description>
+      </entry>
+      <entry value="4" name="SV_APP_STATUS_HALT">
+        <description>Application is halted.</description>
+      </entry>
     </enum>
 
     <enum name="SV_TARGETING_MODE">
       <description>Camera targeting mode (View::TargetingMode).</description>
-      <entry value="0" name="SV_TARGETING_MODE_DIRECTIONAL">Target by yaw, pitch, and roll.</entry>
-      <entry value="1" name="SV_TARGETING_MODE_COORDINAL">Target by latitude, longitude, and altitude.</entry>
-      <entry value="2" name="SV_TARGETING_MODE_DETECTION">Target by detection id.</entry>
-      <entry value="3" name="SV_TARGETING_MODE_SINGLE_TARGET_TRACKING">Use single target tracking output.</entry>
-      <entry value="4" name="SV_TARGETING_MODE_NUM_TARGETING_MODES">Enum count sentinel.</entry>
+      <entry value="0" name="SV_TARGETING_MODE_DIRECTIONAL">
+        <description>Target by yaw, pitch, and roll.</description>
+      </entry>
+      <entry value="1" name="SV_TARGETING_MODE_COORDINAL">
+        <description>Target by latitude, longitude, and altitude.</description>
+      </entry>
+      <entry value="2" name="SV_TARGETING_MODE_DETECTION">
+        <description>Target by detection id.</description>
+      </entry>
+      <entry value="3" name="SV_TARGETING_MODE_SINGLE_TARGET_TRACKING">
+        <description>Use single target tracking output.</description>
+      </entry>
+      <entry value="4" name="SV_TARGETING_MODE_NUM_TARGETING_MODES">
+        <description>Enum count sentinel.</description>
+      </entry>
     </enum>
 
     <enum name="SV_CROP_MODE">
       <description>Camera crop mode (View::CropMode).</description>
-      <entry value="0" name="SV_CROP_MODE_NONE">No crop mode override.</entry>
-      <entry value="1" name="SV_CROP_MODE_CARTESIAN">Cartesian crop mode.</entry>
-      <entry value="2" name="SV_CROP_MODE_PANORAMA">Panorama crop mode.</entry>
-      <entry value="3" name="SV_CROP_MODE_LUSTIGA_HUSET">Lustiga huset crop mode.</entry>
-      <entry value="4" name="SV_CROP_MODE_FULL_FRAME">Full-frame crop mode.</entry>
+      <entry value="0" name="SV_CROP_MODE_NONE">
+        <description>No crop mode override.</description>
+      </entry>
+      <entry value="1" name="SV_CROP_MODE_CARTESIAN">
+        <description>Cartesian crop mode.</description>
+      </entry>
+      <entry value="2" name="SV_CROP_MODE_PANORAMA">
+        <description>Panorama crop mode.</description>
+      </entry>
+      <entry value="3" name="SV_CROP_MODE_LUSTIGA_HUSET">
+        <description>Lustiga huset crop mode.</description>
+      </entry>
+      <entry value="4" name="SV_CROP_MODE_FULL_FRAME">
+        <description>Full-frame crop mode.</description>
+      </entry>
     </enum>
 
     <enum name="SV_LAYOUT_ID">
       <description>Video layout mode (Layout::ID).</description>
-      <entry value="0" name="SV_LAYOUT_ID_LAYOUT_1">Single user view.</entry>
-      <entry value="1" name="SV_LAYOUT_ID_LAYOUT_2_STK">Two stacked user views.</entry>
-      <entry value="2" name="SV_LAYOUT_ID_LAYOUT_2_SBS">Two side-by-side user views.</entry>
-      <entry value="3" name="SV_LAYOUT_ID_LAYOUT_2_SBS_1_STK">Three-view side-by-side plus stacked layout.</entry>
-      <entry value="4" name="SV_LAYOUT_ID_LAYOUT_4">Four-view grid layout.</entry>
-      <entry value="5" name="SV_LAYOUT_ID_LAYOUT_3_SBS_1_STK">Three side-by-side plus one stacked layout.</entry>
-      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_DEBUG">Debug layout.</entry>
-      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_MAX">Max layout sentinel (same as debug).</entry>
+      <entry value="0" name="SV_LAYOUT_ID_LAYOUT_1">
+        <description>Single user view.</description>
+      </entry>
+      <entry value="1" name="SV_LAYOUT_ID_LAYOUT_2_STK">
+        <description>Two stacked user views.</description>
+      </entry>
+      <entry value="2" name="SV_LAYOUT_ID_LAYOUT_2_SBS">
+        <description>Two side-by-side user views.</description>
+      </entry>
+      <entry value="3" name="SV_LAYOUT_ID_LAYOUT_2_SBS_1_STK">
+        <description>Three-view side-by-side plus stacked layout.</description>
+      </entry>
+      <entry value="4" name="SV_LAYOUT_ID_LAYOUT_4">
+        <description>Four-view grid layout.</description>
+      </entry>
+      <entry value="5" name="SV_LAYOUT_ID_LAYOUT_3_SBS_1_STK">
+        <description>Three side-by-side plus one stacked layout.</description>
+      </entry>
+      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_DEBUG">
+        <description>Debug layout.</description>
+      </entry>
+      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_MAX">
+        <description>Max layout sentinel (same as debug).</description>
+      </entry>
     </enum>
 
     <enum name="SV_LAYOUT_DET_OVERLAY_MODE">
       <description>Detection overlay layout mode (Layout::DetOverlayMode).</description>
-      <entry value="0" name="SV_LAYOUT_DET_OVERLAY_NONE">No detection overlay.</entry>
-      <entry value="1" name="SV_LAYOUT_DET_OVERLAY_SINGLE_TOP_RIGHT">Single overlay in top-right.</entry>
-      <entry value="2" name="SV_LAYOUT_DET_OVERLAY_COLUMN_RIGHT">Overlay column on right side.</entry>
-      <entry value="3" name="SV_LAYOUT_DET_OVERLAY_COLUMN_LEFT">Overlay column on left side.</entry>
-      <entry value="4" name="SV_LAYOUT_DET_OVERLAY_ROW_TOP">Overlay row on top side.</entry>
-      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_ROW_BOTTOM">Overlay row on bottom side.</entry>
-      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_MAX">Max overlay sentinel (same as row bottom).</entry>
+      <entry value="0" name="SV_LAYOUT_DET_OVERLAY_NONE">
+        <description>No detection overlay.</description>
+      </entry>
+      <entry value="1" name="SV_LAYOUT_DET_OVERLAY_SINGLE_TOP_RIGHT">
+        <description>Single overlay in top-right.</description>
+      </entry>
+      <entry value="2" name="SV_LAYOUT_DET_OVERLAY_COLUMN_RIGHT">
+        <description>Overlay column on right side.</description>
+      </entry>
+      <entry value="3" name="SV_LAYOUT_DET_OVERLAY_COLUMN_LEFT">
+        <description>Overlay column on left side.</description>
+      </entry>
+      <entry value="4" name="SV_LAYOUT_DET_OVERLAY_ROW_TOP">
+        <description>Overlay row on top side.</description>
+      </entry>
+      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_ROW_BOTTOM">
+        <description>Overlay row on bottom side.</description>
+      </entry>
+      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_MAX">
+        <description>Max overlay sentinel (same as row bottom).</description>
+      </entry>
     </enum>
 
     <enum name="SV_SINGLE_TARGET_TRACKER_COMMAND">
       <description>Single target tracker command (single_target_tracker_command).</description>
-      <entry value="0" name="SV_STT_CMD_OFF">Disable single target tracking.</entry>
-      <entry value="1" name="SV_STT_CMD_SET_TARGET_VECTOR">Set target from offsets and angles.</entry>
-      <entry value="2" name="SV_STT_CMD_SET_TARGET_DETECTION">Set target from detection id.</entry>
-      <entry value="3" name="SV_STT_CMD_NUDGE">Nudge active target.</entry>
-      <entry value="4" name="SV_STT_CMD_NONE">No-op command.</entry>
+      <entry value="0" name="SV_STT_CMD_OFF">
+        <description>Disable single target tracking.</description>
+      </entry>
+      <entry value="1" name="SV_STT_CMD_SET_TARGET_VECTOR">
+        <description>Set target from offsets and angles.</description>
+      </entry>
+      <entry value="2" name="SV_STT_CMD_SET_TARGET_DETECTION">
+        <description>Set target from detection id.</description>
+      </entry>
+      <entry value="3" name="SV_STT_CMD_NUDGE">
+        <description>Nudge active target.</description>
+      </entry>
+      <entry value="4" name="SV_STT_CMD_NONE">
+        <description>No-op command.</description>
+      </entry>
     </enum>
 
     <enum name="SV_CALIBRATION_COMMAND">
       <description>Calibration command (calibration_command).</description>
-      <entry value="0" name="SV_CALIBRATION_CMD_NONE">No calibration action.</entry>
-      <entry value="1" name="SV_CALIBRATION_CMD_START_ALL">Start full calibration.</entry>
-      <entry value="2" name="SV_CALIBRATION_CMD_START_6DOF">Start 6DoF calibration.</entry>
-      <entry value="3" name="SV_CALIBRATION_CMD_START_MAG">Start magnetometer calibration.</entry>
-      <entry value="4" name="SV_CALIBRATION_CMD_NUM_CMDS">Enum count sentinel.</entry>
+      <entry value="0" name="SV_CALIBRATION_CMD_NONE">
+        <description>No calibration action.</description>
+      </entry>
+      <entry value="1" name="SV_CALIBRATION_CMD_START_ALL">
+        <description>Start full calibration.</description>
+      </entry>
+      <entry value="2" name="SV_CALIBRATION_CMD_START_6DOF">
+        <description>Start 6DoF calibration.</description>
+      </entry>
+      <entry value="3" name="SV_CALIBRATION_CMD_START_MAG">
+        <description>Start magnetometer calibration.</description>
+      </entry>
+      <entry value="4" name="SV_CALIBRATION_CMD_NUM_CMDS">
+        <description>Enum count sentinel.</description>
+      </entry>
     </enum>
 
     <enum name="SV_CALIBRATION_STATUS">
       <description>Calibration status (calibration_status).</description>
-      <entry value="0" name="SV_CALIBRATION_STATUS_NOT_STARTED">Calibration not started.</entry>
-      <entry value="1" name="SV_CALIBRATION_STATUS_6DOF_X_POS">Hold +X orientation.</entry>
-      <entry value="2" name="SV_CALIBRATION_STATUS_6DOF_X_NEG">Hold -X orientation.</entry>
-      <entry value="3" name="SV_CALIBRATION_STATUS_6DOF_Y_POS">Hold +Y orientation.</entry>
-      <entry value="4" name="SV_CALIBRATION_STATUS_6DOF_Y_NEG">Hold -Y orientation.</entry>
-      <entry value="5" name="SV_CALIBRATION_STATUS_6DOF_Z_POS">Hold +Z orientation.</entry>
-      <entry value="6" name="SV_CALIBRATION_STATUS_6DOF_Z_NEG">Hold -Z orientation.</entry>
-      <entry value="7" name="SV_CALIBRATION_STATUS_MAG_IN_PROGRESS">Magnetometer calibration in progress.</entry>
-      <entry value="8" name="SV_CALIBRATION_STATUS_NUM_STATUSES">Enum count sentinel.</entry>
+      <entry value="0" name="SV_CALIBRATION_STATUS_NOT_STARTED">
+        <description>Calibration not started.</description>
+      </entry>
+      <entry value="1" name="SV_CALIBRATION_STATUS_6DOF_X_POS">
+        <description>Hold +X orientation.</description>
+      </entry>
+      <entry value="2" name="SV_CALIBRATION_STATUS_6DOF_X_NEG">
+        <description>Hold -X orientation.</description>
+      </entry>
+      <entry value="3" name="SV_CALIBRATION_STATUS_6DOF_Y_POS">
+        <description>Hold +Y orientation.</description>
+      </entry>
+      <entry value="4" name="SV_CALIBRATION_STATUS_6DOF_Y_NEG">
+        <description>Hold -Y orientation.</description>
+      </entry>
+      <entry value="5" name="SV_CALIBRATION_STATUS_6DOF_Z_POS">
+        <description>Hold +Z orientation.</description>
+      </entry>
+      <entry value="6" name="SV_CALIBRATION_STATUS_6DOF_Z_NEG">
+        <description>Hold -Z orientation.</description>
+      </entry>
+      <entry value="7" name="SV_CALIBRATION_STATUS_MAG_IN_PROGRESS">
+        <description>Magnetometer calibration in progress.</description>
+      </entry>
+      <entry value="8" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
+        <description>Enum count sentinel.</description>
+      </entry>
     </enum>
   </enums>
 
