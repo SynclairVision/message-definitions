@@ -93,9 +93,6 @@
       <entry value="6" name="SV_LAYOUT_ID_LAYOUT_DEBUG">
         <description>Debug layout.</description>
       </entry>
-      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_MAX">
-        <description>Max layout sentinel (same as debug).</description>
-      </entry>
     </enum>
 
     <enum name="SV_LAYOUT_DET_OVERLAY_MODE">
@@ -117,9 +114,6 @@
       </entry>
       <entry value="5" name="SV_LAYOUT_DET_OVERLAY_ROW_BOTTOM">
         <description>Overlay row on bottom side.</description>
-      </entry>
-      <entry value="5" name="SV_LAYOUT_DET_OVERLAY_MAX">
-        <description>Max overlay sentinel (same as row bottom).</description>
       </entry>
     </enum>
 
