@@ -398,7 +398,7 @@ inline void pack_detection_parameters(
     memcpy((void *)&msg.data[offset], &missed_redetection_penalty, sizeof(uint8_t));
 }
 
-inline void pack_detected_roi_parameters(
+inline void pack_tracked_detection_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height, uint16_t track_id = 0) {
     msg.param_type = TRACKED_DETECTION;
@@ -660,25 +660,25 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, const char *st
 /*
     Convenience function for TRACKED_DETECTION. Specify the index of the detection to get.
 */
-inline void pack_get_detected_roi(message &msg, uint8_t index, uint8_t rel_frame_of_reference) {
+inline void pack_get_tracked_detection(message &msg, uint8_t index, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_detected_roi_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
     Convenience function for TRACKED_DETECTION. Get all detections that are visible on screen.
 */
-inline void pack_get_detected_roi_visible(message &msg, uint8_t rel_frame_of_reference) {
+inline void pack_get_tracked_detection_visible(message &msg, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_detected_roi_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
     Convenience function for TRACKED_DETECTION. Get all detections.
 */
-inline void pack_get_detected_roi_all(message &msg, uint8_t rel_frame_of_reference) {
+inline void pack_get_tracked_detection_all(message &msg, uint8_t rel_frame_of_reference) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_detected_roi_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
