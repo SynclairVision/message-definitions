@@ -5,17 +5,18 @@ project(digiview_mavlink_headers LANGUAGES NONE)
 set(DIGIVIEW_MAVLINK_WIRE_PROTOCOL "2.0" CACHE STRING "MAVLink wire protocol version used for generated C headers")
 
 set(DIGIVIEW_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
-set(MAVLINK_SUBMODULE_DIR "${DIGIVIEW_REPO_ROOT}/mavlink")
-set(MAVLINK_DEFINITIONS_SOURCE_DIR "${MAVLINK_SUBMODULE_DIR}/message_definitions/v1.0")
+set(MAVLINK_SUBMODULE_SOURCE_DIR "${DIGIVIEW_REPO_ROOT}/mavlink")
+set(MAVLINK_DEFINITIONS_SOURCE_DIR "${MAVLINK_SUBMODULE_SOURCE_DIR}/message_definitions/v1.0")
 set(MAVLINK_ALL_XML_SOURCE "${MAVLINK_DEFINITIONS_SOURCE_DIR}/all.xml")
-set(MAVLINK_REQUIREMENTS_FILE "${MAVLINK_SUBMODULE_DIR}/pymavlink/requirements.txt")
+set(MAVLINK_REQUIREMENTS_FILE "${MAVLINK_SUBMODULE_SOURCE_DIR}/pymavlink/requirements.txt")
 set(SV_DIALECT_SOURCE "${DIGIVIEW_REPO_ROOT}/sv_mavlink_dialect.xml")
 
 function(require_mavlink_content path_value)
     if(NOT EXISTS "${path_value}")
         message(FATAL_ERROR
             "Required MAVLink submodule content is missing:\n"
-            "  ${path_value}\n"
+            "  Missing path: ${path_value}\n"
+            "  Expected MAVLink source root: ${MAVLINK_SUBMODULE_SOURCE_DIR}\n"
             "Run:\n"
             "  git submodule update --init --recursive"
         )
@@ -41,9 +42,13 @@ if(NOT PIP_RESULT EQUAL 0)
     message(FATAL_ERROR "Python pip not found, pip is required to generate MAVLink headers")
 endif()
 
-set(DIGIVIEW_XML_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/message_definitions/v1.0")
+set(DIGIVIEW_STAGED_MAVLINK_ROOT "${CMAKE_CURRENT_BINARY_DIR}/mavlink")
+set(DIGIVIEW_XML_BUILD_DIR "${DIGIVIEW_STAGED_MAVLINK_ROOT}/message_definitions/v1.0")
+set(DIGIVIEW_STAGED_ALL_XML "${DIGIVIEW_XML_BUILD_DIR}/all.xml")
 set(DIGIVIEW_XML_PATCH_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/patch_all_xml.cmake")
 set(DIGIVIEW_XML_STAGE_STAMP "${CMAKE_CURRENT_BINARY_DIR}/.xml_staged.stamp")
+set(DIGIVIEW_MAVGEN_WORKING_DIR "${DIGIVIEW_STAGED_MAVLINK_ROOT}")
+set(DIGIVIEW_MAVGEN_INPUT_XML_REL "message_definitions/v1.0/all.xml")
 
 set(DIGIVIEW_GENERATED_INCLUDE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated/include")
 set(DIGIVIEW_GENERATED_MAVLINK_DIR "${DIGIVIEW_GENERATED_INCLUDE_ROOT}/mavlink/v${DIGIVIEW_MAVLINK_WIRE_PROTOCOL}")
@@ -83,10 +88,11 @@ endif()
 
 add_custom_command(
     OUTPUT "${DIGIVIEW_XML_STAGE_STAMP}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DIGIVIEW_STAGED_MAVLINK_ROOT}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${DIGIVIEW_XML_BUILD_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory "${MAVLINK_DEFINITIONS_SOURCE_DIR}" "${DIGIVIEW_XML_BUILD_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${SV_DIALECT_SOURCE}" "${DIGIVIEW_XML_BUILD_DIR}/sv_mavlink_dialect.xml"
-    COMMAND "${CMAKE_COMMAND}" -DALL_XML_PATH="${DIGIVIEW_XML_BUILD_DIR}/all.xml" -P "${DIGIVIEW_XML_PATCH_SCRIPT}"
+    COMMAND "${CMAKE_COMMAND}" -DALL_XML_PATH="${DIGIVIEW_STAGED_ALL_XML}" -P "${DIGIVIEW_XML_PATCH_SCRIPT}"
     COMMAND "${CMAKE_COMMAND}" -E touch "${DIGIVIEW_XML_STAGE_STAMP}"
     DEPENDS
         "${SV_DIALECT_SOURCE}"
@@ -102,8 +108,8 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${DIGIVIEW_PYTHON_DEPS_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${DIGIVIEW_GENERATED_MAVLINK_DIR}"
     COMMAND "${Python3_EXECUTABLE}" -m pip install --upgrade -r "${MAVLINK_REQUIREMENTS_FILE}" -t "${DIGIVIEW_PYTHON_DEPS_DIR}"
-    COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=${DIGIVIEW_PYTHON_DEPS_DIR}" "${Python3_EXECUTABLE}" -m pymavlink.tools.mavgen --lang=C --wire-protocol=${DIGIVIEW_MAVLINK_WIRE_PROTOCOL} --output "${DIGIVIEW_GENERATED_MAVLINK_DIR}" "${DIGIVIEW_XML_BUILD_DIR}/all.xml"
-    WORKING_DIRECTORY "${MAVLINK_SUBMODULE_DIR}"
+    COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=${DIGIVIEW_PYTHON_DEPS_DIR}" "${Python3_EXECUTABLE}" -m pymavlink.tools.mavgen --lang=C --wire-protocol=${DIGIVIEW_MAVLINK_WIRE_PROTOCOL} --output "${DIGIVIEW_GENERATED_MAVLINK_DIR}" "${DIGIVIEW_MAVGEN_INPUT_XML_REL}"
+    WORKING_DIRECTORY "${DIGIVIEW_MAVGEN_WORKING_DIR}"
     DEPENDS
         "${DIGIVIEW_XML_STAGE_STAMP}"
         "${MAVLINK_REQUIREMENTS_FILE}"
@@ -123,4 +129,8 @@ target_include_directories(digiview_mavlink_headers
         "${DIGIVIEW_GENERATED_INCLUDE_ROOT}"
 )
 
+message(STATUS "Using MAVLink source submodule at: ${MAVLINK_SUBMODULE_SOURCE_DIR}")
+message(STATUS "Using build-local MAVLink staging root: ${DIGIVIEW_STAGED_MAVLINK_ROOT}")
+message(STATUS "mavgen working directory: ${DIGIVIEW_MAVGEN_WORKING_DIR}")
+message(STATUS "mavgen input XML (relative): ${DIGIVIEW_MAVGEN_INPUT_XML_REL}")
 message(STATUS "DigiView MAVLink headers will be generated in: ${DIGIVIEW_GENERATED_INCLUDE_ROOT}")
