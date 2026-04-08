@@ -267,7 +267,7 @@
             <field type="uint8_t" name="missed_redetection_penalty">Score penalty when expected but not detected during tracking.</field>
         </message>
 
-        <message id="40006" name="DETECTED_ROI_PARAMETERS">
+        <message id="40006" name="TRACKED_DETECTION_PARAMETERS">
             <description>Information about a specific detection or group of detections.</description>
 
             <field type="uint8_t" name="index">Requested or returned detection index (254/255 are special values).</field>
