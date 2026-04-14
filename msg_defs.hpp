@@ -254,6 +254,14 @@ struct calibration_parameters {
 
 struct navigation_parameters {
     float altitude;
+    float visual_lat;
+    float visual_lon;
+    float next_waypoint_target_yaw;
+    float next_waypoint_target_pitch;
+    float next_waypoint_target_roll;
+    float visual_vel_x;
+    float visual_vel_y;
+    float visual_vel_z;
 };
 
 /*
@@ -626,11 +634,48 @@ inline void pack_calibration_parameters(message &msg, uint8_t cam_id, calibratio
     memcpy((void *)&msg.data[offset], &calib_status_wire, sizeof(uint8_t));
 }
 
-inline void pack_navigation_parameters(message &msg, float altitude) {
+inline void pack_navigation_parameters(
+    message &msg, float altitude, float visual_lat = 0.0f, float visual_lon = 0.0f,
+    float next_waypoint_target_yaw = 0.0f, float next_waypoint_target_pitch = 0.0f,
+    float next_waypoint_target_roll = 0.0f, float visual_vel_x = 0.0f,
+    float visual_vel_y = 0.0f, float visual_vel_z = 0.0f) {
     msg.param_type = NAVIGATION;
     uint16_t offset = 0;
     int32_t mm;
+
     mm = static_cast<int32_t>(altitude * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(visual_lat * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(visual_lon * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(next_waypoint_target_yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(next_waypoint_target_pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(next_waypoint_target_roll * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(visual_vel_x * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(visual_vel_y * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(visual_vel_z * 1000.0f);
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
@@ -1114,8 +1159,41 @@ inline void unpack_calibration_parameters(message &raw_msg, calibration_paramete
 inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters &params) {
     uint8_t offset = 0;
     int32_t mm;
+
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.altitude = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.visual_lat = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.visual_lon = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.next_waypoint_target_yaw = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.next_waypoint_target_pitch = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.next_waypoint_target_roll = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.visual_vel_x = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.visual_vel_y = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.visual_vel_z = static_cast<float>(mm) / 1000.0f;
 }
 
 // CHECK_SUM stuff

@@ -404,6 +404,14 @@ angles.</field>
             <description>Navigation parameters.</description>
 
             <field type="float" name="altitude">Navigation altitude in meters.</field>
+            <field type="float" name="visual_lat">Vision-estimated latitude in degrees.</field>
+            <field type="float" name="visual_lon">Vision-estimated longitude in degrees.</field>
+            <field type="float" name="next_waypoint_target_yaw">Next waypoint target yaw in degrees.</field>
+            <field type="float" name="next_waypoint_target_pitch">Next waypoint target pitch in degrees.</field>
+            <field type="float" name="next_waypoint_target_roll">Next waypoint target roll in degrees.</field>
+            <field type="float" name="visual_vel_x">Vision-estimated velocity X in m/s.</field>
+            <field type="float" name="visual_vel_y">Vision-estimated velocity Y in m/s.</field>
+            <field type="float" name="visual_vel_z">Vision-estimated velocity Z in m/s.</field>
         </message>
 
     </messages>
