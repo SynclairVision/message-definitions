@@ -79,6 +79,7 @@ enum MESSAGE_TYPE : uint8_t {
     DATA_ERROR,
     FORBIDDEN,
     UNKNOWN,
+    DEBUG,
     QUIT = 255,
 };
 
@@ -262,6 +263,17 @@ struct navigation_parameters {
     float visual_vel_x;
     float visual_vel_y;
     float visual_vel_z;
+};
+
+struct debug_parameters {
+    int32_t param1;
+    int32_t param2;
+    int32_t param3;
+    int32_t param4;
+    int32_t param5;
+    int32_t param6;
+    int32_t param7;
+    int32_t param8;
 };
 
 /*
@@ -679,6 +691,27 @@ inline void pack_navigation_parameters(
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
+inline void pack_debug_parameters(
+    message &msg, int32_t param1 = 0, int32_t param2 = 0, int32_t param3 = 0, int32_t param4 = 0,
+    int32_t param5 = 0, int32_t param6 = 0, int32_t param7 = 0, int32_t param8 = 0) {
+    uint16_t offset = 0;
+    memcpy((void *)&msg.data[offset], &param1, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param2, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param3, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param4, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param5, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param6, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param7, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &param8, sizeof(int32_t));
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     GET PACKING FUNCTIONS
@@ -825,6 +858,16 @@ inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, calibr
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_calibration_parameters(msg, cam_id, calib_command, CALIBRATION_STATUS_NOT_STARTED);
+}
+
+inline void pack_debug_message(
+    message &msg, int32_t param1 = 0, int32_t param2 = 0, int32_t param3 = 0, int32_t param4 = 0,
+    int32_t param5 = 0, int32_t param6 = 0, int32_t param7 = 0, int32_t param8 = 0) {
+    msg.version = VERSION;
+    msg.message_type = DEBUG;
+    msg.param_type = 0;
+    msg.interval_ms = 0;
+    pack_debug_parameters(msg, param1, param2, param3, param4, param5, param6, param7, param8);
 }
 
 /*
@@ -1194,6 +1237,25 @@ inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters
 
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.visual_vel_z = static_cast<float>(mm) / 1000.0f;
+}
+
+inline void unpack_debug_parameters(message &raw_msg, debug_parameters &params) {
+    uint16_t offset = 0;
+    memcpy((void *)&params.param1, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param2, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param3, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param4, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param5, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param6, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param7, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.param8, (void *)&raw_msg.data[offset], sizeof(int32_t));
 }
 
 // CHECK_SUM stuff
