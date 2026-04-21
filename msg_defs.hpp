@@ -1143,9 +1143,9 @@ enum CRC8TYPE{
 };
 
 struct crc8 {
-    crc8() : polynomial(0x07), init_val(0x00), final_xor(0x00), reflect_in(false), reflect_out(false) {}
+    crc8() : final_xor(0x00), init_val(0x00), polynomial(0x07), reflect_in(false), reflect_out(false) {}
     crc8(uint8_t key, uint8_t initial_value = 0x00, uint8_t final_xor_value = 0x00, bool b_reflection_in = false, bool b_reflection_out = false) : 
-                                        polynomial(key), init_val(initial_value), final_xor(final_xor_value), reflect_in(b_reflection_in), reflect_out(b_reflection_out){}
+                                        final_xor(final_xor_value), init_val(initial_value), polynomial(key), reflect_in(b_reflection_in), reflect_out(b_reflection_out){}
     crc8(int preset){
         switch (preset)
         {
