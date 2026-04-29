@@ -292,6 +292,7 @@
 
             <extensions/>
             <field type="uint16_t" name="track_id">Stable tracker id for this detection.</field>
+            <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this detection in microseconds.</field>
         </message>
 
         <message id="40007" name="CAM_TARGETING_PARAMETERS">
@@ -390,6 +391,9 @@
 angles.</field>
             <field type="float"   name="yaw_rel">Relative yaw of target in degrees.</field>
             <field type="float"   name="pitch_rel">Relative pitch of target in degrees.</field>
+
+            <extensions/>
+            <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this STT output in microseconds.</field>
         </message>
 
         <message id="40013" name="CALIBRATION_PARAMETERS">

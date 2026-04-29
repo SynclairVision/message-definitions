@@ -176,6 +176,9 @@ struct tracked_detection_parameters {
     // Appended field (v0 payload extension): stable tracker id for this detection.
     // Older senders may leave this at 0.
     uint16_t track_id;
+
+    // Appended tail field: publish timestamp for this detection in microseconds.
+    uint64_t publish_timestamp_us;
 };
 
 struct cam_targeting_parameters {
@@ -245,6 +248,9 @@ struct single_target_tracking_parameters {
     uint8_t rel_frame_of_reference;
     float yaw_rel;
     float pitch_rel;
+
+    // Appended tail field: publish timestamp for this STT output in microseconds.
+    uint64_t publish_timestamp_us;
 };
 
 struct calibration_parameters {
@@ -420,7 +426,8 @@ inline void pack_detection_parameters(
 
 inline void pack_tracked_detection_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height, uint16_t track_id = 0) {
+    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height,
+    uint16_t track_id = 0, uint64_t publish_timestamp_us = 0) {
     msg.param_type = TRACKED_DETECTION;
     uint16_t offset = 0;
     int32_t mrad;
@@ -467,6 +474,8 @@ inline void pack_tracked_detection_parameters(
     offset += sizeof(int32_t);
     // Keep this field appended for backward compatibility with older receivers.
     memcpy((void *)&msg.data[offset], &track_id, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
 }
 
 inline void pack_cam_targeting_parameters(
@@ -594,7 +603,7 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
 inline void pack_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel) {
+    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0) {
 
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
@@ -632,6 +641,8 @@ inline void pack_single_target_tracking_parameters(
     offset += sizeof(int32_t);
     mrad = static_cast<int32_t>(pitch_rel * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
 }
 
 inline void pack_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command, calibration_status calib_status) {
@@ -1027,8 +1038,11 @@ inline void unpack_tracked_detection_parameters(message &raw_msg, tracked_detect
     
     offset += sizeof(int32_t);
     params.track_id = 0;
-    // Appended optional field: tolerant parsing for older payloads.
+    // Appended tail fields stay within the fixed-size message::data payload.
     memcpy(&params.track_id, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    params.publish_timestamp_us = 0;
+    memcpy(&params.publish_timestamp_us, (void *)&raw_msg.data[offset], sizeof(uint64_t));
 }
 
 inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_parameters &params) {
@@ -1184,6 +1198,9 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    params.publish_timestamp_us = 0;
+    memcpy((void *)&params.publish_timestamp_us, (void *)&raw_msg.data[offset], sizeof(uint64_t));
 }
 
 inline void unpack_calibration_parameters(message &raw_msg, calibration_parameters &params) {
