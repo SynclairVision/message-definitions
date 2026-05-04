@@ -4,6 +4,7 @@
 #define MSG_DEFS_HPP
 
 #include <cstring>
+#include <cstddef>
 #include <string.h>
 #include <inttypes.h>
 #include <stdint.h>
@@ -34,6 +35,7 @@ inline EnumType u8_to_enum(uint8_t value) {
 static_assert(sizeof(app_status) == sizeof(uint8_t), "app_status must stay uint8_t-sized");
 static_assert(sizeof(View::TargetingMode) == sizeof(uint8_t), "View::TargetingMode must stay uint8_t-sized");
 static_assert(sizeof(single_target_tracker_command) == sizeof(uint8_t), "single_target_tracker_command must stay uint8_t-sized");
+static_assert(sizeof(single_target_tracking_status) == sizeof(uint8_t), "single_target_tracking_status must stay uint8_t-sized");
 static_assert(sizeof(calibration_command) == sizeof(uint8_t), "calibration_command must stay uint8_t-sized");
 static_assert(sizeof(calibration_status) == sizeof(uint8_t), "calibration_status must stay uint8_t-sized");
 
@@ -251,6 +253,9 @@ struct single_target_tracking_parameters {
 
     // Appended tail field: publish timestamp for this STT output in microseconds.
     uint64_t publish_timestamp_us;
+
+    // Appended tail field: runtime STT status for GET/current output semantics.
+    single_target_tracking_status status = single_target_tracking_status::OFF;
 };
 
 struct calibration_parameters {
@@ -603,11 +608,13 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
 inline void pack_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0) {
+    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0,
+    single_target_tracking_status status = single_target_tracking_status::OFF) {
 
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
     int32_t mrad;
+    uint8_t status_wire = enum_to_u8(status);
     uint8_t command_wire = enum_to_u8(command);
     memcpy((void *)&msg.data[offset], &command_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -643,6 +650,8 @@ inline void pack_single_target_tracking_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
     memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    memcpy((void *)&msg.data[offset], &status_wire, sizeof(uint8_t));
 }
 
 inline void pack_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command, calibration_status calib_status) {
@@ -1164,6 +1173,7 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     uint8_t offset = 0;
     int32_t mrad;
     int16_t offs_int;
+    uint8_t status_wire;
     uint8_t command_wire;
     memcpy((void *)&command_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.command = u8_to_enum<single_target_tracker_command>(command_wire);
@@ -1201,6 +1211,15 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     offset += sizeof(int32_t);
     params.publish_timestamp_us = 0;
     memcpy((void *)&params.publish_timestamp_us, (void *)&raw_msg.data[offset], sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    params.status = single_target_tracking_status::OFF;
+    status_wire = enum_to_u8(single_target_tracking_status::OFF);
+    if (offset + sizeof(uint8_t) <= PARAMCOUNT) {
+        memcpy((void *)&status_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+        if (status_wire <= enum_to_u8(single_target_tracking_status::DROPPED)) {
+            params.status = u8_to_enum<single_target_tracking_status>(status_wire);
+        }
+    }
 }
 
 inline void unpack_calibration_parameters(message &raw_msg, calibration_parameters &params) {

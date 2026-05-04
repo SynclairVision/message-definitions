@@ -136,6 +136,22 @@
       </entry>
     </enum>
 
+    <enum name="SV_SINGLE_TARGET_TRACKING_STATUS">
+      <description>Single target tracker runtime status (single_target_tracking_status).</description>
+      <entry value="0" name="SV_STT_STATUS_OFF">
+        <description>Tracking is off.</description>
+      </entry>
+      <entry value="1" name="SV_STT_STATUS_INIT">
+        <description>Tracking is initializing from the requested target.</description>
+      </entry>
+      <entry value="2" name="SV_STT_STATUS_RUNNING">
+        <description>Tracking has a live measured slot-0 target.</description>
+      </entry>
+      <entry value="3" name="SV_STT_STATUS_DROPPED">
+        <description>Tracking is active but the live slot-0 target was dropped.</description>
+      </entry>
+    </enum>
+
     <enum name="SV_CALIBRATION_COMMAND">
       <description>Calibration command (calibration_command).</description>
       <entry value="0" name="SV_CALIBRATION_CMD_NONE">
@@ -394,6 +410,7 @@ angles.</field>
 
             <extensions/>
             <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this STT output in microseconds.</field>
+            <field type="uint8_t" name="status" enum="SV_SINGLE_TARGET_TRACKING_STATUS">Runtime STT status for GET/current output semantics.</field>
         </message>
 
         <message id="40013" name="CALIBRATION_PARAMETERS">
