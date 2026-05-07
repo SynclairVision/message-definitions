@@ -274,6 +274,7 @@ struct navigation_parameters {
     float visual_vel_x;
     float visual_vel_y;
     float visual_vel_z;
+    float desired_thrust;
 };
 
 struct debug_parameters {
@@ -670,7 +671,7 @@ inline void pack_navigation_parameters(
     message &msg, float altitude, float visual_lat = 0.0f, float visual_lon = 0.0f,
     float next_waypoint_target_yaw = 0.0f, float next_waypoint_target_pitch = 0.0f,
     float next_waypoint_target_roll = 0.0f, float visual_vel_x = 0.0f,
-    float visual_vel_y = 0.0f, float visual_vel_z = 0.0f) {
+    float visual_vel_y = 0.0f, float visual_vel_z = 0.0f, float desired_thrust = 0.0f) {
     msg.param_type = NAVIGATION;
     uint16_t offset = 0;
     int32_t mm;
@@ -708,6 +709,10 @@ inline void pack_navigation_parameters(
     offset += sizeof(int32_t);
 
     mm = static_cast<int32_t>(visual_vel_z * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    mm = static_cast<int32_t>(desired_thrust * 1000.0f);
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
@@ -1273,6 +1278,10 @@ inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters
 
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.visual_vel_z = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.desired_thrust = static_cast<float>(mm) / 1000.0f;
 }
 
 inline void unpack_debug_parameters(message &raw_msg, debug_parameters &params) {
