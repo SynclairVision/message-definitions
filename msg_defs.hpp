@@ -256,6 +256,9 @@ struct single_target_tracking_parameters {
 
     // Appended tail field: runtime STT status for GET/current output semantics.
     single_target_tracking_status status = single_target_tracking_status::OFF;
+
+    // Appended tail field: request DigiView to lock the current target.
+    bool lock_target = false;
 };
 
 struct calibration_parameters {
@@ -609,7 +612,7 @@ inline void pack_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0,
-    single_target_tracking_status status = single_target_tracking_status::OFF) {
+    single_target_tracking_status status = single_target_tracking_status::OFF, bool lock_target = false) {
 
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
@@ -652,6 +655,9 @@ inline void pack_single_target_tracking_parameters(
     memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
     offset += sizeof(uint64_t);
     memcpy((void *)&msg.data[offset], &status_wire, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    const uint8_t lock_target_wire = lock_target ? 1U : 0U;
+    memcpy((void *)&msg.data[offset], &lock_target_wire, sizeof(uint8_t));
 }
 
 inline void pack_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command, calibration_status calib_status) {
@@ -867,11 +873,12 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 inline void pack_set_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel) {
+    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, bool lock_target = false) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
-        detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel);
+        detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel,
+        0, single_target_tracking_status::OFF, lock_target);
 }
 
 inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command) {
@@ -1175,6 +1182,7 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     int16_t offs_int;
     uint8_t status_wire;
     uint8_t command_wire;
+    uint8_t lock_target_wire;
     memcpy((void *)&command_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.command = u8_to_enum<single_target_tracker_command>(command_wire);
     offset += sizeof(uint8_t);
@@ -1219,6 +1227,14 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
         if (status_wire <= enum_to_u8(single_target_tracking_status::DROPPED)) {
             params.status = u8_to_enum<single_target_tracking_status>(status_wire);
         }
+        offset += sizeof(uint8_t);
+    }
+
+    params.lock_target = false;
+    lock_target_wire = 0;
+    if (offset + sizeof(uint8_t) <= PARAMCOUNT) {
+        memcpy((void *)&lock_target_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+        params.lock_target = lock_target_wire != 0;
     }
 }
 
