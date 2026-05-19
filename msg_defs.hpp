@@ -200,6 +200,9 @@ struct cam_targeting_parameters {
     // Appended field (v0 payload extension): locked detection id for DETECTION mode.
     // -1 means no detection lock.
     int16_t detection_id;
+
+    // Appended tail field: request DigiView to lock the current target.
+    bool lock_target = false;
 };
 
 struct cam_optics_and_control_parameters {
@@ -489,7 +492,7 @@ inline void pack_tracked_detection_parameters(
 inline void pack_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, int16_t detection_id = -1) {
+    float target_longitude, float target_altitude, int16_t detection_id = -1, bool lock_target = false) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
@@ -530,6 +533,8 @@ inline void pack_cam_targeting_parameters(
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
     memcpy((void *)&msg.data[offset], &detection_id, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
 }
 
 inline void pack_cam_optics_and_control_parameters(
@@ -840,13 +845,13 @@ inline void pack_set_detection_parameters(
 inline void pack_set_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, int16_t detection_id = -1) {
+    float target_longitude, float target_altitude, int16_t detection_id = -1, bool lock_target = false) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_targeting_parameters(
         msg, stream_name, cam_id, targeting_mode, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
-        target_latitude, target_longitude, target_altitude, detection_id);
+        target_latitude, target_longitude, target_altitude, detection_id, lock_target);
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
@@ -1104,6 +1109,9 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     params.detection_id = -1;
     // Appended optional field: tolerant parsing for older payloads.
     memcpy((void *)&params.detection_id, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    offset += sizeof(int16_t);
+    params.lock_target = false;
+    memcpy((void *)&params.lock_target, (void *)&raw_msg.data[offset], sizeof(bool));
 }
 
 inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optics_and_control_parameters &params) {
