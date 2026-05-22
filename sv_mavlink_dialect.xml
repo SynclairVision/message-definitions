@@ -433,6 +433,7 @@ angles.</field>
             <field type="float" name="visual_vel_x">Vision-estimated velocity X in m/s.</field>
             <field type="float" name="visual_vel_y">Vision-estimated velocity Y in m/s.</field>
             <field type="float" name="visual_vel_z">Vision-estimated velocity Z in m/s.</field>
+            <field type="float" name="desired_thrust">Desired thrust command.</field>
         </message>
 
     </messages>
