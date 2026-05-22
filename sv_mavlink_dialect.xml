@@ -125,13 +125,7 @@
       <entry value="1" name="SV_STT_CMD_SET_TARGET_VECTOR">
         <description>Set target from offsets and angles.</description>
       </entry>
-      <entry value="2" name="SV_STT_CMD_SET_TARGET_DETECTION">
-        <description>Set target from detection id.</description>
-      </entry>
-      <entry value="3" name="SV_STT_CMD_NUDGE">
-        <description>Nudge active target.</description>
-      </entry>
-      <entry value="4" name="SV_STT_CMD_NONE">
+      <entry value="2" name="SV_STT_CMD_NONE">
         <description>No-op command.</description>
       </entry>
     </enum>
@@ -334,6 +328,7 @@
 
             <extensions/>
             <field type="int16_t" name="detection_id">Detection id for DETECTION targeting mode; -1 clears lock.</field>
+            <field type="uint8_t" name="lock_target">Request DigiView to lock the current target.</field>
         </message>
 
         <message id="40008" name="CAM_OPTICS_AND_CONTROL_PARAMETERS">
@@ -411,6 +406,7 @@ angles.</field>
             <extensions/>
             <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this STT output in microseconds.</field>
             <field type="uint8_t" name="status" enum="SV_SINGLE_TARGET_TRACKING_STATUS">Runtime STT status for GET/current output semantics.</field>
+            <field type="uint8_t" name="lock_target">Request DigiView to lock the current target.</field>
         </message>
 
         <message id="40013" name="CALIBRATION_PARAMETERS">
