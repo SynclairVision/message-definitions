@@ -181,6 +181,10 @@ struct tracked_detection_parameters {
 
     // Appended tail field: publish timestamp for this detection in microseconds.
     uint64_t publish_timestamp_us;
+
+    // Appended tail field: displayed AI-view slot id.
+    // Wire value 0 means unavailable/legacy sender. Otherwise wire value is view_id + 1.
+    uint8_t view_id = UINT8_MAX;
 };
 
 struct cam_targeting_parameters {
@@ -438,7 +442,7 @@ inline void pack_detection_parameters(
 inline void pack_tracked_detection_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height,
-    uint16_t track_id = 0, uint64_t publish_timestamp_us = 0) {
+    uint16_t track_id = 0, uint64_t publish_timestamp_us = 0, uint8_t view_id = UINT8_MAX) {
     msg.param_type = TRACKED_DETECTION;
     uint16_t offset = 0;
     int32_t mrad;
@@ -487,6 +491,9 @@ inline void pack_tracked_detection_parameters(
     memcpy((void *)&msg.data[offset], &track_id, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    const uint8_t view_id_wire = view_id == UINT8_MAX ? 0U : static_cast<uint8_t>(view_id + 1U);
+    memcpy((void *)&msg.data[offset], &view_id_wire, sizeof(uint8_t));
 }
 
 inline void pack_cam_targeting_parameters(
@@ -1064,6 +1071,13 @@ inline void unpack_tracked_detection_parameters(message &raw_msg, tracked_detect
     offset += sizeof(uint16_t);
     params.publish_timestamp_us = 0;
     memcpy(&params.publish_timestamp_us, (void *)&raw_msg.data[offset], sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    params.view_id = UINT8_MAX;
+    uint8_t view_id_wire = 0;
+    memcpy(&view_id_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    if (view_id_wire > 0) {
+        params.view_id = static_cast<uint8_t>(view_id_wire - 1U);
+    }
 }
 
 inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_parameters &params) {
