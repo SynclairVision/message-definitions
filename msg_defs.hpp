@@ -12,8 +12,8 @@
 #include "digiview_commons/public_enums.hpp"
 
 static constexpr uint32_t PARAMCOUNT            = 64;
-static constexpr uint32_t VERSION               = 0x01;
-static constexpr uint32_t CAM_TARGETING_TRACK_ID_VERSION = 0x01;
+static constexpr uint32_t VERSION               = 0x00;
+static constexpr uint32_t CAM_TARGETING_TRACK_ID_MAGIC = 0x43544b31U;
 
 static constexpr float    U16_MAX_F             = 65535.0f;
 static constexpr float    S16_MAX_F             = 32767.0f;
@@ -211,6 +211,7 @@ struct cam_targeting_parameters {
     bool lock_target = false;
 
     // Appended tail field: direct tracker identity for DETECTION mode.
+    // This is only honored when the appended CAM_TARGETING magic marker matches.
     // 0 means unavailable/legacy sender or "use detection_id/view_id".
     uint16_t track_id = 0;
 };
@@ -549,6 +550,8 @@ inline void pack_cam_targeting_parameters(
     offset += sizeof(int16_t);
     memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
     offset += sizeof(bool);
+    memcpy((void *)&msg.data[offset], &CAM_TARGETING_TRACK_ID_MAGIC, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
     memcpy((void *)&msg.data[offset], &track_id, sizeof(uint16_t));
 }
 
@@ -1136,7 +1139,10 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     memcpy((void *)&params.lock_target, (void *)&raw_msg.data[offset], sizeof(bool));
     offset += sizeof(bool);
     params.track_id = 0;
-    if (raw_msg.version >= CAM_TARGETING_TRACK_ID_VERSION) {
+    uint32_t track_id_magic = 0;
+    memcpy((void *)&track_id_magic, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    if (track_id_magic == CAM_TARGETING_TRACK_ID_MAGIC) {
         memcpy((void *)&params.track_id, (void *)&raw_msg.data[offset], sizeof(uint16_t));
     }
 }
