@@ -13,7 +13,6 @@
 
 static constexpr uint32_t PARAMCOUNT            = 64;
 static constexpr uint32_t VERSION               = 0x00;
-
 static constexpr float    U16_MAX_F             = 65535.0f;
 static constexpr float    S16_MAX_F             = 32767.0f;
 
@@ -181,6 +180,10 @@ struct tracked_detection_parameters {
 
     // Appended tail field: publish timestamp for this detection in microseconds.
     uint64_t publish_timestamp_us;
+
+    // Appended tail field: displayed AI-view slot id.
+    // Wire value 0 means unavailable/legacy sender. Otherwise wire value is view_id + 1.
+    uint8_t view_id = UINT8_MAX;
 };
 
 struct cam_targeting_parameters {
@@ -197,9 +200,17 @@ struct cam_targeting_parameters {
     float   target_latitude;
     float   target_longitude;
     float   target_altitude;
-    // Appended field (v0 payload extension): locked detection id for DETECTION mode.
+    // Appended field (v0 payload extension): direct tracker identity for DETECTION mode.
+    // 0 means unavailable or "use view_id".
+    uint16_t track_id = 0;
+
+    // Appended tail field: locked displayed AI-view slot id for DETECTION mode.
+    // This is the returned overlay/view identity, not the dense tracker track_id.
     // -1 means no detection lock.
-    int16_t detection_id;
+    int16_t view_id = -1;
+
+    // Appended tail field: request DigiView to lock the current target.
+    bool lock_target = false;
 };
 
 struct cam_optics_and_control_parameters {
@@ -256,6 +267,9 @@ struct single_target_tracking_parameters {
 
     // Appended tail field: runtime STT status for GET/current output semantics.
     single_target_tracking_status status = single_target_tracking_status::OFF;
+
+    // Appended tail field: request DigiView to lock the current target.
+    bool lock_target = false;
 };
 
 struct calibration_parameters {
@@ -432,7 +446,7 @@ inline void pack_detection_parameters(
 inline void pack_tracked_detection_parameters(
     message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height,
-    uint16_t track_id = 0, uint64_t publish_timestamp_us = 0) {
+    uint16_t track_id = 0, uint64_t publish_timestamp_us = 0, uint8_t view_id = UINT8_MAX) {
     msg.param_type = TRACKED_DETECTION;
     uint16_t offset = 0;
     int32_t mrad;
@@ -481,12 +495,15 @@ inline void pack_tracked_detection_parameters(
     memcpy((void *)&msg.data[offset], &track_id, sizeof(uint16_t));
     offset += sizeof(uint16_t);
     memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    const uint8_t view_id_wire = view_id == UINT8_MAX ? 0U : static_cast<uint8_t>(view_id + 1U);
+    memcpy((void *)&msg.data[offset], &view_id_wire, sizeof(uint8_t));
 }
 
 inline void pack_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, int16_t detection_id = -1) {
+    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
@@ -526,7 +543,11 @@ inline void pack_cam_targeting_parameters(
     mrad = static_cast<int32_t>(target_altitude * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    memcpy((void *)&msg.data[offset], &detection_id, sizeof(int16_t));
+    memcpy((void *)&msg.data[offset], &track_id, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    memcpy((void *)&msg.data[offset], &view_id, sizeof(int16_t));
+    offset += sizeof(int16_t);
+    memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
 }
 
 inline void pack_cam_optics_and_control_parameters(
@@ -609,7 +630,7 @@ inline void pack_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0,
-    single_target_tracking_status status = single_target_tracking_status::OFF) {
+    single_target_tracking_status status = single_target_tracking_status::OFF, bool lock_target = false) {
 
     msg.param_type = SINGLE_TARGET_TRACKING;
     uint16_t offset = 0;
@@ -652,6 +673,9 @@ inline void pack_single_target_tracking_parameters(
     memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
     offset += sizeof(uint64_t);
     memcpy((void *)&msg.data[offset], &status_wire, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    const uint8_t lock_target_wire = lock_target ? 1U : 0U;
+    memcpy((void *)&msg.data[offset], &lock_target_wire, sizeof(uint8_t));
 }
 
 inline void pack_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command, calibration_status calib_status) {
@@ -834,13 +858,13 @@ inline void pack_set_detection_parameters(
 inline void pack_set_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, int16_t detection_id = -1) {
+    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_targeting_parameters(
         msg, stream_name, cam_id, targeting_mode, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
-        target_latitude, target_longitude, target_altitude, detection_id);
+        target_latitude, target_longitude, target_altitude, track_id, view_id, lock_target);
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
@@ -867,11 +891,12 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 inline void pack_set_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel) {
+    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, bool lock_target = false) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
-        detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel);
+        detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel,
+        0, single_target_tracking_status::OFF, lock_target);
 }
 
 inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command) {
@@ -1052,6 +1077,13 @@ inline void unpack_tracked_detection_parameters(message &raw_msg, tracked_detect
     offset += sizeof(uint16_t);
     params.publish_timestamp_us = 0;
     memcpy(&params.publish_timestamp_us, (void *)&raw_msg.data[offset], sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    params.view_id = UINT8_MAX;
+    uint8_t view_id_wire = 0;
+    memcpy(&view_id_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    if (view_id_wire > 0) {
+        params.view_id = static_cast<uint8_t>(view_id_wire - 1U);
+    }
 }
 
 inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_parameters &params) {
@@ -1094,9 +1126,14 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.target_altitude = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
-    params.detection_id = -1;
-    // Appended optional field: tolerant parsing for older payloads.
-    memcpy((void *)&params.detection_id, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    params.track_id = 0;
+    memcpy((void *)&params.track_id, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    params.view_id = -1;
+    memcpy((void *)&params.view_id, (void *)&raw_msg.data[offset], sizeof(int16_t));
+    offset += sizeof(int16_t);
+    params.lock_target = false;
+    memcpy((void *)&params.lock_target, (void *)&raw_msg.data[offset], sizeof(bool));
 }
 
 inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optics_and_control_parameters &params) {
@@ -1175,6 +1212,7 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     int16_t offs_int;
     uint8_t status_wire;
     uint8_t command_wire;
+    uint8_t lock_target_wire;
     memcpy((void *)&command_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.command = u8_to_enum<single_target_tracker_command>(command_wire);
     offset += sizeof(uint8_t);
@@ -1219,6 +1257,14 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
         if (status_wire <= enum_to_u8(single_target_tracking_status::DROPPED)) {
             params.status = u8_to_enum<single_target_tracking_status>(status_wire);
         }
+        offset += sizeof(uint8_t);
+    }
+
+    params.lock_target = false;
+    lock_target_wire = 0;
+    if (offset + sizeof(uint8_t) <= PARAMCOUNT) {
+        memcpy((void *)&lock_target_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+        params.lock_target = lock_target_wire != 0;
     }
 }
 
