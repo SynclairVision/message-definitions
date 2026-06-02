@@ -228,7 +228,7 @@
         <message id="40003" name="VIDEO_OUTPUT_PARAMETERS">
             <description>Output resolution, layout and detection overlay geometry.</description>
 
-            <field type="char[8]"      name="stream_name">Stream name.</field>
+            <field type="char[16]"      name="stream_name">Stream name.</field>
 
             <field type="uint16_t"     name="width">Total output width in pixels.</field>
             <field type="uint16_t"     name="height">Total output height in pixels.</field>
@@ -256,7 +256,7 @@
         <message id="40004" name="CAPTURE_PARAMETERS">
             <description>Capture of still images and video per stream.</description>
 
-            <field type="char[8]" name="stream_name">Stream name.</field>
+            <field type="char[16]" name="stream_name">Stream name.</field>
 
             <field type="uint8_t" name="cap_single_image">1 to capture a single still image.</field>
             <field type="uint8_t" name="record_video">1 to start/continue video recording, 0 to stop.</field>
@@ -314,7 +314,7 @@
         <message id="40007" name="CAM_TARGETING_PARAMETERS">
             <description>User camera targeting by angles, coordinates or detection.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="uint8_t" name="targeting_mode" enum="SV_TARGETING_MODE">Camera targeting mode.</field>
@@ -339,7 +339,7 @@
         <message id="40008" name="CAM_OPTICS_AND_CONTROL_PARAMETERS">
             <description>Optical controls for user cameras, including zoom and FOV.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="int8_t"  name="zoom">Zoom control, -127..127 (negative=zoom out, positive=zoom in).</field>
             <field type="float"   name="fov">Field of view in degrees (typical range ~[1, 180.0]).</field>
@@ -349,7 +349,7 @@
         <message id="40009" name="CAM_OFFSET_PARAMETERS">
             <description>Maps normalized offsets in the view to yaw/pitch directions.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
 
@@ -375,7 +375,7 @@
         <message id="40011" name="CAM_DEPTH_ESTIMATION_PARAMETERS">
             <description>Depth estimation configuration per camera.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="uint8_t" name="depth_estimation_mode">Depth estimation mode.</field>
@@ -389,7 +389,7 @@
 
             <field type="uint8_t"  name="command" enum="SV_SINGLE_TARGET_TRACKER_COMMAND">Tracking command.</field>
 
-            <field type="char[8]"  name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]"  name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t"  name="cam_id">Camera index on the stream.</field>
 

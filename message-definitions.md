@@ -21,6 +21,9 @@ Some parameter groups are read-only, some are writable, and some are defined but
 
 The native DigiView message contains these top-level fields:
 
+Current native protocol version is `0x00`.
+This version uses `stream_name` as `char[16]` and `data[72]`.
+
 | Name | Type | Description |
 |---|---|---|
 | `timestamp` | `uint64_t` | Message timestamp |
@@ -28,7 +31,7 @@ The native DigiView message contains these top-level fields:
 | `message_type` | `uint8_t` | Message action/result type |
 | `param_type` | `uint8_t` | Parameter group |
 | `interval_ms` | `uint16_t` | Optional repeat interval for recurring GET requests |
-| `data[64]` | `uint8_t[]` | Payload for the selected parameter group |
+| `data[72]` | `uint8_t[]` | Payload for the selected parameter group |
 | `checksum` | `uint8_t[]` | Message checksum |
 
 ### Message types
@@ -79,10 +82,10 @@ In DigiView 0.6, recurring updates use the base field `interval_ms`.
 
 ### `stream_name`
 
-Many messages include `stream_name` as `char[8]`.
+Many messages include `stream_name` as `char[16]`.
 
 - Use it to select which output stream a message applies to.
-- The maximum length is 8 characters.
+- The maximum length is 16 characters.
 - For some GET requests, an empty stream name returns data for all streams.
 
 ### `cam_id`
@@ -191,7 +194,7 @@ Control stream resolution and layout, and read back current output geometry.
 
 | Field | Type | Notes |
 |---|---|---|
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `width` | `uint16_t` | Output width |
 | `height` | `uint16_t` | Output height |
 | `fps` | `uint8_t` | Target frame rate |
@@ -241,7 +244,7 @@ Control video recording per stream.
 
 | Field | Type | Notes |
 |---|---|---|
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `cap_single_image` | `bool` | Defined in the protocol |
 | `record_video` | `bool` | Start or stop recording |
 | `images_captured` | `uint16_t` | Defined for reporting |
@@ -320,7 +323,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 
 | Field | Type | Notes |
 |---|---|---|
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `targeting_mode` | `uint8_t` | Aiming mode |
 | `euler_delta` | `bool` | Treat yaw/pitch/roll as relative changes |
@@ -367,7 +370,7 @@ Control camera FOV and relative zoom.
 
 | Field | Type | Notes |
 |---|---|---|
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `zoom` | `int8_t` | Relative zoom command |
 | `fov` | `float` | Field of view in degrees |
@@ -398,7 +401,7 @@ Convert a point inside a camera view into global and relative angles.
 
 | Field | Type | Notes |
 |---|---|---|
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `x` | `float` | Normalized horizontal offset |
 | `y` | `float` | Normalized vertical offset |
@@ -440,7 +443,7 @@ This parameter group is defined in the protocol.
 
 | Field | Type | Notes |
 |---|---|---|
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `depth_estimation_mode` | `uint8_t` | Mode value |
 | `depth` | `float` | Returned depth |
@@ -459,7 +462,7 @@ Control and monitor DigiView's single target tracking mode.
 | Field | Type | Notes |
 |---|---|---|
 | `command` | `uint8_t` | Tracking command |
-| `stream_name` | `char[8]` | Selected stream |
+| `stream_name` | `char[16]` | Selected stream |
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `x_offset` | `float` | Normalized horizontal target offset |
 | `y_offset` | `float` | Normalized vertical target offset |

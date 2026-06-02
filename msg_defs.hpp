@@ -3,15 +3,17 @@
 #ifndef MSG_DEFS_HPP
 #define MSG_DEFS_HPP
 
+#include <algorithm>
 #include <cstring>
 #include <cstddef>
 #include <string.h>
+#include <string_view>
 #include <inttypes.h>
 #include <stdint.h>
 
 #include "digiview_commons/public_enums.hpp"
 
-static constexpr uint32_t PARAMCOUNT            = 64;
+static constexpr uint32_t PARAMCOUNT            = 72;
 static constexpr uint32_t VERSION               = 0x00;
 static constexpr float    U16_MAX_F             = 65535.0f;
 static constexpr float    S16_MAX_F             = 32767.0f;
@@ -19,7 +21,35 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
-static constexpr uint32_t STREAM_NAME_SIZE      = 8;
+static constexpr uint32_t STREAM_NAME_SIZE      = 16;
+
+inline std::string_view stream_name_view(const char *stream_name) {
+    const char *const stream_name_end =
+        std::find(stream_name, stream_name + STREAM_NAME_SIZE, '\0');
+    return {
+        stream_name,
+        static_cast<size_t>(stream_name_end - stream_name)
+    };
+}
+
+inline std::string_view stream_name_source_view(const char *stream_name) {
+    return stream_name == nullptr ? std::string_view{} : std::string_view(stream_name);
+}
+
+template <size_t N>
+inline std::string_view stream_name_source_view(const char (&stream_name)[N]) {
+    const char *const stream_name_end =
+        std::find(stream_name, stream_name + N, '\0');
+    return {
+        stream_name,
+        static_cast<size_t>(stream_name_end - stream_name)
+    };
+}
+
+inline void copy_stream_name_field(uint8_t *dst, std::string_view stream_name) {
+    memset(dst, 0, STREAM_NAME_SIZE);
+    memcpy(dst, stream_name.data(), std::min(stream_name.size(), static_cast<size_t>(STREAM_NAME_SIZE)));
+}
 
 template <typename EnumType>
 inline uint8_t enum_to_u8(EnumType value) {
@@ -355,13 +385,14 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
     memcpy((void *)&msg.data[0], model_name, 16);
 }
 
+template <typename StreamName>
 inline void pack_video_output_parameters(
-    message &msg, const char *stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
+    message &msg, StreamName &&stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
     uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint16_t offset = 0;
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &width, sizeof(uint16_t));
     offset += sizeof(uint16_t);
@@ -393,13 +424,14 @@ inline void pack_video_output_parameters(
     memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
 }
 
-inline void pack_capture_parameters(message &msg, const char *stream_name, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
+template <typename StreamName>
+inline void pack_capture_parameters(message &msg, StreamName &&stream_name, bool pic, bool vid, uint16_t num_pics = 0, uint16_t num_vids = 0) {
     msg.param_type     = CAPTURE;
     uint16_t offset     = 0;
     uint8_t cap_flags  = 0x0;
     cap_flags         |= static_cast<uint8_t>(pic ? CAP_FLAG_SINGLE_IMAGE : 0);
     cap_flags         |= static_cast<uint8_t>(vid ? CAP_FLAG_VIDEO : 0);
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cap_flags, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -500,15 +532,16 @@ inline void pack_tracked_detection_parameters(
     memcpy((void *)&msg.data[offset], &view_id_wire, sizeof(uint8_t));
 }
 
+template <typename StreamName>
 inline void pack_cam_targeting_parameters(
-    message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
+    message &msg, StreamName &&stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
     float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
     int32_t mrad;
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(cam_id);
@@ -550,11 +583,12 @@ inline void pack_cam_targeting_parameters(
     memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
 }
 
+template <typename StreamName>
 inline void pack_cam_optics_and_control_parameters(
-    message &msg, const char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+    message &msg, StreamName &&stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
     msg.param_type = CAM_OPTICS_AND_CONTROL;
     uint16_t offset = 0;
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -566,13 +600,14 @@ inline void pack_cam_optics_and_control_parameters(
     memcpy((void *)&msg.data[offset], &crop_mode, sizeof(uint8_t));
 }
 
+template <typename StreamName>
 inline void pack_cam_offset_parameters(
-    message &msg, const char *stream_name, uint8_t cam, float x, float y, float yaw_global = 0, float pitch_global = 0, float yaw_rel = 0, float pitch_rel = 0) {
+    message &msg, StreamName &&stream_name, uint8_t cam, float x, float y, float yaw_global = 0, float pitch_global = 0, float yaw_rel = 0, float pitch_rel = 0) {
     msg.param_type = CAM_OFFSET;
     uint16_t offset = 0;
     int16_t offs_int;
     int32_t mrad;
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam, sizeof(uint8_t));
     offset   += sizeof(uint8_t);
@@ -612,11 +647,12 @@ inline void pack_sensor_parameters(
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
-inline void pack_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
+template <typename StreamName>
+inline void pack_cam_depth_estimation_parameters(message &msg, StreamName &&stream_name, uint8_t cam_id, uint8_t depth_estimation_mode, float depth) {
     msg.param_type = CAM_DEPTH_ESTIMATION;
     uint16_t offset = 0;
     int32_t mm;
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -626,8 +662,9 @@ inline void pack_cam_depth_estimation_parameters(message &msg, const char *strea
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
 }
 
+template <typename StreamName>
 inline void pack_single_target_tracking_parameters(
-    message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
+    message &msg, single_target_tracker_command command, StreamName &&stream_name, uint8_t cam_id, float x_offset, float y_offset,
     uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
     uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0,
     single_target_tracking_status status = single_target_tracking_status::OFF, bool lock_target = false) {
@@ -639,7 +676,7 @@ inline void pack_single_target_tracking_parameters(
     uint8_t command_wire = enum_to_u8(command);
     memcpy((void *)&msg.data[offset], &command_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], stream_name, STREAM_NAME_SIZE);
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&msg.data[offset], &cam_id, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -770,7 +807,7 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, const char *st
     msg.message_type = GET_PARAMETERS;
     msg.param_type   = param_type;
     if (stream_name != nullptr) {
-        memcpy((void *)&msg.data[0], stream_name, STREAM_NAME_SIZE);
+        copy_stream_name_field(&msg.data[0], stream_name_source_view(stream_name));
     } else {
         memset((void *)&msg.data[0], 0, STREAM_NAME_SIZE);
     }
