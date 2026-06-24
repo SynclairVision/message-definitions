@@ -15,7 +15,7 @@ DigiView exposes parameter-based messages. A client typically:
 2. sends a `SET_PARAMETERS` message to change supported fields
 3. receives `CURRENT_PARAMETERS` as the normal response containing the current values
 
-Some parameter groups are read-only, some are writable, and some are defined but only partly active in DigiView 0.6.
+Some parameter groups are read-only, some are writable, and some exist in the message format but are only partly active in DigiView 0.6.
 
 ## Base message structure
 
@@ -30,9 +30,9 @@ This version uses `stream_name` as `char[16]` and `data[72]`.
 | `version` | `uint8_t` | Message definition version |
 | `message_type` | `uint8_t` | Message action/result type |
 | `param_type` | `uint8_t` | Parameter group |
-| `interval_ms` | `uint16_t` | Optional repeat interval for recurring GET requests |
+| `interval_ms` | `uint32_t` | Optional repeat interval for recurring GET requests |
 | `data[72]` | `uint8_t[]` | Payload for the selected parameter group |
-| `checksum` | `uint8_t[]` | Message checksum |
+| `checksum` | `uint8_t` | Message checksum |
 
 ### Message types
 
@@ -68,15 +68,15 @@ In DigiView 0.6, recurring updates use the base field `interval_ms`.
 | 3 | `VIDEO_OUTPUT` | Yes | Yes | Stream layout and output settings |
 | 4 | `CAPTURE` | Yes | Yes | Recording control |
 | 5 | `DETECTION` | Yes | Yes | Detection thresholds and score tuning |
-| 6 | `DETECTED_ROI` | Yes | No | Information about current detections |
-| 7 | `CAM_TARGETING` | Yes | Yes | Camera aiming and lock modes |
-| 8 | `CAM_OPTICS_AND_CONTROL` | Yes | Yes | Camera FOV and zoom control |
-| 9 | `CAM_OFFSET` | Yes | No | Convert a point in the view into angles |
-| 10 | `SENSOR` | Yes | Yes | Sensor exposure, gain, brightness |
-| 11 | `CAM_DEPTH_ESTIMATION` | Defined | Defined | Reserved for depth estimation control |
-| 12 | `SINGLE_TARGET_TRACKING` | Yes | Yes | Single-target-tracking control and status |
-| 13 | `CALIBRATION` | Yes | Yes | Calibration command and progress |
-| 14 | `NAVIGATION` | Yes | No | Navigation altitude |
+| 6 | `TRACKED_DETECTION` | Yes | No | Information about current detections |
+| 13 | `CAM_TARGETING` | Yes | Yes | Camera aiming and lock modes |
+| 14 | `CAM_OPTICS_AND_CONTROL` | Yes | Yes | Camera FOV and zoom control |
+| 15 | `CAM_OFFSET` | Yes | No | Convert a point in the view into angles |
+| 16 | `SENSOR` | Yes | Yes | Sensor exposure, gain, brightness |
+| 17 | `CAM_DEPTH_ESTIMATION` | No | No | Reserved parameter group, not used by DigiView in this release |
+| 18 | `SINGLE_TARGET_TRACKING` | Yes | Yes | Single-target-tracking control and status |
+| 19 | `CALIBRATION` | Yes | Yes | Calibration command and progress |
+| 20 | `NAVIGATION` | No | No | Parameter group exists, but DigiView does not produce it in this release |
 
 ## Common usage notes
 
@@ -111,7 +111,7 @@ This applies to:
 - `CAM_TARGETING`
 - `CAM_OPTICS_AND_CONTROL`
 - `CAM_OFFSET`
-- `DETECTED_ROI`
+- `TRACKED_DETECTION`
 - `SINGLE_TARGET_TRACKING`
 
 ### Frames of reference
@@ -140,18 +140,23 @@ Read current application state.
 
 ### Status values
 
-| Value | Meaning |
-|---:|---|
-| 0 | Loading |
-| 1 | Running |
-| 2 | Error |
-| 3 | Halt |
+| Value | Meaning | Notes
+|---:|---|---|
+| 0 | Startup |  |
+| 1 | Loading |  |
+| 2 | Running |  |
+| 3 | Error |  |
+| 4 | Halt |  |
+
+
 
 ### Behavior
 
 - `GET` returns the current status, reserved error byte, and device temperature.
 - `SET` only supports switching between `Running` and `Halt`.
 - Other status writes should not be relied on.
+- In this release, DigiView uses `Startup`, `Loading`, `Running`, and `Halt`.
+- `Error` exists in the message definitions, but is not used by DigiView as an application state in this release.
 
 ## `AI`
 
@@ -184,6 +189,7 @@ List available models.
 ### Behavior
 
 - `GET` returns one `CURRENT_PARAMETERS` response per available model.
+- The first returned names are the active scan model and active track model, followed by the remaining available models.
 - `SET` is not supported.
 
 ## `VIDEO_OUTPUT`
@@ -245,17 +251,20 @@ Control video recording per stream.
 | Field | Type | Notes |
 |---|---|---|
 | `stream_name` | `char[16]` | Selected stream |
-| `cap_single_image` | `bool` | Defined in the protocol |
+| `cap_single_image` | `bool` | Not used by DigiView in this release |
 | `record_video` | `bool` | Start or stop recording |
-| `images_captured` | `uint16_t` | Defined for reporting |
-| `videos_captured` | `uint16_t` | Defined for reporting |
+| `images_captured` | `uint16_t` | Not maintained by DigiView as a usable counter in this release |
+| `videos_captured` | `uint16_t` | Not maintained by DigiView as a usable counter in this release |
 
 ### Behavior
 
 - `GET` returns current capture-related state for the selected stream.
+- An empty `stream_name` in a GET request can be used to request all enabled streams.
 - `SET record_video = true` starts recording for that stream.
 - `SET record_video = false` stops recording.
-- `cap_single_image` is defined but should not be treated as a primary 0.6 workflow.
+- `cap_single_image` is not used by DigiView in this release.
+- `images_captured` and `videos_captured` are not maintained by DigiView as usable counters in this release.
+- Use `record_video` for the supported customer-facing capture workflow in this release.
 
 ## `DETECTION`
 
@@ -265,8 +274,8 @@ Adjust detection thresholds and score tuning.
 
 | Field | Type | Notes |
 |---|---|---|
-| `mode` | `uint8_t` | Defined but not a primary user control in 0.6 |
-| `sorting_mode` | `uint8_t` | Defined but not a primary user control in 0.6 |
+| `mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.6 |
+| `sorting_mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.6 |
 | `track_confidence_threshold` | `float` | Tracking threshold |
 | `scan_confidence_threshold` | `float` | Scan threshold |
 | `track_box_overlap` | `float` | Tracking overlap limit |
@@ -284,7 +293,7 @@ Adjust detection thresholds and score tuning.
 - The threshold and overlap float values are quantized on the wire.
 - A value of `255` in the score-weight fields means “leave unchanged”.
 
-## `DETECTED_ROI`
+## `TRACKED_DETECTION`
 
 Request one or more current detections.
 
@@ -301,11 +310,15 @@ Request one or more current detections.
 | `rel_frame_of_reference` | `uint8_t` | Relative angle frame |
 | `yaw_rel` | `float` | Relative yaw in degrees |
 | `pitch_rel` | `float` | Relative pitch in degrees |
-| `latitude` | `float` | Reserved in current 0.6 usage |
-| `longitude` | `float` | Reserved in current 0.6 usage |
-| `altitude` | `float` | Reserved in current 0.6 usage |
-| `distance` | `float` | Reserved in current 0.6 usage |
-| `track_id` | `uint16_t` | Stable tracker ID |
+| `latitude` | `float` | Latitude of the detection |
+| `longitude` | `float` | Longitude of the detection |
+| `altitude` | `float` | Not filled by DigiView in this release |
+| `distance` | `float` | Not filled by DigiView in this release |
+| `width` | `float` | Detection width |
+| `height` | `float` | Detection height |
+| `track_id` | `uint16_t` | Tracked object ID |
+| `publish_timestamp_us` | `uint64_t` | Detection publish timestamp |
+| `view_id` | `uint8_t` | AI-view slot index |
 
 ### Behavior
 
@@ -313,6 +326,8 @@ Request one or more current detections.
 - DigiView returns one response per detection.
 - `track_id` is the stable ID to keep if you want to reference a detection later.
 - If there are no detections, DigiView still responds with `CURRENT_PARAMETERS` and `total_detections = 0`.
+- `latitude` and `longitude` may be returned when DigiView has those values available.
+- `altitude` and `distance` are not filled by DigiView in this release.
 - `SET` is not supported.
 
 ## `CAM_TARGETING`
@@ -336,7 +351,9 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | `target_latitude` | `float` | Target coordinate latitude |
 | `target_longitude` | `float` | Target coordinate longitude |
 | `target_altitude` | `float` | Target coordinate altitude |
-| `detection_id` | `int16_t` | Detection/tracker ID when using detection targeting |
+| `track_id` | `uint16_t` | Tracked object ID |
+| `view_id` | `int16_t` | AI-view slot index |
+| `lock_target` | `bool` | Request DigiView to lock onto the currently selected target |
 
 ### Targeting modes
 
@@ -359,8 +376,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 
 - `GET` returns the current targeting state for the selected stream and camera.
 - `SET` updates targeting mode and the relevant fields for that mode.
-- `roll` is defined but should not be treated as a primary control path.
-- `detection_id = -1` clears a detection lock.
+- `roll` is available, but should not be treated as a primary control path.
 
 ## `CAM_OPTICS_AND_CONTROL`
 
@@ -392,6 +408,7 @@ Control camera FOV and relative zoom.
 - `SET zoom` acts as a relative change.
 - `SET fov` acts as an absolute FOV request.
 - In current DigiView 0.6 usage, crop mode changes should not be relied on as a primary customer workflow.
+- Treat FOV and crop mode as the current state indicators rather than expecting a persistent absolute zoom value.
 
 ## `CAM_OFFSET`
 
@@ -414,6 +431,7 @@ Convert a point inside a camera view into global and relative angles.
 
 - `GET` returns the direction of a point in the selected view.
 - `x` and `y` are normalized view offsets in the range `-1.0` to `1.0`.
+- `stream_name` and `cam_id` must identify a valid view.
 - `SET` is not supported.
 
 ## `SENSOR`
@@ -437,7 +455,7 @@ Control exposure, gain, and brightness targets.
 
 ## `CAM_DEPTH_ESTIMATION`
 
-This parameter group is defined in the protocol.
+This parameter group exists in the message format.
 
 ### Fields
 
@@ -445,13 +463,12 @@ This parameter group is defined in the protocol.
 |---|---|---|
 | `stream_name` | `char[16]` | Selected stream |
 | `cam_id` | `uint8_t` | Selected camera/view |
-| `depth_estimation_mode` | `uint8_t` | Mode value |
-| `depth` | `float` | Returned depth |
+| `depth_estimation_mode` | `uint8_t` | Reserved |
+| `depth` | `float` | Reserved |
 
 ### Behavior
 
-- Present in DigiView 0.6 definitions.
-- Current customer-facing behavior should be treated as reserved.
+- DigiView does not provide a customer-facing depth estimation feature through this message group in this release.
 
 ## `SINGLE_TARGET_TRACKING`
 
@@ -466,7 +483,7 @@ Control and monitor DigiView's single target tracking mode.
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `x_offset` | `float` | Normalized horizontal target offset |
 | `y_offset` | `float` | Normalized vertical target offset |
-| `detection_id` | `uint8_t` | Detection ID |
+| `detection_id` | `uint8_t` | Current tracked object ID used by single-target tracking |
 | `zoom_level` | `uint16_t` | Tracking zoom level |
 | `confidence` | `float` | Current tracker confidence |
 | `yaw_global` | `float` | Current target yaw in degrees |
@@ -474,6 +491,9 @@ Control and monitor DigiView's single target tracking mode.
 | `rel_frame_of_reference` | `uint8_t` | Relative angle frame |
 | `yaw_rel` | `float` | Relative yaw in degrees |
 | `pitch_rel` | `float` | Relative pitch in degrees |
+| `publish_timestamp_us` | `uint64_t` | Tracking output publish timestamp |
+| `status` | `uint8_t` | Tracking status |
+| `lock_target` | `bool` | Request DigiView to lock onto the current target |
 
 ### Command values
 
@@ -481,22 +501,31 @@ Control and monitor DigiView's single target tracking mode.
 |---:|---|
 | 0 | Off |
 | 1 | Set target vector |
-| 2 | Set target detection |
-| 3 | Nudge target |
-| 4 | No operation |
+| 2 | No operation |
+
+### Status values
+
+| Value | Meaning |
+|---:|---|
+| 0 | Off |
+| 1 | Init |
+| 2 | Running |
+| 3 | Dropped |
 
 ### Behavior
 
-- `GET` returns current tracking state, target direction, and confidence.
+- `GET` returns current tracking state, target direction, confidence, timestamp, and status.
 - The most reliable 0.6 customer workflow is:
   - set a target vector
   - switch a camera to `CAM_TARGETING` mode `Single target tracking`
   - poll tracking status with `GET`
-- Commands `Set target detection` and `Nudge target` are defined in the protocol, but should be treated as advanced or validation-required workflows in 0.6.
+- `lock_target` can be set when you want DigiView to lock onto the current target.
 
 ## `CALIBRATION`
 
 Start calibration and read current calibration progress.
+
+This message group is intended for the MOSS One hardware platform.
 
 ### Fields
 
@@ -535,18 +564,27 @@ Start calibration and read current calibration progress.
 
 ## `NAVIGATION`
 
-Read navigation altitude.
+This parameter group exists in the message format, but DigiView does not produce it in this release.
 
 ### Fields
 
 | Field | Type | Notes |
 |---|---|---|
 | `altitude` | `float` | Altitude above home |
+| `visual_lat` | `float` | Not filled by DigiView in this release |
+| `visual_lon` | `float` | Not filled by DigiView in this release |
+| `next_waypoint_target_yaw` | `float` | Not filled by DigiView in this release |
+| `next_waypoint_target_pitch` | `float` | Not filled by DigiView in this release |
+| `next_waypoint_target_roll` | `float` | Not filled by DigiView in this release |
+| `visual_vel_x` | `float` | Not filled by DigiView in this release |
+| `visual_vel_y` | `float` | Not filled by DigiView in this release |
+| `visual_vel_z` | `float` | Not filled by DigiView in this release |
 
 ### Behavior
 
-- `GET` returns altitude in meters above home.
+- DigiView runtime does not produce `NAVIGATION` responses in this release.
 - `SET` is not supported.
+- In MAVLink integrations, requesting recurring `NAVIGATION_PARAMETERS` output with `SET_MESSAGE_INTERVAL` should be treated as unsupported in this release.
 
 ## MAVLink usage
 
@@ -581,7 +619,7 @@ Examples include:
 - `SYSTEM_STATUS_PARAMETERS`
 - `AI_PARAMETERS`
 - `VIDEO_OUTPUT_PARAMETERS`
-- `DETECTED_ROI_PARAMETERS`
+- `TRACKED_DETECTION_PARAMETERS`
 - `CAM_TARGETING_PARAMETERS`
 - `SINGLE_TARGET_TRACKING_PARAMETERS`
 
@@ -596,6 +634,7 @@ Examples include:
 - The custom MAVLink dialect follows the same parameter families as the native protocol.
 - Standard gimbal-manager messages are the recommended MAVLink path for camera pointing.
 - Some fields available in the native protocol are newer than the current custom dialect and may not be exposed identically in MAVLink-based integrations.
+- `NAVIGATION_PARAMETERS` remains part of the dialect, but DigiView runtime does not produce it in this release.
 - For external integrations, validate the exact field set you depend on if you need both native DigiView and MAVLink compatibility.
 
 ## Recommended integration sequence
@@ -606,4 +645,4 @@ For a new client, the recommended sequence is:
 2. read `MODEL`
 3. read `VIDEO_OUTPUT`
 4. configure `AI`, `DETECTION`, and `VIDEO_OUTPUT` as needed
-5. use `CAM_TARGETING`, `CAM_OPTICS_AND_CONTROL`, `DETECTED_ROI`, or `SINGLE_TARGET_TRACKING` for the mission workflow
+5. use `CAM_TARGETING`, `CAM_OPTICS_AND_CONTROL`, `TRACKED_DETECTION`, or `SINGLE_TARGET_TRACKING` for the mission workflow
