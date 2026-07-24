@@ -583,15 +583,15 @@ six 6DoF face datasets only; it is not a general calibration success or failure 
 Bits 6 and 7 are always zero. The mask is cumulative for the current calibration run.
 When all six face datasets have been collected, it is `0x3f`.
 
-Raw sensor face labels are converted to the user-facing labels published in status and
-mask values as follows:
+Raw sensor face labels map directly to the user-facing labels published in status and
+mask values; there is no raw-to-user sign inversion:
 
 | Raw face | Published user-facing face |
 |---|---|
-| +X | -X |
-| -X | +X |
-| +Y | -Y |
-| -Y | +Y |
+| +X | +X |
+| -X | -X |
+| +Y | +Y |
+| -Y | -Y |
 | +Z | +Z |
 | -Z | -Z |
 
