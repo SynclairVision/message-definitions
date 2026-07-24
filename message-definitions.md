@@ -534,6 +534,11 @@ This message group is intended for the MOSS One hardware platform.
 | `cam_id` | `uint8_t` | Selected camera |
 | `calib_command` | `uint8_t` | Requested calibration action |
 | `calib_status` | `uint8_t` | Current calibration state |
+| `completed_face_mask` | `uint8_t` | Completed user-facing 6DoF face datasets |
+
+The native payload offsets are `cam_id = 0`, `calib_command = 1`, `calib_status = 2`, and
+`completed_face_mask = 3`. In the MAVLink dialect, `completed_face_mask` is a MAVLink 2
+extension field appended after the three base fields.
 
 ### Calibration command values
 
@@ -556,11 +561,45 @@ This message group is intended for the MOSS One hardware platform.
 | 5 | Hold +Z orientation |
 | 6 | Hold -Z orientation |
 | 7 | Magnetometer calibration in progress |
+| 8 | Ready for any remaining 6DoF face; no face is active |
+| 9 | 6DoF complete: all six face datasets are collected and the mask is `0x3f` |
+
+Statuses 1 through 6 identify the active user-facing face in the order +X, -X, +Y,
+-Y, +Z, -Z. `6DOF_READY` means the system is waiting for any face whose bit is not
+set, without selecting an active face. `6DOF_COMPLETE` describes collection of all
+six 6DoF face datasets only; it is not a general calibration success or failure status.
+
+### Completed face mask
+
+| Bit | Mask | User-facing face |
+|---:|---:|---|
+| 0 | `0x01` | +X |
+| 1 | `0x02` | -X |
+| 2 | `0x04` | +Y |
+| 3 | `0x08` | -Y |
+| 4 | `0x10` | +Z |
+| 5 | `0x20` | -Z |
+
+Bits 6 and 7 are always zero. The mask is cumulative for the current calibration run.
+When all six face datasets have been collected, it is `0x3f`.
+
+Raw sensor face labels are converted to the user-facing labels published in status and
+mask values as follows:
+
+| Raw face | Published user-facing face |
+|---|---|
+| +X | -X |
+| -X | +X |
+| +Y | -Y |
+| -Y | +Y |
+| +Z | +Z |
+| -Z | -Z |
 
 ### Behavior
 
-- `GET` returns current status for the selected camera.
-- `SET` starts the requested calibration action.
+- `GET` snapshots return the current status and the full completed-face mask for the selected camera.
+- `SET` is command-only and starts the requested calibration action. Its status and mask bytes are neutral zero values and are ignored by the server.
+- During `START_ALL`, the mask remains `0x3f` while status is `MAG_IN_PROGRESS` after all six 6DoF faces have been collected.
 
 ## `NAVIGATION`
 
