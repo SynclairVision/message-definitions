@@ -189,7 +189,7 @@
         <description>Hold -Z orientation.</description>
       </entry>
       <entry value="7" name="SV_CALIBRATION_STATUS_MAG_IN_PROGRESS">
-        <description>Magnetometer calibration in progress.</description>
+        <description>Magnetometer calibration in progress; mag_progress_percent is monotonic from 0 through 99.</description>
       </entry>
       <entry value="8" name="SV_CALIBRATION_STATUS_6DOF_READY">
         <description>Waiting for any remaining 6DoF face; no face is currently active.</description>
@@ -197,7 +197,13 @@
       <entry value="9" name="SV_CALIBRATION_STATUS_6DOF_COMPLETE">
         <description>All six 6DoF face datasets have been collected.</description>
       </entry>
-      <entry value="10" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
+      <entry value="10" name="SV_CALIBRATION_STATUS_MAG_COMPLETE">
+        <description>Magnetometer calibration completed; mag_progress_percent is 100 after fit and result handoff.</description>
+      </entry>
+      <entry value="11" name="SV_CALIBRATION_STATUS_MAG_FAILED">
+        <description>Magnetometer calibration failed; mag_progress_percent retains the last value from 0 through 99.</description>
+      </entry>
+      <entry value="12" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
         <description>Enum count sentinel.</description>
       </entry>
     </enum>
@@ -425,6 +431,7 @@ angles.</field>
             <field type="uint8_t" name="calib_status" enum="SV_CALIBRATION_STATUS">Calibration status.</field>
             <extensions/>
             <field type="uint8_t" name="completed_face_mask">Completed user-facing 6DoF faces: bits 0..5 are +X, -X, +Y, -Y, +Z, -Z; bits 6..7 are zero.</field>
+            <field type="uint8_t" name="mag_progress_percent">Magnetometer calibration progress: monotonic 0..99 while in progress, 100 when complete, and the last 0..99 value when failed.</field>
         </message>
 
         <message id="40014" name="NAVIGATION_PARAMETERS">

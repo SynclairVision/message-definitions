@@ -535,10 +535,12 @@ This message group is intended for the MOSS One hardware platform.
 | `calib_command` | `uint8_t` | Requested calibration action |
 | `calib_status` | `uint8_t` | Current calibration state |
 | `completed_face_mask` | `uint8_t` | Completed user-facing 6DoF face datasets |
+| `mag_progress_percent` | `uint8_t` | Magnetometer calibration progress/result percentage |
 
 The native payload offsets are `cam_id = 0`, `calib_command = 1`, `calib_status = 2`, and
-`completed_face_mask = 3`. In the MAVLink dialect, `completed_face_mask` is a MAVLink 2
-extension field appended after the three base fields.
+`completed_face_mask = 3`, followed by `mag_progress_percent = 4`. In the MAVLink dialect,
+`completed_face_mask` and `mag_progress_percent` are MAVLink 2 extension fields appended in
+that order after the three base fields.
 
 ### Calibration command values
 
@@ -563,11 +565,21 @@ extension field appended after the three base fields.
 | 7 | Magnetometer calibration in progress |
 | 8 | Ready for any remaining 6DoF face; no face is active |
 | 9 | 6DoF complete: all six face datasets are collected and the mask is `0x3f` |
+| 10 | Magnetometer calibration complete |
+| 11 | Magnetometer calibration failed |
 
 Statuses 1 through 6 identify the active user-facing face in the order +X, -X, +Y,
 -Y, +Z, -Z. `6DOF_READY` means the system is waiting for any face whose bit is not
 set, without selecting an active face. `6DOF_COMPLETE` describes collection of all
 six 6DoF face datasets only; it is not a general calibration success or failure status.
+
+`MAG_IN_PROGRESS` carries monotonic magnetometer progress from 0 through 99.
+`MAG_COMPLETE` carries 100 and is published only after fit and result handoff.
+`MAG_FAILED` retains the last progress value from 0 through 99. `MAG_COMPLETE` and
+`MAG_FAILED` are magnetometer-only outcomes, not 6DoF or full-calibration outcomes.
+They remain sticky after the command is cleared until later calibration activity or a
+process restart. The protocol defines no timeout or I/O-abort outcome and carries no
+separate reason or result field.
 
 ### Completed face mask
 
@@ -597,8 +609,8 @@ mask values; there is no raw-to-user sign inversion:
 
 ### Behavior
 
-- `GET` snapshots return the current status and the full completed-face mask for the selected camera.
-- `SET` is command-only and starts the requested calibration action. Its status and mask bytes are neutral zero values and are ignored by the server.
+- `GET` snapshots return the current status, full completed-face mask, and magnetometer progress for the selected camera.
+- `SET` is command-only and starts the requested calibration action. Its status, mask, and progress bytes are neutral zero values and are ignored by the server.
 - During `START_ALL`, the mask remains `0x3f` while status is `MAG_IN_PROGRESS` after all six 6DoF faces have been collected.
 
 ## `NAVIGATION`

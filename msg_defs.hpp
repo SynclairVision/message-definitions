@@ -307,6 +307,7 @@ struct calibration_parameters {
     calibration_command calib_command;
     calibration_status calib_status;
     uint8_t completed_face_mask;
+    uint8_t mag_progress_percent;
 };
 
 struct navigation_parameters {
@@ -718,7 +719,7 @@ inline void pack_single_target_tracking_parameters(
 
 inline void pack_calibration_parameters(
     message &msg, uint8_t cam_id, calibration_command calib_command, calibration_status calib_status,
-    uint8_t completed_face_mask) {
+    uint8_t completed_face_mask, uint8_t mag_progress_percent) {
     msg.param_type = CALIBRATION;
     uint16_t offset = 0;
     uint8_t calib_command_wire = enum_to_u8(calib_command);
@@ -730,6 +731,8 @@ inline void pack_calibration_parameters(
     memcpy((void *)&msg.data[offset], &calib_status_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &completed_face_mask, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &mag_progress_percent, sizeof(uint8_t));
 }
 
 inline void pack_navigation_parameters(
@@ -944,7 +947,7 @@ inline void pack_set_single_target_tracking_parameters(
 inline void pack_set_calibration_parameters(message &msg, uint8_t cam_id, calibration_command calib_command) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_calibration_parameters(msg, cam_id, calib_command, CALIBRATION_STATUS_NOT_STARTED, 0);
+    pack_calibration_parameters(msg, cam_id, calib_command, CALIBRATION_STATUS_NOT_STARTED, 0, 0);
 }
 
 inline void pack_debug_message(
@@ -1323,6 +1326,8 @@ inline void unpack_calibration_parameters(message &raw_msg, calibration_paramete
     params.calib_status = u8_to_enum<calibration_status>(calib_status_wire);
     offset += sizeof(uint8_t);
     memcpy((void *)&params.completed_face_mask, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&params.mag_progress_percent, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters &params) {
