@@ -318,6 +318,8 @@ struct navigation_parameters {
     float visual_vel_x;
     float visual_vel_y;
     float visual_vel_z;
+    float desired_thrust;
+    uint8_t position_quality;
 };
 
 struct debug_parameters {
@@ -1363,6 +1365,13 @@ inline void unpack_navigation_parameters(message &raw_msg, navigation_parameters
 
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.visual_vel_z = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.desired_thrust = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+
+    memcpy(&params.position_quality, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 inline void unpack_debug_parameters(message &raw_msg, debug_parameters &params) {
