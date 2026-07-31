@@ -786,7 +786,7 @@ inline void pack_navigation_parameters(
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    mm = static_cast<uint8_t>(position_quality * 1000.0f);
+    mm = static_cast<uint8_t>(position_quality);
     memcpy((void *)&msg.data[offset], &mm, sizeof(uint8_t));
 }
 

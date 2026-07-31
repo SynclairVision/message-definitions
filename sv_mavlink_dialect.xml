@@ -207,9 +207,8 @@
         <description>Enum count sentinel.</description>
       </entry>
     </enum>
-  </enums>
 
-  <enum name="SV_POSITION_QUALITY">
+    <enum name="SV_POSITION_QUALITY">
       <description>Estimated position quality.</description>
       <entry value="0" name="SV_POSITION_QUALITY_UNKNOWN">
         <description>Position unknown.</description>
@@ -230,6 +229,8 @@
         <description>Excellent good position quality.</description>
       </entry>
     </enum>
+  </enums>
+
 
   <messages>
         <message id="40000" name="SYSTEM_STATUS_PARAMETERS">
@@ -469,6 +470,7 @@ angles.</field>
             <field type="float" name="visual_vel_y">Vision-estimated velocity Y in m/s.</field>
             <field type="float" name="visual_vel_z">Vision-estimated velocity Z in m/s.</field>
             <field type="float" name="desired_thrust">Desired thrust command.</field>
+            <extensions/>
             <field type="uint8_t" name="position_quality" enum="SV_POSITION_QUALITY">Estimated position quality.</field>
         </message>
 

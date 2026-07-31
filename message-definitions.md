@@ -609,6 +609,8 @@ This parameter group exists in the message format, but DigiView does not produce
 | `visual_vel_x` | `float` | Not filled by DigiView in this release |
 | `visual_vel_y` | `float` | Not filled by DigiView in this release |
 | `visual_vel_z` | `float` | Not filled by DigiView in this release |
+| `desired_thrust` | `float` | Not filled by DigiView in this release |
+| `position_quality` | `uint8_t` | Not filled by DigiView in this release |
 
 ### Behavior
 
