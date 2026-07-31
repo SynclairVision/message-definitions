@@ -741,7 +741,7 @@ inline void pack_navigation_parameters(
     message &msg, float altitude, float visual_lat = 0.0f, float visual_lon = 0.0f,
     float next_waypoint_target_yaw = 0.0f, float next_waypoint_target_pitch = 0.0f,
     float next_waypoint_target_roll = 0.0f, float visual_vel_x = 0.0f,
-    float visual_vel_y = 0.0f, float visual_vel_z = 0.0f, float desired_thrust = 0.0f, uint8_t position_quality = 0.0f) {
+    float visual_vel_y = 0.0f, float visual_vel_z = 0.0f, float desired_thrust = 0.0f, uint8_t position_quality = 0U) {
     msg.param_type = NAVIGATION;
     uint16_t offset = 0;
     int32_t mm;
@@ -786,8 +786,7 @@ inline void pack_navigation_parameters(
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    mm = static_cast<uint8_t>(position_quality);
-    memcpy((void *)&msg.data[offset], &mm, sizeof(uint8_t));
+    memcpy(&msg.data[offset], &position_quality, sizeof(position_quality));
 }
 
 inline void pack_debug_parameters(
