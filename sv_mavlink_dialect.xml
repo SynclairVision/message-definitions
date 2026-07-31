@@ -125,13 +125,7 @@
       <entry value="1" name="SV_STT_CMD_SET_TARGET_VECTOR">
         <description>Set target from offsets and angles.</description>
       </entry>
-      <entry value="2" name="SV_STT_CMD_SET_TARGET_DETECTION">
-        <description>Set target from detection id.</description>
-      </entry>
-      <entry value="3" name="SV_STT_CMD_NUDGE">
-        <description>Nudge active target.</description>
-      </entry>
-      <entry value="4" name="SV_STT_CMD_NONE">
+      <entry value="2" name="SV_STT_CMD_NONE">
         <description>No-op command.</description>
       </entry>
     </enum>
@@ -195,9 +189,21 @@
         <description>Hold -Z orientation.</description>
       </entry>
       <entry value="7" name="SV_CALIBRATION_STATUS_MAG_IN_PROGRESS">
-        <description>Magnetometer calibration in progress.</description>
+        <description>Magnetometer calibration in progress; mag_progress_percent is monotonic from 0 through 99.</description>
       </entry>
-      <entry value="8" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
+      <entry value="8" name="SV_CALIBRATION_STATUS_6DOF_READY">
+        <description>Waiting for any remaining 6DoF face; no face is currently active.</description>
+      </entry>
+      <entry value="9" name="SV_CALIBRATION_STATUS_6DOF_COMPLETE">
+        <description>All six 6DoF face datasets have been collected.</description>
+      </entry>
+      <entry value="10" name="SV_CALIBRATION_STATUS_MAG_COMPLETE">
+        <description>Magnetometer calibration completed; mag_progress_percent is 100 after fit and result handoff.</description>
+      </entry>
+      <entry value="11" name="SV_CALIBRATION_STATUS_MAG_FAILED">
+        <description>Magnetometer calibration failed; mag_progress_percent retains the last value from 0 through 99.</description>
+      </entry>
+      <entry value="12" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
         <description>Enum count sentinel.</description>
       </entry>
     </enum>
@@ -228,7 +234,7 @@
         <message id="40003" name="VIDEO_OUTPUT_PARAMETERS">
             <description>Output resolution, layout and detection overlay geometry.</description>
 
-            <field type="char[8]"      name="stream_name">Stream name.</field>
+            <field type="char[16]"      name="stream_name">Stream name.</field>
 
             <field type="uint16_t"     name="width">Total output width in pixels.</field>
             <field type="uint16_t"     name="height">Total output height in pixels.</field>
@@ -256,7 +262,7 @@
         <message id="40004" name="CAPTURE_PARAMETERS">
             <description>Capture of still images and video per stream.</description>
 
-            <field type="char[8]" name="stream_name">Stream name.</field>
+            <field type="char[16]" name="stream_name">Stream name.</field>
 
             <field type="uint8_t" name="cap_single_image">1 to capture a single still image.</field>
             <field type="uint8_t" name="record_video">1 to start/continue video recording, 0 to stop.</field>
@@ -309,12 +315,13 @@
             <extensions/>
             <field type="uint16_t" name="track_id">Stable tracker id for this detection.</field>
             <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this detection in microseconds.</field>
+            <field type="uint8_t" name="view_id">Displayed AI-view slot id plus one; 0 means unavailable.</field>
         </message>
 
         <message id="40007" name="CAM_TARGETING_PARAMETERS">
             <description>User camera targeting by angles, coordinates or detection.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="uint8_t" name="targeting_mode" enum="SV_TARGETING_MODE">Camera targeting mode.</field>
@@ -333,13 +340,15 @@
             <field type="float"   name="target_altitude">Target altitude (m) if using coordinal mode.</field>
 
             <extensions/>
-            <field type="int16_t" name="detection_id">Detection id for DETECTION targeting mode; -1 clears lock.</field>
+            <field type="uint16_t" name="track_id">Direct tracker identity for DETECTION mode; 0 means unavailable or use view_id.</field>
+            <field type="int16_t" name="view_id">Displayed AI-view slot id for DETECTION mode; -1 clears/no lock.</field>
+            <field type="uint8_t" name="lock_target">1 to request DigiView to lock the current target.</field>
         </message>
 
         <message id="40008" name="CAM_OPTICS_AND_CONTROL_PARAMETERS">
             <description>Optical controls for user cameras, including zoom and FOV.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="int8_t"  name="zoom">Zoom control, -127..127 (negative=zoom out, positive=zoom in).</field>
             <field type="float"   name="fov">Field of view in degrees (typical range ~[1, 180.0]).</field>
@@ -349,7 +358,7 @@
         <message id="40009" name="CAM_OFFSET_PARAMETERS">
             <description>Maps normalized offsets in the view to yaw/pitch directions.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
 
@@ -375,7 +384,7 @@
         <message id="40011" name="CAM_DEPTH_ESTIMATION_PARAMETERS">
             <description>Depth estimation configuration per camera.</description>
 
-            <field type="char[8]" name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="uint8_t" name="depth_estimation_mode">Depth estimation mode.</field>
@@ -389,7 +398,7 @@
 
             <field type="uint8_t"  name="command" enum="SV_SINGLE_TARGET_TRACKER_COMMAND">Tracking command.</field>
 
-            <field type="char[8]"  name="stream_name">Stream name (max 8 characters).</field>
+            <field type="char[16]"  name="stream_name">Stream name (max 16 characters).</field>
 
             <field type="uint8_t"  name="cam_id">Camera index on the stream.</field>
 
@@ -411,6 +420,7 @@ angles.</field>
             <extensions/>
             <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this STT output in microseconds.</field>
             <field type="uint8_t" name="status" enum="SV_SINGLE_TARGET_TRACKING_STATUS">Runtime STT status for GET/current output semantics.</field>
+            <field type="uint8_t" name="lock_target">1 to request DigiView to lock the current target.</field>
         </message>
 
         <message id="40013" name="CALIBRATION_PARAMETERS">
@@ -419,6 +429,9 @@ angles.</field>
             <field type="uint8_t" name="cam_id">Camera index.</field>
             <field type="uint8_t" name="calib_command" enum="SV_CALIBRATION_COMMAND">Calibration command.</field>
             <field type="uint8_t" name="calib_status" enum="SV_CALIBRATION_STATUS">Calibration status.</field>
+            <extensions/>
+            <field type="uint8_t" name="completed_face_mask">Completed user-facing 6DoF faces: bits 0..5 are +X, -X, +Y, -Y, +Z, -Z; bits 6..7 are zero.</field>
+            <field type="uint8_t" name="mag_progress_percent">Magnetometer calibration progress: monotonic 0..99 while in progress, 100 when complete, and the last 0..99 value when failed.</field>
         </message>
 
         <message id="40014" name="NAVIGATION_PARAMETERS">
