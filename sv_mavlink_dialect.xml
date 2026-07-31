@@ -209,6 +209,28 @@
     </enum>
   </enums>
 
+  <enum name="SV_POSITION_QUALITY">
+      <description>Estimated position quality.</description>
+      <entry value="0" name="SV_POSITION_QUALITY_UNKNOWN">
+        <description>Position unknown.</description>
+      </entry>
+      <entry value="1" name="SV_POSITION_QUALITY_BAD">
+        <description>Bad position quality.</description>
+      </entry>
+      <entry value="2" name="SV_POSITION_QUALITY_MEDIUM">
+        <description>Medium position quality.</description>
+      </entry>
+      <entry value="3" name="SV_POSITION_QUALITY_GOOD">
+        <description>Good position quality.</description>
+      </entry>
+      <entry value="4" name="SV_POSITION_QUALITY_VERY_GOOD">
+        <description>Very good position quality.</description>
+      </entry>
+      <entry value="5" name="SV_POSITION_QUALITY_EXCELLENT">
+        <description>Excellent good position quality.</description>
+      </entry>
+    </enum>
+
   <messages>
         <message id="40000" name="SYSTEM_STATUS_PARAMETERS">
             <description>High-level system state and Jetson temperature.</description>
@@ -446,6 +468,7 @@ angles.</field>
             <field type="float" name="visual_vel_x">Vision-estimated velocity X in m/s.</field>
             <field type="float" name="visual_vel_y">Vision-estimated velocity Y in m/s.</field>
             <field type="float" name="visual_vel_z">Vision-estimated velocity Z in m/s.</field>
+            <field type="uint8_t" name="position_quality" enum="SV_POSITION_QUALITY">Estimated position quality.</field>
         </message>
 
     </messages>
