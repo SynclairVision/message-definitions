@@ -8,7 +8,6 @@ set(DIGIVIEW_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(MAVLINK_SUBMODULE_SOURCE_DIR "${DIGIVIEW_REPO_ROOT}/mavlink")
 set(MAVLINK_DEFINITIONS_SOURCE_DIR "${MAVLINK_SUBMODULE_SOURCE_DIR}/message_definitions/v1.0")
 set(MAVLINK_ALL_XML_SOURCE "${MAVLINK_DEFINITIONS_SOURCE_DIR}/all.xml")
-set(MAVLINK_REQUIREMENTS_FILE "${MAVLINK_SUBMODULE_SOURCE_DIR}/pymavlink/requirements.txt")
 set(SV_DIALECT_SOURCE "${DIGIVIEW_REPO_ROOT}/sv_mavlink_dialect.xml")
 
 function(require_mavlink_content path_value)
@@ -24,23 +23,12 @@ function(require_mavlink_content path_value)
 endfunction()
 
 require_mavlink_content("${MAVLINK_ALL_XML_SOURCE}")
-require_mavlink_content("${MAVLINK_REQUIREMENTS_FILE}")
 
 if(NOT EXISTS "${SV_DIALECT_SOURCE}")
     message(FATAL_ERROR "Required DigiView dialect file is missing: ${SV_DIALECT_SOURCE}")
 endif()
 
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
-
-execute_process(
-    COMMAND "${Python3_EXECUTABLE}" -m pip --version
-    RESULT_VARIABLE PIP_RESULT
-    OUTPUT_QUIET
-    ERROR_QUIET
-)
-if(NOT PIP_RESULT EQUAL 0)
-    message(FATAL_ERROR "Python pip not found, pip is required to generate MAVLink headers")
-endif()
 
 set(DIGIVIEW_STAGED_MAVLINK_ROOT "${CMAKE_CURRENT_BINARY_DIR}/mavlink")
 set(DIGIVIEW_XML_BUILD_DIR "${DIGIVIEW_STAGED_MAVLINK_ROOT}/message_definitions/v1.0")
@@ -53,13 +41,7 @@ set(DIGIVIEW_MAVGEN_INPUT_XML_REL "message_definitions/v1.0/all.xml")
 set(DIGIVIEW_GENERATED_INCLUDE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/generated/include")
 set(DIGIVIEW_GENERATED_MAVLINK_DIR "${DIGIVIEW_GENERATED_INCLUDE_ROOT}/mavlink/v${DIGIVIEW_MAVLINK_WIRE_PROTOCOL}")
 set(DIGIVIEW_GENERATED_HEADER "${DIGIVIEW_GENERATED_MAVLINK_DIR}/all/mavlink.h")
-set(DIGIVIEW_PYTHON_DEPS_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/pip-dependencies")
-if(WIN32)
-    set(DIGIVIEW_PYTHONPATH_SEPARATOR ";")
-else()
-    set(DIGIVIEW_PYTHONPATH_SEPARATOR ":")
-endif()
-set(DIGIVIEW_MAVGEN_PYTHONPATH "${DIGIVIEW_PYTHON_DEPS_DIR}${DIGIVIEW_PYTHONPATH_SEPARATOR}${MAVLINK_SUBMODULE_SOURCE_DIR}")
+set(DIGIVIEW_MAVGEN_PYTHONPATH "${MAVLINK_SUBMODULE_SOURCE_DIR}")
 
 file(GLOB MAVLINK_XML_FILES CONFIGURE_DEPENDS "${MAVLINK_DEFINITIONS_SOURCE_DIR}/*.xml")
 
@@ -148,14 +130,11 @@ add_custom_command(
 
 add_custom_command(
     OUTPUT "${DIGIVIEW_GENERATED_HEADER}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${DIGIVIEW_PYTHON_DEPS_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${DIGIVIEW_GENERATED_MAVLINK_DIR}"
-    COMMAND "${Python3_EXECUTABLE}" -m pip install --upgrade -r "${MAVLINK_REQUIREMENTS_FILE}" -t "${DIGIVIEW_PYTHON_DEPS_DIR}"
-    COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=${DIGIVIEW_MAVGEN_PYTHONPATH}" "${Python3_EXECUTABLE}" -m pymavlink.tools.mavgen --lang=C --wire-protocol=${DIGIVIEW_MAVLINK_WIRE_PROTOCOL} --output "${DIGIVIEW_GENERATED_MAVLINK_DIR}" "${DIGIVIEW_MAVGEN_INPUT_XML_REL}"
+    COMMAND "${CMAKE_COMMAND}" -E env "PYTHONPATH=${DIGIVIEW_MAVGEN_PYTHONPATH}" "${Python3_EXECUTABLE}" -m pymavlink.tools.mavgen --lang=C --wire-protocol=${DIGIVIEW_MAVLINK_WIRE_PROTOCOL} --no-validate --output "${DIGIVIEW_GENERATED_MAVLINK_DIR}" "${DIGIVIEW_MAVGEN_INPUT_XML_REL}"
     WORKING_DIRECTORY "${DIGIVIEW_MAVGEN_WORKING_DIR}"
     DEPENDS
         "${DIGIVIEW_XML_STAGE_STAMP}"
-        "${MAVLINK_REQUIREMENTS_FILE}"
     COMMENT "Generating DigiView MAVLink C headers"
     VERBATIM
 )
