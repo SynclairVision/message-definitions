@@ -58,7 +58,7 @@ An asterisk means a specific operation is not yet implemented.
 | DETECTION | 5 | GET & SET | Message containing AI post processing parameters |
 | TRACKED_DETECTION | 6 | GET | Retrieve information of specific detections |
 | CAM_TARGETING | 7 | GET & SET | Handles user-controlled cameras targeting including euler angles and coordinates |
-| CAM_OPTICS_AND_CONTROL | 8 | GET & SET | Handles user-controlled cameras' zoom, FOV, and crop mode |
+| CAM_OPTICS_AND_CONTROL | 8 | GET & SET | Handles user-controlled cameras' zoom and FOV |
 | CAM_OFFSET | 9 | GET | Retrieve directional info relative to the center of the picture |
 | SENSOR | 10 | GET & SET | Control for the image sensor's settings |
 | CAM_DEPTH_ESTIMATION | 11 | GET & SET | Control for the depth estimation unit |
@@ -635,7 +635,6 @@ Message for user-controllable cameras' optics and control information.
 | cam_id | uint8_t | \[0,3\] | \[0,3\] |
 | zoom | int8_t | \[-127,127\] | n/a |
 | fov | float | \[0.0,180.0\] | n/a |
-| crop_mode | uint8_t | \[0,1\] | n/a |
 
 ### Set behavior
 
@@ -654,14 +653,6 @@ Sets the zoom level of the camera. The valid range is \[-127,127\], where 0 is n
 ##### fov
 
 Sets the field of view (FOV) of the camera in degrees. The valid range is \[5.73, 180.0\] degrees. Values outside this range is ignored.
-
-##### crop mode
-
-Sets the crop mode of the camera. The valid values are:
-| **crop_mode value** | **Crop mode** |
-|:-------------------:|:------------------:|
-| 1 | Cartesian, the output is rectified (no distortion) |
-| 2 | Panoramic, the output is in a panoramic format |
 
 ### Get behavior
 
