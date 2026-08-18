@@ -75,23 +75,23 @@
       <entry value="0" name="SV_LAYOUT_ID_LAYOUT_1">
         <description>Single user view.</description>
       </entry>
-      <entry value="1" name="SV_LAYOUT_ID_LAYOUT_2_COLUMNS">
-        <description>Two user views in columns.</description>
+      <entry value="1" name="SV_LAYOUT_ID_LAYOUT_2_STK">
+        <description>Two stacked user views.</description>
       </entry>
-      <entry value="2" name="SV_LAYOUT_ID_LAYOUT_2_ROWS">
-        <description>Two user views in rows.</description>
+      <entry value="2" name="SV_LAYOUT_ID_LAYOUT_2_SBS">
+        <description>Two side-by-side user views.</description>
       </entry>
-      <entry value="3" name="SV_LAYOUT_ID_LAYOUT_TOP_2_BOTTOM_1">
-        <description>Two user views on top and one on the bottom.</description>
+      <entry value="3" name="SV_LAYOUT_ID_LAYOUT_2_SBS_1_STK">
+        <description>Three-view side-by-side plus stacked layout.</description>
       </entry>
-      <entry value="4" name="SV_LAYOUT_ID_LAYOUT_TOP_2_BOTTOM_2">
-        <description>Two user views on top and two on the bottom.</description>
+      <entry value="4" name="SV_LAYOUT_ID_LAYOUT_4">
+        <description>Four-view grid layout.</description>
       </entry>
-      <entry value="5" name="SV_LAYOUT_ID_LAYOUT_TOP_3_BOTTOM_1">
-        <description>Three user views on top and one on the bottom.</description>
+      <entry value="5" name="SV_LAYOUT_ID_LAYOUT_3_SBS_1_STK">
+        <description>Three side-by-side plus one stacked layout.</description>
       </entry>
-      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_SOURCE_FRAME">
-        <description>Source-frame layout.</description>
+      <entry value="6" name="SV_LAYOUT_ID_LAYOUT_DEBUG">
+        <description>Debug layout.</description>
       </entry>
     </enum>
 
