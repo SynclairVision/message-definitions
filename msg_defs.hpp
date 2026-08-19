@@ -89,8 +89,7 @@ enum PARAM_TYPE : uint8_t {
     CAM_ZOOM,
     CAM_LOCK_FLAGS,
     CAM_CONTROL_MODE,
-    CAM_CROP_MODE,
-    CAM_TARGETING,
+    CAM_TARGETING = 13, // Value 12 is retired.
     CAM_OPTICS_AND_CONTROL,
     CAM_OFFSET,
     SENSOR,
@@ -99,6 +98,10 @@ enum PARAM_TYPE : uint8_t {
     CALIBRATION,
     NAVIGATION,
 };
+
+static_assert(CAM_TARGETING == 13, "CAM_TARGETING wire value changed");
+static_assert(CAM_OPTICS_AND_CONTROL == 14, "CAM_OPTICS_AND_CONTROL wire value changed");
+static_assert(NAVIGATION == 20, "NAVIGATION wire value changed");
 
 enum MESSAGE_TYPE : uint8_t {
     EMPTY,
@@ -248,7 +251,6 @@ struct cam_optics_and_control_parameters {
     uint8_t cam_id;
     int8_t  zoom;
     float   fov;
-    uint8_t crop_mode;
 };
 
 struct cam_offset_parameters {
@@ -589,7 +591,7 @@ inline void pack_cam_targeting_parameters(
 
 template <typename StreamName>
 inline void pack_cam_optics_and_control_parameters(
-    message &msg, StreamName &&stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+    message &msg, StreamName &&stream_name, uint8_t cam_id, int8_t zoom, float fov) {
     msg.param_type = CAM_OPTICS_AND_CONTROL;
     uint16_t offset = 0;
     copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
@@ -600,8 +602,6 @@ inline void pack_cam_optics_and_control_parameters(
     offset += sizeof(int8_t);
     int32_t mrad = static_cast<int32_t>(fov * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
-    offset += sizeof(int32_t);
-    memcpy((void *)&msg.data[offset], &crop_mode, sizeof(uint8_t));
 }
 
 template <typename StreamName>
@@ -922,11 +922,11 @@ inline void pack_set_cam_targeting_parameters(
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
-    message &msg, const char *stream_name, uint8_t cam_id, int8_t zoom, float fov, uint8_t crop_mode) {
+    message &msg, const char *stream_name, uint8_t cam_id, int8_t zoom, float fov) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_cam_optics_and_control_parameters(msg, stream_name, cam_id, zoom, fov, crop_mode);
+    pack_cam_optics_and_control_parameters(msg, stream_name, cam_id, zoom, fov);
 }
 
 inline void pack_set_sensor_parameters(
@@ -1201,8 +1201,6 @@ inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optic
     offset += sizeof(int8_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.fov = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(int32_t);
-    memcpy((void *)&params.crop_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 inline void unpack_cam_offset_parameters(message &raw_msg, cam_offset_parameters &params) {
