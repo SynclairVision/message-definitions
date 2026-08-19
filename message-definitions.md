@@ -167,7 +167,6 @@ Enable or disable AI and select the active scan and track models.
 | Field | Type | Notes |
 |---|---|---|
 | `run_ai` | `bool` | Enable or disable AI |
-| `track_model_name` | `char[16]` | Active tracking model |
 | `scan_model_name` | `char[16]` | Active scanning model |
 
 ### Behavior

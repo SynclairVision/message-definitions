@@ -245,7 +245,6 @@
             <description>Controls AI processing and reports active models.</description>
             
             <field type="uint8_t"  name="run_ai">1 if AI processing is enabled, 0 otherwise.</field>
-            <field type="char[16]" name="track_model_name">Name of the verification / tracking model.</field>
             <field type="char[16]" name="scan_model_name">Name of the crop (detection) model.</field>
         </message>
 
