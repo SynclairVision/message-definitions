@@ -389,25 +389,13 @@ Control camera FOV and relative zoom.
 | `cam_id` | `uint8_t` | Selected camera/view |
 | `zoom` | `int8_t` | Relative zoom command |
 | `fov` | `float` | Field of view in degrees |
-| `crop_mode` | `uint8_t` | Crop mode enum |
-
-### Crop mode values
-
-| Value | Meaning |
-|---:|---|
-| 0 | None |
-| 1 | Cartesian |
-| 2 | Panorama |
-| 3 | Lustiga huset |
-| 4 | Full frame |
 
 ### Behavior
 
 - `GET` returns the current optics state for the selected stream and camera.
 - `SET zoom` acts as a relative change.
 - `SET fov` acts as an absolute FOV request.
-- In current DigiView 0.6 usage, crop mode changes should not be relied on as a primary customer workflow.
-- Treat FOV and crop mode as the current state indicators rather than expecting a persistent absolute zoom value.
+- Treat FOV as the current state indicator rather than expecting a persistent absolute zoom value.
 
 ## `CAM_OFFSET`
 

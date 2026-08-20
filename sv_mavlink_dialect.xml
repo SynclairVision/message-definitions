@@ -51,25 +51,6 @@
       </entry>
     </enum>
 
-    <enum name="SV_CROP_MODE">
-      <description>Camera crop mode (View::CropMode).</description>
-      <entry value="0" name="SV_CROP_MODE_NONE">
-        <description>No crop mode override.</description>
-      </entry>
-      <entry value="1" name="SV_CROP_MODE_CARTESIAN">
-        <description>Cartesian crop mode.</description>
-      </entry>
-      <entry value="2" name="SV_CROP_MODE_PANORAMA">
-        <description>Panorama crop mode.</description>
-      </entry>
-      <entry value="3" name="SV_CROP_MODE_LUSTIGA_HUSET">
-        <description>Lustiga huset crop mode.</description>
-      </entry>
-      <entry value="4" name="SV_CROP_MODE_FULL_FRAME">
-        <description>Full-frame crop mode.</description>
-      </entry>
-    </enum>
-
     <enum name="SV_LAYOUT_ID">
       <description>Video layout mode (Layout::ID).</description>
       <entry value="0" name="SV_LAYOUT_ID_LAYOUT_1">
@@ -374,7 +355,6 @@
             <field type="uint8_t" name="cam_id">Camera index on the stream.</field>
             <field type="int8_t"  name="zoom">Zoom control, -127..127 (negative=zoom out, positive=zoom in).</field>
             <field type="float"   name="fov">Field of view in degrees (typical range ~[1, 180.0]).</field>
-            <field type="uint8_t" name="crop_mode" enum="SV_CROP_MODE">Crop mode.</field>
         </message>
 
         <message id="40009" name="CAM_OFFSET_PARAMETERS">
