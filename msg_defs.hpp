@@ -147,7 +147,6 @@ struct system_status_parameters {
 
 struct ai_parameters {
     bool     run_ai;
-    char     track_model_name[16];
     char     scan_model_name[16];
 };
 
@@ -376,13 +375,11 @@ inline void pack_system_status_parameters(message &msg, app_status status, uint8
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
 }
 
-inline void pack_ai_parameters(message &msg, bool run_ai, const char *track_model_name, const char *scan_model_name) {
+inline void pack_ai_parameters(message &msg, bool run_ai, const char *scan_model_name) {
     msg.param_type = AI;
     uint8_t offset = 0;
     memcpy((void *)&msg.data[offset], &run_ai, sizeof(bool));
     offset += sizeof(bool);
-    memcpy((void *)&msg.data[offset], track_model_name, 16);
-    offset += 16;
     memcpy((void *)&msg.data[offset], scan_model_name, 16);
 }
 
@@ -877,10 +874,10 @@ inline void pack_get_navigation_parameters(message &msg) {
 ------------------------------------------------------------------------------------------------------------------------
 */
 inline void pack_set_ai_parameters(
-    message &msg, bool run_ai, const char *track_model_name, const char *scan_model_name) {
+    message &msg, bool run_ai, const char *scan_model_name) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
-    pack_ai_parameters(msg, run_ai, track_model_name, scan_model_name);
+    pack_ai_parameters(msg, run_ai, scan_model_name);
 }
 
 inline void pack_set_video_output_parameters(
@@ -993,8 +990,6 @@ inline void unpack_ai_parameters(message &raw_msg, ai_parameters &params) {
     uint8_t offset = 0;
     memcpy((void *)&params.run_ai, (void *)&raw_msg.data[offset], sizeof(bool));
     offset += sizeof(bool);
-    memcpy((void *)&params.track_model_name, (void *)&raw_msg.data[offset], 16);
-    offset += 16;
     memcpy((void *)&params.scan_model_name, (void *)&raw_msg.data[offset], 16);
 }
 
