@@ -21,6 +21,10 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_NO_CHANGE = -2;
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_AUTOMATIC = -1;
+static constexpr uint32_t CAM_TARGETING_CROP_CAMERA_MAGIC = 0x43524F50U;
+
 static constexpr uint32_t STREAM_NAME_SIZE      = 16;
 
 inline std::string_view stream_name_view(const char *stream_name) {
@@ -49,6 +53,18 @@ inline std::string_view stream_name_source_view(const char (&stream_name)[N]) {
 inline void copy_stream_name_field(uint8_t *dst, std::string_view stream_name) {
     memset(dst, 0, STREAM_NAME_SIZE);
     memcpy(dst, stream_name.data(), std::min(stream_name.size(), static_cast<size_t>(STREAM_NAME_SIZE)));
+}
+
+inline uint8_t cam_targeting_crop_camera_to_wire(int32_t crop_camera) {
+    if (crop_camera == CAM_TARGETING_CROP_CAMERA_NO_CHANGE) return 0;
+    if (crop_camera == CAM_TARGETING_CROP_CAMERA_AUTOMATIC) return 1;
+    return static_cast<uint8_t>(crop_camera + 2);
+}
+
+inline int32_t cam_targeting_crop_camera_from_wire(uint8_t crop_camera) {
+    if (crop_camera == 0) return CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
+    if (crop_camera == 1) return CAM_TARGETING_CROP_CAMERA_AUTOMATIC;
+    return static_cast<int32_t>(crop_camera) - 2;
 }
 
 template <typename EnumType>
@@ -243,6 +259,10 @@ struct cam_targeting_parameters {
 
     // Appended tail field: request DigiView to lock the current target.
     bool lock_target = false;
+
+    // Appended tail field: source camera for this view crop.
+    // -2 = no change, -1 = automatic, 0.. = explicit camera.
+    int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
 };
 
 struct cam_optics_and_control_parameters {
@@ -539,7 +559,8 @@ template <typename StreamName>
 inline void pack_cam_targeting_parameters(
     message &msg, StreamName &&stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
+    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1,
+    bool lock_target = false, int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
@@ -584,6 +605,11 @@ inline void pack_cam_targeting_parameters(
     memcpy((void *)&msg.data[offset], &view_id, sizeof(int16_t));
     offset += sizeof(int16_t);
     memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
+    offset += sizeof(bool);
+    const uint8_t crop_camera_wire = cam_targeting_crop_camera_to_wire(crop_camera);
+    memcpy((void *)&msg.data[offset], &crop_camera_wire, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &CAM_TARGETING_CROP_CAMERA_MAGIC, sizeof(uint32_t));
 }
 
 template <typename StreamName>
@@ -909,13 +935,23 @@ inline void pack_set_detection_parameters(
 inline void pack_set_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t lock_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
+    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1,
+    bool lock_target = false, int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_targeting_parameters(
         msg, stream_name, cam_id, targeting_mode, euler_delta, yaw, pitch, roll, lock_flags, x_offset, y_offset,
-        target_latitude, target_longitude, target_altitude, track_id, view_id, lock_target);
+        target_latitude, target_longitude, target_altitude, track_id, view_id, lock_target, crop_camera);
+}
+
+inline void pack_set_cam_targeting_crop_camera_parameters(
+    message &msg, const char *stream_name, uint8_t view_id, int32_t crop_camera) {
+    msg = {};
+    pack_set_cam_targeting_parameters(
+        msg, stream_name, view_id, static_cast<View::TargetingMode>(UINT8_MAX), false,
+        0.0f, 0.0f, 0.0f, 0x8, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0, -1, false, crop_camera);
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
@@ -1183,6 +1219,16 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     offset += sizeof(int16_t);
     params.lock_target = false;
     memcpy((void *)&params.lock_target, (void *)&raw_msg.data[offset], sizeof(bool));
+    offset += sizeof(bool);
+    params.crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
+    uint8_t crop_camera_wire = 0;
+    uint32_t crop_camera_magic = 0;
+    memcpy((void *)&crop_camera_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&crop_camera_magic, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    if (crop_camera_magic == CAM_TARGETING_CROP_CAMERA_MAGIC) {
+        params.crop_camera = cam_targeting_crop_camera_from_wire(crop_camera_wire);
+    }
 }
 
 inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optics_and_control_parameters &params) {
