@@ -113,11 +113,13 @@ enum PARAM_TYPE : uint8_t {
     SINGLE_TARGET_TRACKING,
     CALIBRATION,
     NAVIGATION,
+    VIEW_CROP_CAMERA,
 };
 
 static_assert(CAM_TARGETING == 13, "CAM_TARGETING wire value changed");
 static_assert(CAM_OPTICS_AND_CONTROL == 14, "CAM_OPTICS_AND_CONTROL wire value changed");
 static_assert(NAVIGATION == 20, "NAVIGATION wire value changed");
+static_assert(VIEW_CROP_CAMERA == 21, "VIEW_CROP_CAMERA wire value changed");
 
 enum MESSAGE_TYPE : uint8_t {
     EMPTY,
@@ -181,6 +183,12 @@ struct video_output_parameters {
     bounding_box views[4];
     bounding_box detection_overlay_box;
     uint16_t     single_detection_size;
+};
+
+struct view_crop_camera_parameters {
+    char stream_name[STREAM_NAME_SIZE];
+    uint8_t view_id;
+    int8_t camera_id; // -1 = automatic, 0.. = explicit camera
 };
 
 struct capture_parameters {
@@ -445,6 +453,17 @@ inline void pack_video_output_parameters(
     memcpy((void *)&msg.data[offset], &detection_overlay_box, sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
+}
+
+template <typename StreamName>
+inline void pack_view_crop_camera_parameters(message &msg, StreamName &&stream_name, uint8_t view_id, int8_t camera_id) {
+    msg.param_type = VIEW_CROP_CAMERA;
+    uint16_t offset = 0;
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&msg.data[offset], &view_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &camera_id, sizeof(int8_t));
 }
 
 template <typename StreamName>
@@ -892,6 +911,10 @@ inline void pack_get_navigation_parameters(message &msg) {
     pack_get_parameters(msg, NAVIGATION);
 }
 
+inline void pack_get_view_crop_camera_parameters(message &msg, const char *stream_name, uint8_t view_id) {
+    pack_get_parameters(msg, VIEW_CROP_CAMERA, stream_name, view_id);
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     SET PACKING FUNCTIONS
@@ -911,6 +934,12 @@ inline void pack_set_video_output_parameters(
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_video_output_parameters(msg, stream_name, width, height, fps, layout_mode, detection_overlay_mode);
+}
+
+inline void pack_set_view_crop_camera_parameters(message &msg, const char *stream_name, uint8_t view_id, int8_t camera_id) {
+    msg.version = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_view_crop_camera_parameters(msg, stream_name, view_id, camera_id);
 }
 
 inline void pack_set_capture_parameters(message &msg, const char *stream_name, bool pic, bool vid) {
@@ -1063,6 +1092,18 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     memcpy((void *)&params.detection_overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&params.single_detection_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+}
+
+inline void unpack_view_crop_camera_parameters(message &raw_msg, view_crop_camera_parameters &params) {
+    uint16_t offset = 0;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&params.view_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    params.camera_id = -1;
+    if (raw_msg.message_type != GET_PARAMETERS) {
+        memcpy((void *)&params.camera_id, (void *)&raw_msg.data[offset], sizeof(int8_t));
+    }
 }
 
 inline void unpack_capture_parameters(message &raw_msg, capture_parameters &params) {
