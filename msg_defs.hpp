@@ -178,9 +178,7 @@ struct capture_parameters {
 struct detection_parameters {
     uint8_t  mode;
     uint8_t  sorting_mode;
-    float    track_confidence_threshold;
     float    scan_confidence_threshold;
-    float    track_box_overlap;
     float    scan_box_overlap;
     uint8_t  creation_score_scale;
     uint8_t  bonus_detection_scale;
@@ -444,26 +442,19 @@ inline void pack_capture_parameters(message &msg, StreamName &&stream_name, bool
 }
 
 inline void pack_detection_parameters(
-    message &msg, uint8_t mode, uint8_t sorting_mode, float track_confidence_threshold, float scan_confidence_threshold,
-    float track_box_overlap, float scan_box_overlap, uint8_t creation_score_scale, uint8_t bonus_detection_scale,
+    message &msg, uint8_t mode, uint8_t sorting_mode, float scan_confidence_threshold, float scan_box_overlap, uint8_t creation_score_scale, uint8_t bonus_detection_scale,
     uint8_t bonus_redetection_scale, uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.param_type           = DETECTION;
     uint16_t offset           = 0;
-    uint8_t track_conf_thresh  = static_cast<uint8_t>(track_confidence_threshold * 255.0f);
     uint8_t scan_conf_thresh = static_cast<uint8_t>(scan_confidence_threshold * 255.0f);
-    uint8_t track_box_ovlp     = static_cast<uint8_t>(track_box_overlap * 255.0f);
     uint8_t scan_box_ovlp    = static_cast<uint8_t>(scan_box_overlap * 255.0f);
 
     memcpy((void *)&msg.data[offset], &mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &sorting_mode, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &track_conf_thresh, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &scan_conf_thresh, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &track_box_ovlp, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &scan_box_ovlp, sizeof(uint8_t));
     offset += sizeof(uint8_t);
@@ -894,16 +885,15 @@ inline void pack_set_capture_parameters(message &msg, const char *stream_name, b
 }
 
 inline void pack_set_detection_parameters(
-    message &msg, uint8_t mode, uint8_t sorting_mode, float track_confidence_threshold, float scan_confidence_threshold, float track_box_overlap, float scan_box_overlap, 
+    message &msg, uint8_t mode, uint8_t sorting_mode, float scan_confidence_threshold, float scan_box_overlap, 
     uint8_t creation_score_scale, uint8_t bonus_detection_scale,
     uint8_t bonus_redetection_scale, uint8_t missed_detection_penalty, uint8_t missed_redetection_penalty) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_detection_parameters(
-        msg, mode, sorting_mode, track_confidence_threshold, scan_confidence_threshold,
-        track_box_overlap, scan_box_overlap, creation_score_scale, bonus_detection_scale,
-        bonus_redetection_scale, missed_detection_penalty, missed_redetection_penalty);
+        msg, mode, sorting_mode, scan_confidence_threshold, scan_box_overlap, creation_score_scale, 
+        bonus_detection_scale, bonus_redetection_scale, missed_detection_penalty, missed_redetection_penalty);
 }
 
 inline void pack_set_cam_targeting_parameters(
@@ -1045,22 +1035,14 @@ inline void unpack_capture_parameters(message &raw_msg, capture_parameters &para
 
 inline void unpack_detection_parameters(message &raw_msg, detection_parameters &params) {
     uint16_t offset = 0;
-    uint8_t track_conf_thresh;
     uint8_t scan_conf_thresh;
-    uint8_t track_box_ovlp;
     uint8_t scan_box_ovlp;
     memcpy(&params.mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy(&params.sorting_mode, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy(&track_conf_thresh, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.track_confidence_threshold  = static_cast<float>(track_conf_thresh) / 255.0f;
-    offset += sizeof(uint8_t);
     memcpy(&scan_conf_thresh, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.scan_confidence_threshold  = static_cast<float>(scan_conf_thresh) / 255.0f;
-    offset += sizeof(uint8_t);
-    memcpy(&track_box_ovlp, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    params.track_box_overlap  = static_cast<float>(track_box_ovlp) / 255.0f;
     offset += sizeof(uint8_t);
     memcpy(&scan_box_ovlp, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     params.scan_box_overlap  = static_cast<float>(scan_box_ovlp) / 255.0f;
