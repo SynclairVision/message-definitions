@@ -286,9 +286,7 @@
             <field type="uint8_t" name="mode">Reserved/unused mode field.</field>
             <field type="uint8_t" name="sorting_mode">Detection sorting strategy.</field>
 
-            <field type="float"   name="track_confidence_threshold">Score threshold when tracking existing objects.</field>
             <field type="float"   name="scan_confidence_threshold">Score threshold when scanning for new objects.</field>
-            <field type="float"   name="track_box_overlap">Max allowed overlap between crop tracking boxes.</field>
             <field type="float"   name="scan_box_overlap">Max allowed overlap between var scan boxes.</field>
 
             <field type="uint8_t" name="creation_score_scale">Initial score scaling of new detections (255 keeps old value).</field>

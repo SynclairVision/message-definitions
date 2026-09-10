@@ -275,9 +275,7 @@ Adjust detection thresholds and score tuning.
 |---|---|---|
 | `mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.6 |
 | `sorting_mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.6 |
-| `track_confidence_threshold` | `float` | Tracking threshold |
 | `scan_confidence_threshold` | `float` | Scan threshold |
-| `track_box_overlap` | `float` | Tracking overlap limit |
 | `scan_box_overlap` | `float` | Scan overlap limit |
 | `creation_score_scale` | `uint8_t` | Initial score for new detections |
 | `bonus_detection_scale` | `uint8_t` | Score bonus when a detection is found again |
