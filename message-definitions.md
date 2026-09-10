@@ -510,7 +510,7 @@ Control and monitor DigiView's single target tracking mode.
 
 ## `CALIBRATION`
 
-Start calibration and read current calibration progress.
+Control calibration and read current calibration progress.
 
 This message group is intended for the MOSS One hardware platform.
 
@@ -532,6 +532,7 @@ This message group is intended for the MOSS One hardware platform.
 | 1 | Start all calibration |
 | 2 | Start 6DoF calibration |
 | 3 | Start magnetometer calibration |
+| 4 | Stop: request cancellation of the active calibration |
 
 ### Calibration status values
 
@@ -548,7 +549,8 @@ This message group is intended for the MOSS One hardware platform.
 | 8 | Ready for any remaining 6DoF face; no face is active |
 | 9 | 6DoF complete: all six face datasets are collected and the mask is `0x3f` |
 | 10 | Magnetometer calibration complete |
-| 11 | Magnetometer calibration failed |
+| 11 | Magnetometer calibration genuinely failed |
+| 12 | Generic terminal failure after acknowledged cancellation or a general non-magnetometer failure |
 
 Statuses 1 through 6 identify the active user-facing face in the order +X, -X, +Y,
 -Y, +Z, -Z. `6DOF_READY` means the system is waiting for any face whose bit is not
@@ -557,7 +559,10 @@ six 6DoF face datasets only; it is not a general calibration success or failure 
 
 `MAG_IN_PROGRESS` carries monotonic magnetometer progress from 0 through 99.
 `MAG_COMPLETE` carries 100 and is published only after fit and result handoff.
-`MAG_FAILED` retains the last progress value from 0 through 99.
+`MAG_FAILED` is a genuine magnetometer result and retains the last progress value
+from 0 through 99. Generic `FAILED` has no magnetometer-progress semantics; it is
+terminal after a cancellation request is acknowledged or for a general
+non-magnetometer calibration failure.
 
 ### Completed face mask
 
@@ -576,7 +581,7 @@ When all six face datasets have been collected, it is `0x3f`.
 ### Behavior
 
 - `GET` snapshots return the current status, full completed-face mask, and magnetometer progress for the selected camera.
-- `SET` is command-only and starts the requested calibration action.
+- `SET` is command-only. A `START_ALL`, `START_6DOF`, or `START_MAG` command starts the requested calibration action; `STOP` requests cancellation of the active calibration.
 - During `START_ALL`, the mask remains `0x3f` while status is `MAG_IN_PROGRESS` after all six 6DoF faces have been collected.
 
 ## `NAVIGATION`

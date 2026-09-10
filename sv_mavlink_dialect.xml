@@ -141,7 +141,10 @@
       <entry value="3" name="SV_CALIBRATION_CMD_START_MAG">
         <description>Start magnetometer calibration.</description>
       </entry>
-      <entry value="4" name="SV_CALIBRATION_CMD_NUM_CMDS">
+      <entry value="4" name="SV_CALIBRATION_CMD_STOP">
+        <description>Request cancellation of the active calibration.</description>
+      </entry>
+      <entry value="5" name="SV_CALIBRATION_CMD_NUM_CMDS">
         <description>Enum count sentinel.</description>
       </entry>
     </enum>
@@ -182,9 +185,12 @@
         <description>Magnetometer calibration completed; mag_progress_percent is 100 after fit and result handoff.</description>
       </entry>
       <entry value="11" name="SV_CALIBRATION_STATUS_MAG_FAILED">
-        <description>Magnetometer calibration failed; mag_progress_percent retains the last value from 0 through 99.</description>
+        <description>Magnetometer calibration genuinely failed; mag_progress_percent retains the last value from 0 through 99.</description>
       </entry>
-      <entry value="12" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
+      <entry value="12" name="SV_CALIBRATION_STATUS_FAILED">
+        <description>Terminal status for acknowledged cancellation or a general non-magnetometer calibration failure.</description>
+      </entry>
+      <entry value="13" name="SV_CALIBRATION_STATUS_NUM_STATUSES">
         <description>Enum count sentinel.</description>
       </entry>
     </enum>
