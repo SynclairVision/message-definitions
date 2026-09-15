@@ -342,7 +342,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | `yaw` | `float` | Degrees |
 | `pitch` | `float` | Degrees |
 | `roll` | `float` | Degrees |
-| `lock_flags` | `uint8_t` | Axis lock bitmask |
+| `stabilize_flags` | `uint8_t` | Axis stabilization bitmask |
 | `x_offset` | `float` | Normalized horizontal offset |
 | `y_offset` | `float` | Normalized vertical offset |
 | `target_latitude` | `float` | Target coordinate latitude |
@@ -361,13 +361,13 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | 2 | Detection targeting |
 | 3 | Single target tracking |
 
-### Lock flags
+### Stabilization flags
 
-`lock_flags` uses the lowest 3 bits:
+`stabilize_flags` uses the lowest 3 bits:
 
-- bit 0: yaw lock
-- bit 1: pitch lock
-- bit 2: roll lock
+- bit 0: yaw stabilization
+- bit 1: pitch stabilization
+- bit 2: roll stabilization
 
 ### Behavior
 
