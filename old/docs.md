@@ -555,7 +555,7 @@ Message for user-controllable cameras' targeting information.
 | yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
 | pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
 | roll | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
-| lock_flags | uint8_t | \[0,7\] | \[0,7\] |
+| stabilize_flags | uint8_t | \[0,7\] | \[0,7\] |
 | x_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
 | y_offset | float | \[-1.0,1.0\] | \[-1.0,1.0\] |
 | target_latitude | float | \[-90.0,90.0\] | | \[-90.0,90.0\] |
@@ -592,15 +592,15 @@ The euler angles in degrees (using Tait-Bryan
 formalism) used to aim the camera. Roll is currently
 ignored.
 
-##### lock flags
+##### stabilization flags
 
-`lock_flags` is a 3-bit combinable mask where 0x01 = yaw, 0x02 = pitch,
+`stabilize_flags` is a 3-bit combinable mask where 0x01 = yaw, 0x02 = pitch,
 and 0x04 = roll. Public values are 0x00..0x07 (0..7).
 
 A set bit means that axis is locked/stabilized to the global frame. A
 cleared bit means that axis follows the system frame.
 
-For example, if the lock_flags field is set to 0b00000011, yaw and pitch
+For example, if the stabilize_flags field is set to 0b00000011, yaw and pitch
 are locked while roll is unlocked.
 
 ##### x offset, y offset

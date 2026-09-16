@@ -338,7 +338,7 @@
             <field type="float"   name="pitch">Pitch in degrees (global frame, Tait-Bryan).</field>
             <field type="float"   name="roll">Roll in degrees (currently ignored).</field>
 
-            <field type="uint8_t" name="lock_flags">3-bit combinable yaw/pitch/roll lock mask: 0x01=yaw, 0x02=pitch, 0x04=roll; set bit=locked/stabilized to global frame, clear bit=follows system frame.</field>
+            <field type="uint8_t" name="stabilization_flags">3-bit combinable yaw/pitch/roll lock mask: 0x01=yaw, 0x02=pitch, 0x04=roll; set bit=locked/stabilized to global frame, clear bit=follows system frame.</field>
 
             <field type="float"   name="x_offset">Horizontal offset in view, [-1.0, 1.0].</field>
             <field type="float"   name="y_offset">Vertical offset in view, [-1.0, 1.0].</field>
