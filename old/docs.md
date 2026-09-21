@@ -449,11 +449,14 @@ Detected ROI contains information specific to one detection.
 |      index       |   uint8_t    |   \[0,254\], 255   |
 |      score       |   uint8_t    |           n/a           |
 | total_detections |   uint8_t    |           n/a           |
-|     yaw_global      |    float     |           n/a           |
-|    pitch_global     |    float     |           n/a           |
-| rel_frame_of_reference |   uint8_t    |        0, 1, 2         |
-|     yaw_rel      |    float     |           n/a           |
-|    pitch_rel     |    float     |           n/a           |
+| moss_global_yaw | float | n/a |
+| moss_global_pitch | float | n/a |
+| moss_relative_yaw | float | n/a |
+| moss_relative_pitch | float | n/a |
+| autopilot_global_yaw | float | n/a |
+| autopilot_global_pitch | float | n/a |
+| autopilot_relative_yaw | float | n/a |
+| autopilot_relative_pitch | float | n/a |
 |     latitude     |    float     |           n/a           |
 |    longitude     |    float     |           n/a           |
 |     altitude     |    float     |           n/a           |
@@ -488,34 +491,18 @@ The assigned score of the object.
 
 The number detections for which information has been sent.
 
-##### yaw (global)
+##### direction fields
 
-The yaw euler angle in degrees (using Tait-Bryan formalism) in relation to true
-north.
+The message returns these direction fields in this exact order, in degrees:
 
-##### pitch (global)
-
-The pitch euler angle in degrees (using Tait-Bryan formalism) in relation to true
-north.
-
-##### rel frame of reference
-
-Indicates the frame of reference for the relative yaw and pitch
-angles. The possible values are listed below.
-
-| **Value** |       **Frame of reference**        |
-|:---------:|:----------------------------------:|
-|     0     | Global frame, same as yaw_global and pitch_global   |
-|     1     | Autopilot heading frame, relative to the system's current heading |
-|     2     | Camera frame, relative to the camera's center axis   |
-
-##### yaw (relative)
-
-The yaw euler angle in degrees in relation to the center axis of the camera.
-
-##### pitch (relative)
-
-The pitch euler angle in degrees in relation to the center axis of the camera.
+1. `moss_global_yaw`
+2. `moss_global_pitch`
+3. `moss_relative_yaw`
+4. `moss_relative_pitch`
+5. `autopilot_global_yaw`
+6. `autopilot_global_pitch`
+7. `autopilot_relative_yaw`
+8. `autopilot_relative_pitch`
 
 ##### latitude
 
@@ -760,11 +747,14 @@ Message for controlling the single target tracking unit.
 | detection_id | uint8_t | \[0,255\] | \[0,255\] |
 | zoom_level | uint16_t | \[0,65535\] | \[0,65535\] |
 | confidence | float | n/a | \[0.0,1.0\] |
-| yaw_global | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
-| pitch_global | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
-| rel_frame_of_reference | uint8_t | 0,1,2 | 0,1,2 |
-| yaw_rel | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
-| pitch_rel | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
+| moss_global_yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| moss_global_pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
+| moss_relative_yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| moss_relative_pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
+| autopilot_global_yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| autopilot_global_pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
+| autopilot_relative_yaw | float | \[-180.0,180.0\] | \[-180.0,180.0\] |
+| autopilot_relative_pitch | float | \[-90.0,90.0\] | \[-90.0,90.0\] |
 
 ### Set behavior
 
@@ -806,26 +796,21 @@ A zoom of 0 makes the system use the biggest possible tracking box, while a zoom
 
 Unused for set.
 
-##### yaw, pitch (global)
+##### direction fields
 
-The yaw and pitch euler angles in degrees (using
-Tait-Bryan formalism) in relation to true north. Used when command is set to 1 and designates the target
-direction.
+The message carries these eight direction fields in this exact order, in degrees:
 
-##### rel frame of reference
+1. `moss_global_yaw`
+2. `moss_global_pitch`
+3. `moss_relative_yaw`
+4. `moss_relative_pitch`
+5. `autopilot_global_yaw`
+6. `autopilot_global_pitch`
+7. `autopilot_relative_yaw`
+8. `autopilot_relative_pitch`
 
-Indicates the frame of reference for the relative yaw and pitch
-angles. The possible values are listed below.
-
-| **Value** |       **Frame of reference**        |
-|:---------:|:----------------------------------:|
-|     0     | Global frame, same as yaw_global and pitch_global   |
-|     1     | Autopilot heading frame, relative to the system's current heading |
-|     2     | Camera frame, relative to the camera's center axis   |
-
-##### yaw, pitch (relative)
-
-Unused for set.
+For SET, the MOSS global direction fields designate the target direction when
+the command is set to 1. The remaining direction fields are output fields.
 
 ### Get behavior
 
@@ -833,7 +818,8 @@ When getting the SINGLE_TARGET_TRACKING message all fields will be filled with t
 
 Confidence indicates the system's confidence in the current target, in the range \[0.0,1.0\]. Currently only set to 1.0 when tracking a valid detection, and 0.0 otherwise.
 
-Yaw and pitch (global and relative) indicate the current target direction. Absolute values are in relation to true north, while relative values are set according to the frame of reference.
+The eight direction fields use the MOSS global and camera-relative frames, followed
+by the autopilot global and autopilot-relative frames, in the order listed above.
 
 ## NAVIGATION
 
