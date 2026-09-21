@@ -114,15 +114,12 @@ This applies to:
 - `TRACKED_DETECTION`
 - `SINGLE_TARGET_TRACKING`
 
-### Frames of reference
+### Independent angle frames
 
-Some messages return both global and relative angles. The relative frame is identified by:
-
-| Value | Meaning |
-|---:|---|
-| 0 | Global frame |
-| 1 | Autopilot heading frame |
-| 2 | Camera frame |
+The tracking messages expose independent MOSS and autopilot angle values. MOSS global
+angles are the current native global direction, and MOSS relative angles are
+camera-local. Autopilot global and relative angles use the corresponding autopilot
+frames supplied by the integration.
 
 ## Message reference
 
@@ -302,11 +299,14 @@ Request one or more current detections.
 | `score` | `uint8_t` | Detection score |
 | `total_detections` | `uint8_t` | Number of returned detections |
 | `type` | `int16_t` | Detection type/class field |
-| `yaw_global` | `float` | Global yaw in degrees |
-| `pitch_global` | `float` | Global pitch in degrees |
-| `rel_frame_of_reference` | `uint8_t` | Relative angle frame |
-| `yaw_rel` | `float` | Relative yaw in degrees |
-| `pitch_rel` | `float` | Relative pitch in degrees |
+| `moss_global_yaw` | `float` | MOSS global yaw in degrees |
+| `moss_global_pitch` | `float` | MOSS global pitch in degrees |
+| `moss_relative_yaw` | `float` | MOSS camera-local relative yaw in degrees |
+| `moss_relative_pitch` | `float` | MOSS camera-local relative pitch in degrees |
+| `autopilot_global_yaw` | `float` | Autopilot global yaw in degrees |
+| `autopilot_global_pitch` | `float` | Autopilot global pitch in degrees |
+| `autopilot_relative_yaw` | `float` | Autopilot relative yaw in degrees |
+| `autopilot_relative_pitch` | `float` | Autopilot relative pitch in degrees |
 | `latitude` | `float` | Latitude of the detection |
 | `longitude` | `float` | Longitude of the detection |
 | `altitude` | `float` | Not filled by DigiView in this release |
@@ -471,11 +471,14 @@ Control and monitor DigiView's single target tracking mode.
 | `detection_id` | `uint8_t` | Current tracked object ID used by single-target tracking |
 | `zoom_level` | `uint16_t` | Tracking zoom level |
 | `confidence` | `float` | Current tracker confidence |
-| `yaw_global` | `float` | Current target yaw in degrees |
-| `pitch_global` | `float` | Current target pitch in degrees |
-| `rel_frame_of_reference` | `uint8_t` | Relative angle frame |
-| `yaw_rel` | `float` | Relative yaw in degrees |
-| `pitch_rel` | `float` | Relative pitch in degrees |
+| `moss_global_yaw` | `float` | MOSS current target global yaw in degrees |
+| `moss_global_pitch` | `float` | MOSS current target global pitch in degrees |
+| `moss_relative_yaw` | `float` | MOSS camera-local target relative yaw in degrees |
+| `moss_relative_pitch` | `float` | MOSS camera-local target relative pitch in degrees |
+| `autopilot_global_yaw` | `float` | Autopilot target global yaw in degrees |
+| `autopilot_global_pitch` | `float` | Autopilot target global pitch in degrees |
+| `autopilot_relative_yaw` | `float` | Autopilot target relative yaw in degrees |
+| `autopilot_relative_pitch` | `float` | Autopilot target relative pitch in degrees |
 | `publish_timestamp_us` | `uint64_t` | Tracking output publish timestamp |
 | `status` | `uint8_t` | Tracking status |
 | `lock_target` | `bool` | Request DigiView to lock onto the current target |
