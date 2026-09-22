@@ -854,7 +854,7 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, const char *st
 */
 inline void pack_get_tracked_detection(message &msg, uint8_t index) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_tracked_detection_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -862,7 +862,7 @@ inline void pack_get_tracked_detection(message &msg, uint8_t index) {
 */
 inline void pack_get_tracked_detection_visible(message &msg) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_tracked_detection_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -870,7 +870,7 @@ inline void pack_get_tracked_detection_visible(message &msg) {
 */
 inline void pack_get_tracked_detection_all(message &msg) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_tracked_detection_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
