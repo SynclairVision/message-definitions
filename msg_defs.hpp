@@ -192,11 +192,14 @@ struct tracked_detection_parameters {
     uint8_t score;
     uint8_t total_detections;
     int16_t type;
-    float   yaw_global;
-    float   pitch_global;
-    uint8_t rel_frame_of_reference;
-    float   yaw_rel;
-    float   pitch_rel;
+    float   moss_global_yaw;
+    float   moss_global_pitch;
+    float   moss_relative_yaw;
+    float   moss_relative_pitch;
+    float   autopilot_global_yaw;
+    float   autopilot_global_pitch;
+    float   autopilot_relative_yaw;
+    float   autopilot_relative_pitch;
     float   latitude;
     float   longitude;
     float   altitude;
@@ -285,11 +288,14 @@ struct single_target_tracking_parameters {
     uint8_t detection_id;
     uint16_t zoom_level;
     float confidence;
-    float yaw_global;
-    float pitch_global;
-    uint8_t rel_frame_of_reference;
-    float yaw_rel;
-    float pitch_rel;
+    float moss_global_yaw;
+    float moss_global_pitch;
+    float moss_relative_yaw;
+    float moss_relative_pitch;
+    float autopilot_global_yaw;
+    float autopilot_global_pitch;
+    float autopilot_relative_yaw;
+    float autopilot_relative_pitch;
 
     // Appended tail field: publish timestamp for this STT output in microseconds.
     uint64_t publish_timestamp_us;
@@ -470,8 +476,9 @@ inline void pack_detection_parameters(
 }
 
 inline void pack_tracked_detection_parameters(
-    message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, float lat, float lon, float alt, float dist, float width, float height,
+    message &msg, uint8_t total_detections, uint8_t index, uint8_t score, int16_t type, float moss_global_yaw, float moss_global_pitch,
+    float moss_relative_yaw, float moss_relative_pitch, float autopilot_global_yaw, float autopilot_global_pitch,
+    float autopilot_relative_yaw, float autopilot_relative_pitch, float lat, float lon, float alt, float dist, float width, float height,
     uint16_t track_id = 0, uint64_t publish_timestamp_us = 0, uint8_t view_id = UINT8_MAX) {
     msg.param_type = TRACKED_DETECTION;
     uint16_t offset = 0;
@@ -484,18 +491,28 @@ inline void pack_tracked_detection_parameters(
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &type, sizeof(int16_t));
     offset += sizeof(int16_t);
-    mrad    = static_cast<int32_t>(yaw_global * 1000.0f);
+    mrad    = static_cast<int32_t>(moss_global_yaw * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(pitch_global * 1000.0f);
+    mrad    = static_cast<int32_t>(moss_global_pitch * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    memcpy((void *)&msg.data[offset], &rel_frame_of_reference, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    mrad    = static_cast<int32_t>(yaw_rel * 1000.0f);
+    mrad    = static_cast<int32_t>(moss_relative_yaw * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad    = static_cast<int32_t>(pitch_rel * 1000.0f);
+    mrad    = static_cast<int32_t>(moss_relative_pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(autopilot_global_yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(autopilot_global_pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(autopilot_relative_yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad    = static_cast<int32_t>(autopilot_relative_pitch * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
     mrad    = static_cast<int32_t>(lat * 1000.0f);
@@ -657,8 +674,9 @@ inline void pack_cam_depth_estimation_parameters(message &msg, StreamName &&stre
 template <typename StreamName>
 inline void pack_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, StreamName &&stream_name, uint8_t cam_id, float x_offset, float y_offset,
-    uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, uint64_t publish_timestamp_us = 0,
+    uint8_t detection_id, uint16_t zoom_level, float confidence, float moss_global_yaw, float moss_global_pitch,
+    float moss_relative_yaw, float moss_relative_pitch, float autopilot_global_yaw, float autopilot_global_pitch,
+    float autopilot_relative_yaw, float autopilot_relative_pitch, uint64_t publish_timestamp_us = 0,
     single_target_tracking_status status = single_target_tracking_status::OFF, bool lock_target = false) {
 
     msg.param_type = SINGLE_TARGET_TRACKING;
@@ -685,18 +703,28 @@ inline void pack_single_target_tracking_parameters(
     mrad = static_cast<int32_t>(confidence * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(yaw_global * 1000.0f);
+    mrad = static_cast<int32_t>(moss_global_yaw * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(pitch_global * 1000.0f);
+    mrad = static_cast<int32_t>(moss_global_pitch * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    memcpy((void *)&msg.data[offset], &rel_frame_of_reference, sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    mrad = static_cast<int32_t>(yaw_rel * 1000.0f);
+    mrad = static_cast<int32_t>(moss_relative_yaw * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
-    mrad = static_cast<int32_t>(pitch_rel * 1000.0f);
+    mrad = static_cast<int32_t>(moss_relative_pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(autopilot_global_yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(autopilot_global_pitch * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(autopilot_relative_yaw * 1000.0f);
+    memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    mrad = static_cast<int32_t>(autopilot_relative_pitch * 1000.0f);
     memcpy((void *)&msg.data[offset], &mrad, sizeof(int32_t));
     offset += sizeof(int32_t);
     memcpy((void *)&msg.data[offset], &publish_timestamp_us, sizeof(uint64_t));
@@ -824,25 +852,25 @@ inline void pack_get_parameters(message &msg, uint8_t param_type, const char *st
 /*
     Convenience function for TRACKED_DETECTION. Specify the index of the detection to get.
 */
-inline void pack_get_tracked_detection(message &msg, uint8_t index, uint8_t rel_frame_of_reference) {
+inline void pack_get_tracked_detection(message &msg, uint8_t index) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_tracked_detection_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, index, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
     Convenience function for TRACKED_DETECTION. Get all detections that are visible on screen.
 */
-inline void pack_get_tracked_detection_visible(message &msg, uint8_t rel_frame_of_reference) {
+inline void pack_get_tracked_detection_visible(message &msg) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_tracked_detection_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, 254, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
     Convenience function for TRACKED_DETECTION. Get all detections.
 */
-inline void pack_get_tracked_detection_all(message &msg, uint8_t rel_frame_of_reference) {
+inline void pack_get_tracked_detection_all(message &msg) {
     pack_get_parameters(msg, TRACKED_DETECTION);
-    pack_tracked_detection_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, rel_frame_of_reference, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    pack_tracked_detection_parameters(msg, 0, 255, 0, -2, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 /*
@@ -931,12 +959,14 @@ inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *s
 
 inline void pack_set_single_target_tracking_parameters(
     message &msg, single_target_tracker_command command, const char *stream_name, uint8_t cam_id, float x_offset, float y_offset,
-    uint8_t detection_id, uint16_t zoom_level, float confidence, float yaw_global, float pitch_global,
-    uint8_t rel_frame_of_reference, float yaw_rel, float pitch_rel, bool lock_target = false) {
+    uint8_t detection_id, uint16_t zoom_level, float confidence, float moss_global_yaw, float moss_global_pitch,
+    float moss_relative_yaw, float moss_relative_pitch, float autopilot_global_yaw, float autopilot_global_pitch,
+    float autopilot_relative_yaw, float autopilot_relative_pitch, bool lock_target = false) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_single_target_tracking_parameters(msg, command, stream_name, cam_id, x_offset, y_offset,
-        detection_id, zoom_level, confidence, yaw_global, pitch_global, rel_frame_of_reference, yaw_rel, pitch_rel,
+        detection_id, zoom_level, confidence, moss_global_yaw, moss_global_pitch, moss_relative_yaw, moss_relative_pitch,
+        autopilot_global_yaw, autopilot_global_pitch, autopilot_relative_yaw, autopilot_relative_pitch,
         0, single_target_tracking_status::OFF, lock_target);
 }
 
@@ -1070,34 +1100,44 @@ inline void unpack_tracked_detection_parameters(message &raw_msg, tracked_detect
     memcpy(&params.type, (void *)&raw_msg.data[offset], sizeof(int16_t));
     offset += sizeof(int16_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_global  = static_cast<float>(mrad) / 1000.0f;
+    params.moss_global_yaw  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_global  = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(int32_t);
-    memcpy(&params.rel_frame_of_reference, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_rel  = static_cast<float>(mrad) / 1000.0f;
+    params.moss_global_pitch  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(float);
+    params.moss_relative_yaw  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.moss_relative_pitch  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_global_yaw = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_global_pitch = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_relative_yaw = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_relative_pitch = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.latitude  = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.longitude  = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.altitude  = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.distance = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.width = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(float);
+    offset += sizeof(int32_t);
     memcpy(&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.height = static_cast<float>(mrad) / 1000.0f;
     
@@ -1263,18 +1303,28 @@ inline void unpack_single_target_tracking_parameters(message &raw_msg, single_ta
     params.confidence  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_global  = static_cast<float>(mrad) / 1000.0f;
+    params.moss_global_yaw  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_global  = static_cast<float>(mrad) / 1000.0f;
-    offset += sizeof(int32_t);
-    memcpy((void *)&params.rel_frame_of_reference, (void *)&raw_msg.data[offset], sizeof(uint8_t));
-    offset += sizeof(uint8_t);
-    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.yaw_rel  = static_cast<float>(mrad) / 1000.0f;
+    params.moss_global_pitch  = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
-    params.pitch_rel  = static_cast<float>(mrad) / 1000.0f;
+    params.moss_relative_yaw  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.moss_relative_pitch  = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_global_yaw = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_global_pitch = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_relative_yaw = static_cast<float>(mrad) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&mrad, (void *)&raw_msg.data[offset], sizeof(int32_t));
+    params.autopilot_relative_pitch = static_cast<float>(mrad) / 1000.0f;
     offset += sizeof(int32_t);
     params.publish_timestamp_us = 0;
     memcpy((void *)&params.publish_timestamp_us, (void *)&raw_msg.data[offset], sizeof(uint64_t));

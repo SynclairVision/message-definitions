@@ -305,13 +305,14 @@
 
             <field type="int16_t" name="type">Detection class.</field>
 
-            <field type="float"   name="yaw_global">Global yaw in degrees (Tait-Bryan, vs true north).</field>
-            <field type="float"   name="pitch_global">Global pitch in degrees (vs true north).</field>
-            
-            <field type="uint8_t" name="rel_frame_of_reference">Indicates the frame of reference for the relative yaw and pitch angles.</field>
-
-            <field type="float"   name="yaw_rel">Relative yaw in degrees (vs camera center axis).</field>
-            <field type="float"   name="pitch_rel">Relative pitch in degrees (vs camera center axis).</field>
+            <field type="float"   name="moss_global_yaw">MOSS global yaw in degrees (Tait-Bryan, vs true north).</field>
+            <field type="float"   name="moss_global_pitch">MOSS global pitch in degrees (vs true north).</field>
+            <field type="float"   name="moss_relative_yaw">MOSS camera-local relative yaw in degrees.</field>
+            <field type="float"   name="moss_relative_pitch">MOSS camera-local relative pitch in degrees.</field>
+            <field type="float"   name="autopilot_global_yaw">Autopilot global yaw in degrees.</field>
+            <field type="float"   name="autopilot_global_pitch">Autopilot global pitch in degrees.</field>
+            <field type="float"   name="autopilot_relative_yaw">Autopilot relative yaw in degrees.</field>
+            <field type="float"   name="autopilot_relative_pitch">Autopilot relative pitch in degrees.</field>
             <field type="float"   name="latitude">Detection latitude, currently 0 if not implemented.</field>
             <field type="float"   name="longitude">Detection longitude, currently 0 if not implemented.</field>
             <field type="float"   name="altitude">Detection altitude (m), currently 0 if not implemented.</field>
@@ -416,12 +417,14 @@
 
             <field type="float"   name="confidence">System's confidence in the current target.</field>
 
-            <field type="float"   name="yaw_global">Global yaw of target in degrees.</field>
-            <field type="float"   name="pitch_global">Global pitch of target in degrees.</field>
-            <field type="uint8_t"  name="rel_frame_of_reference">Indicates the frame of reference for the relative yaw and pitch
-angles.</field>
-            <field type="float"   name="yaw_rel">Relative yaw of target in degrees.</field>
-            <field type="float"   name="pitch_rel">Relative pitch of target in degrees.</field>
+            <field type="float"   name="moss_global_yaw">MOSS global yaw of target in degrees.</field>
+            <field type="float"   name="moss_global_pitch">MOSS global pitch of target in degrees.</field>
+            <field type="float"   name="moss_relative_yaw">MOSS camera-local relative yaw of target in degrees.</field>
+            <field type="float"   name="moss_relative_pitch">MOSS camera-local relative pitch of target in degrees.</field>
+            <field type="float"   name="autopilot_global_yaw">Autopilot global yaw of target in degrees.</field>
+            <field type="float"   name="autopilot_global_pitch">Autopilot global pitch of target in degrees.</field>
+            <field type="float"   name="autopilot_relative_yaw">Autopilot relative yaw of target in degrees.</field>
+            <field type="float"   name="autopilot_relative_pitch">Autopilot relative pitch of target in degrees.</field>
 
             <extensions/>
             <field type="uint64_t" name="publish_timestamp_us">Publish timestamp for this STT output in microseconds.</field>
