@@ -55,6 +55,18 @@ inline void copy_stream_name_field(uint8_t *dst, std::string_view stream_name) {
     memcpy(dst, stream_name.data(), std::min(stream_name.size(), static_cast<size_t>(STREAM_NAME_SIZE)));
 }
 
+inline uint8_t cam_targeting_crop_camera_to_wire(int32_t crop_camera) {
+    if (crop_camera == CAM_TARGETING_CROP_CAMERA_NO_CHANGE) return 0;
+    if (crop_camera == CAM_TARGETING_CROP_CAMERA_AUTOMATIC) return 1;
+    return static_cast<uint8_t>(crop_camera + 2);
+}
+
+inline int32_t cam_targeting_crop_camera_from_wire(uint8_t crop_camera) {
+    if (crop_camera == 0) return CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
+    if (crop_camera == 1) return CAM_TARGETING_CROP_CAMERA_AUTOMATIC;
+    return static_cast<int32_t>(crop_camera) - 2;
+}
+
 template <typename EnumType>
 inline uint8_t enum_to_u8(EnumType value) {
     return static_cast<uint8_t>(value);
@@ -621,11 +633,7 @@ inline void pack_cam_targeting_parameters(
     offset += sizeof(int16_t);
     memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
     offset += sizeof(bool);
-    const uint8_t crop_camera_wire = crop_camera == CAM_TARGETING_CROP_CAMERA_NO_CHANGE
-        ? 0U
-        : crop_camera == CAM_TARGETING_CROP_CAMERA_AUTOMATIC
-            ? 1U
-            : static_cast<uint8_t>(crop_camera + 2);
+    const uint8_t crop_camera_wire = cam_targeting_crop_camera_to_wire(crop_camera);
     memcpy((void *)&msg.data[offset], &crop_camera_wire, sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&msg.data[offset], &CAM_TARGETING_CROP_CAMERA_MAGIC, sizeof(uint32_t));
@@ -1282,11 +1290,7 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     offset += sizeof(uint8_t);
     memcpy((void *)&crop_camera_magic, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     if (crop_camera_magic == CAM_TARGETING_CROP_CAMERA_MAGIC) {
-        params.crop_camera = crop_camera_wire == 0
-            ? CAM_TARGETING_CROP_CAMERA_NO_CHANGE
-            : crop_camera_wire == 1
-                ? CAM_TARGETING_CROP_CAMERA_AUTOMATIC
-                : static_cast<int32_t>(crop_camera_wire) - 2;
+        params.crop_camera = cam_targeting_crop_camera_from_wire(crop_camera_wire);
     }
 }
 
