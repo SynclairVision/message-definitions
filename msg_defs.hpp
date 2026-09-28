@@ -21,8 +21,8 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
-static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_NO_CHANGE = -2;
-static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_AUTOMATIC = -1;
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_NO_CHANGE = -1;
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_AUTOMATIC = 0;
 static constexpr uint32_t CAM_TARGETING_CROP_CAMERA_MAGIC = 0x43524F50U;
 
 static constexpr uint32_t STREAM_NAME_SIZE      = 16;
@@ -57,14 +57,12 @@ inline void copy_stream_name_field(uint8_t *dst, std::string_view stream_name) {
 
 inline uint8_t cam_targeting_crop_camera_to_wire(int32_t crop_camera) {
     if (crop_camera == CAM_TARGETING_CROP_CAMERA_NO_CHANGE) return 0;
-    if (crop_camera == CAM_TARGETING_CROP_CAMERA_AUTOMATIC) return 1;
-    return static_cast<uint8_t>(crop_camera + 2);
+    return static_cast<uint8_t>(crop_camera + 1);
 }
 
 inline int32_t cam_targeting_crop_camera_from_wire(uint8_t crop_camera) {
     if (crop_camera == 0) return CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
-    if (crop_camera == 1) return CAM_TARGETING_CROP_CAMERA_AUTOMATIC;
-    return static_cast<int32_t>(crop_camera) - 2;
+    return static_cast<int32_t>(crop_camera) - 1;
 }
 
 template <typename EnumType>
@@ -183,6 +181,7 @@ struct video_output_parameters {
     bounding_box views[4];
     bounding_box detection_overlay_box;
     uint16_t     single_detection_size;
+    uint8_t      num_cameras;
 };
 
 struct capture_parameters {
@@ -196,7 +195,7 @@ struct capture_parameters {
 struct view_crop_camera_parameters {
     char stream_name[STREAM_NAME_SIZE];
     uint8_t view_id;
-    int8_t camera_id; // -1 = automatic, 0.. = explicit camera
+    int8_t camera_id; // 0 = automatic, 1.. = explicit physical camera
 };
 
 struct detection_parameters {
@@ -423,7 +422,8 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
 template <typename StreamName>
 inline void pack_video_output_parameters(
     message &msg, StreamName &&stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
-    uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
+    uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {},
+    uint16_t single_detection_size = 0, uint8_t num_cameras = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint16_t offset = 0;
@@ -457,6 +457,8 @@ inline void pack_video_output_parameters(
     memcpy((void *)&msg.data[offset], &detection_overlay_box, sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    memcpy((void *)&msg.data[offset], &num_cameras, sizeof(uint8_t));
 }
 
 template <typename StreamName>
@@ -1112,6 +1114,11 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     memcpy((void *)&params.detection_overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&params.single_detection_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    params.num_cameras = 0;
+    if (offset + sizeof(uint8_t) <= PARAMCOUNT) {
+        memcpy((void *)&params.num_cameras, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    }
 }
 
 inline void unpack_view_crop_camera_parameters(message &raw_msg, view_crop_camera_parameters &params) {
@@ -1120,7 +1127,7 @@ inline void unpack_view_crop_camera_parameters(message &raw_msg, view_crop_camer
     offset += STREAM_NAME_SIZE;
     memcpy((void *)&params.view_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    params.camera_id = -1;
+    params.camera_id = CAM_TARGETING_CROP_CAMERA_AUTOMATIC;
     if (raw_msg.message_type != GET_PARAMETERS) {
         memcpy((void *)&params.camera_id, (void *)&raw_msg.data[offset], sizeof(int8_t));
     }

@@ -266,6 +266,8 @@
             <field type="uint16_t"     name="detection_overlay_h">Detection overlay height in pixels.</field>
             
             <field type="uint16_t"     name="single_detection_size">Side length of square detection views in pixels.</field>
+            <extensions/>
+            <field type="uint8_t"      name="num_cameras">Number of available physical cameras.</field>
         </message>
 
         <message id="40004" name="CAPTURE_PARAMETERS">
@@ -360,7 +362,7 @@
 
             <field type="char[16]" name="stream_name">Stream name (max 16 characters).</field>
             <field type="uint8_t" name="view_id">Displayed video view slot.</field>
-            <field type="int8_t" name="camera_id">Source camera: -1 automatic, 0 or greater explicit camera.</field>
+            <field type="int8_t" name="camera_id">Source camera: 0 automatic, 1 through num_cameras select a physical camera.</field>
         </message>
 
         <message id="40008" name="CAM_OPTICS_AND_CONTROL_PARAMETERS">
@@ -445,7 +447,7 @@
         <message id="40013" name="CALIBRATION_PARAMETERS">
             <description>Camera calibration command and status.</description>
 
-            <field type="uint8_t" name="cam_id">Camera index.</field>
+            <field type="uint8_t" name="cam_id">Physical camera ID, 1 through num_cameras.</field>
             <field type="uint8_t" name="calib_command" enum="SV_CALIBRATION_COMMAND">Calibration command.</field>
             <field type="uint8_t" name="calib_status" enum="SV_CALIBRATION_STATUS">Calibration status.</field>
             <extensions/>
