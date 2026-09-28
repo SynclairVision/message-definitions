@@ -55,15 +55,6 @@ inline void copy_stream_name_field(uint8_t *dst, std::string_view stream_name) {
     memcpy(dst, stream_name.data(), std::min(stream_name.size(), static_cast<size_t>(STREAM_NAME_SIZE)));
 }
 
-inline uint8_t cam_targeting_crop_camera_to_wire(int32_t crop_camera) {
-    if (crop_camera == CAM_TARGETING_CROP_CAMERA_NO_CHANGE) return 0;
-    return static_cast<uint8_t>(crop_camera + 1);
-}
-
-inline int32_t cam_targeting_crop_camera_from_wire(uint8_t crop_camera) {
-    if (crop_camera == 0) return CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
-    return static_cast<int32_t>(crop_camera) - 1;
-}
 
 template <typename EnumType>
 inline uint8_t enum_to_u8(EnumType value) {
@@ -269,7 +260,7 @@ struct cam_targeting_parameters {
     bool lock_target = false;
 
     // Appended tail field: source camera for this view crop.
-    // -2 = no change, -1 = automatic, 0.. = explicit camera.
+    // -2 = no change, 0 = automatic, 1.. = explicit physical camera.
     int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
 };
 
@@ -635,10 +626,14 @@ inline void pack_cam_targeting_parameters(
     offset += sizeof(int16_t);
     memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
     offset += sizeof(bool);
-    const uint8_t crop_camera_wire = cam_targeting_crop_camera_to_wire(crop_camera);
-    memcpy((void *)&msg.data[offset], &crop_camera_wire, sizeof(uint8_t));
+    const bool crop_camera_update = crop_camera != CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
+    const uint8_t crop_camera_value =
+        crop_camera_update ? static_cast<uint8_t>(crop_camera) : 0U;
+    const uint32_t crop_camera_magic =
+        crop_camera_update ? CAM_TARGETING_CROP_CAMERA_MAGIC : 0U;
+    memcpy((void *)&msg.data[offset], &crop_camera_value, sizeof(uint8_t));
     offset += sizeof(uint8_t);
-    memcpy((void *)&msg.data[offset], &CAM_TARGETING_CROP_CAMERA_MAGIC, sizeof(uint32_t));
+    memcpy((void *)&msg.data[offset], &crop_camera_magic, sizeof(uint32_t));
 }
 
 template <typename StreamName>
@@ -1291,13 +1286,13 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     memcpy((void *)&params.lock_target, (void *)&raw_msg.data[offset], sizeof(bool));
     offset += sizeof(bool);
     params.crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
-    uint8_t crop_camera_wire = 0;
+    uint8_t crop_camera_value = 0;
     uint32_t crop_camera_magic = 0;
-    memcpy((void *)&crop_camera_wire, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    memcpy((void *)&crop_camera_value, (void *)&raw_msg.data[offset], sizeof(uint8_t));
     offset += sizeof(uint8_t);
     memcpy((void *)&crop_camera_magic, (void *)&raw_msg.data[offset], sizeof(uint32_t));
     if (crop_camera_magic == CAM_TARGETING_CROP_CAMERA_MAGIC) {
-        params.crop_camera = cam_targeting_crop_camera_from_wire(crop_camera_wire);
+        params.crop_camera = static_cast<int32_t>(crop_camera_value);
     }
 }
 

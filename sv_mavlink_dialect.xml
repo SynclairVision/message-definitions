@@ -353,7 +353,7 @@
             <field type="uint16_t" name="track_id">Direct tracker identity for DETECTION mode; 0 means unavailable or use view_id.</field>
             <field type="int16_t" name="view_id">Displayed AI-view slot id for DETECTION mode; -1 clears/no lock.</field>
             <field type="uint8_t" name="lock_target">1 to request DigiView to lock the current target.</field>
-            <field type="uint8_t" name="crop_camera">Source camera wire value: 0 = no change, 1 = automatic, otherwise camera index + 2.</field>
+            <field type="uint8_t" name="crop_camera">Source camera: 0 = automatic, 1 through num_cameras select a physical camera. Applied only when crop_camera_magic is valid.</field>
             <field type="uint32_t" name="crop_camera_magic">Must be 0x43524F50 to apply crop_camera.</field>
         </message>
 

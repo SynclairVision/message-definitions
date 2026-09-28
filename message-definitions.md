@@ -377,7 +377,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 - `GET` returns the current targeting state for the selected stream and view.
 - `SET` updates targeting mode and the relevant fields for that mode.
 - A source-only update can set `crop_camera` while leaving targeting unchanged.
-- MAVLink encodes that source selector as 0 = no change, 1 = automatic, and physical camera N as N + 1.
+- MAVLink uses the same camera values: 0 = automatic and 1 through `num_cameras` = physical cameras. `crop_camera_magic` indicates whether the field should be applied.
 - `roll` is available, but should not be treated as a primary control path.
 
 ## `VIEW_CROP_CAMERA`
