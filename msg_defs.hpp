@@ -21,7 +21,7 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
-static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_NO_CHANGE = -1;
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_NO_CHANGE = -2;
 static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_AUTOMATIC = 0;
 static constexpr uint32_t CAM_TARGETING_CROP_CAMERA_MAGIC = 0x43524F50U;
 

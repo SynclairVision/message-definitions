@@ -353,7 +353,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | `track_id` | `uint16_t` | Tracked object ID |
 | `view_id` | `int16_t` | AI-view slot index |
 | `lock_target` | `bool` | Request DigiView to lock onto the currently selected target |
-| `crop_camera` | `int32_t` | Native source selector: -1 no change, 0 automatic, 1 through `num_cameras` physical camera |
+| `crop_camera` | `int32_t` | Native source selector: -2 no change, 0 automatic, 1 through `num_cameras` physical camera |
 
 ### Targeting modes
 
