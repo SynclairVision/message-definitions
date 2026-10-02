@@ -95,6 +95,7 @@ Camera-related messages use two different identifier spaces.
 - View-control `cam_id` fields select a user view within a stream and remain zero-based: `0 .. num_user_views - 1`.
 - Physical camera IDs are one-based: `1 .. num_cameras`.
 - Source-camera selection uses `0` for automatic selection and `1 .. num_cameras` for an explicit physical camera.
+- `SENSOR` `camera_id` is required and uses the physical camera convention: `1 .. num_cameras`.
 - `num_user_views` and `num_cameras` are returned by `VIDEO_OUTPUT`.
 
 ### Enum and flag value names
@@ -447,6 +448,7 @@ Control exposure, gain, and brightness targets.
 | `min_gain` | `uint32_t` | Minimum gain |
 | `max_gain` | `uint32_t` | Maximum gain |
 | `target_brightness` | `float` | Brightness target |
+| `camera_id` | `uint8_t` | Required physical camera ID, `1 .. num_cameras` |
 
 ### Behavior
 

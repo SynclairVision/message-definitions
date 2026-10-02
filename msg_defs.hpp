@@ -288,6 +288,8 @@ struct sensor_parameters {
     uint32_t min_gain;
     uint32_t max_gain;
     float target_brightness;
+    // Physical camera selector: 1..num_cameras.
+    uint8_t camera_id;
 };
 
 struct cam_depth_estimation_parameters {
@@ -682,7 +684,8 @@ inline void pack_cam_offset_parameters(
 }
 
 inline void pack_sensor_parameters(
-    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness,
+    uint8_t camera_id) {
     msg.param_type = SENSOR;
     uint16_t offset = 0;
     int32_t mm;
@@ -696,6 +699,8 @@ inline void pack_sensor_parameters(
     offset += sizeof(uint32_t);
     mm = static_cast<int32_t>(target_brightness * 1000.0f);
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &camera_id, sizeof(uint8_t));
 }
 
 template <typename StreamName>
@@ -1007,10 +1012,11 @@ inline void pack_set_cam_optics_and_control_parameters(
 }
 
 inline void pack_set_sensor_parameters(
-    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness,
+    uint8_t camera_id) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;  
-    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain, target_brightness);
+    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain, target_brightness, camera_id);
 }
 
 inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode) {
@@ -1349,6 +1355,8 @@ inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params
     offset += sizeof(uint32_t);
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.target_brightness = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.camera_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_estimation_parameters &params) {

@@ -390,7 +390,7 @@
         </message>
 
         <message id="40010" name="SENSOR_PARAMETERS">
-            <description>Image sensor exposure, gain and target brightness.</description>
+            <description>Image sensor exposure, gain and target brightness for a physical camera.</description>
 
             <field type="uint32_t" name="min_exposure">Minimum allowed exposure time.</field>
             <field type="uint32_t" name="max_exposure">Maximum allowed exposure time.</field>
@@ -398,6 +398,8 @@
             <field type="uint32_t" name="max_gain">Maximum sensor gain.</field>
 
             <field type="float"    name="target_brightness">Target brightness level.</field>
+
+            <field type="uint8_t"  name="camera_id">Required physical camera ID, 1 through num_cameras.</field>
         </message>
 
         <message id="40011" name="CAM_DEPTH_ESTIMATION_PARAMETERS">
