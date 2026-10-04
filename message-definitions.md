@@ -1,6 +1,6 @@
-# DigiView 0.6 Message Definitions
+# DigiView 0.7.0 Message Definitions
 
-This document is a customer-facing reference for DigiView 0.6 communication. It covers both:
+This document is a customer-facing reference for DigiView 0.7.0 communication. It covers both:
 
 - the native DigiView message format from `msg_defs.hpp`
 - the Synclair MAVLink dialect, which mirrors the same parameter groups
@@ -15,7 +15,7 @@ DigiView exposes parameter-based messages. A client typically:
 2. sends a `SET_PARAMETERS` message to change supported fields
 3. receives `CURRENT_PARAMETERS` as the normal response containing the current values
 
-Some parameter groups are read-only, some are writable, and some exist in the message format but are only partly active in DigiView 0.6.
+Some parameter groups are read-only, some are writable, and some exist in the message format but are only partly active in DigiView 0.7.0.
 
 ## Base message structure
 
@@ -23,6 +23,11 @@ The native DigiView message contains these top-level fields:
 
 Current native protocol version is `0x00`.
 This version uses `stream_name` as `char[16]` and `data[72]`.
+The raw native message is serialized as `sizeof(message)`, which is 96 bytes with this layout.
+
+The field tables below describe logical values and units. Native `data` encoding is defined by the
+pack/unpack functions in `msg_defs.hpp`; for example, angle and FOV values are encoded as scaled
+integers rather than native `float` objects.
 
 | Name | Type | Description |
 |---|---|---|
@@ -47,11 +52,12 @@ This version uses `stream_name` as `char[16]` and `data[72]`.
 | 6 | `DATA_ERROR` | Invalid or unusable payload |
 | 7 | `FORBIDDEN` | Operation not allowed |
 | 8 | `UNKNOWN` | Unknown message or parameter type |
+| 9 | `DEBUG` | Request debug telemetry |
 | 255 | `QUIT` | Close the connection |
 
 ### Recurring GET requests
 
-In DigiView 0.6, recurring updates use the base field `interval_ms`.
+In DigiView 0.7.0, recurring updates use the base field `interval_ms`.
 
 - Send `GET_PARAMETERS` with `interval_ms = 0` for a one-time response.
 - Send `GET_PARAMETERS` with a non-zero `interval_ms` to request repeated updates.
@@ -63,7 +69,7 @@ In DigiView 0.6, recurring updates use the base field `interval_ms`.
 | Value | Name | GET | SET | Description |
 |---:|---|---|---|---|
 | 0 | `SYSTEM_STATUS` | Yes | Limited | Application state |
-| 1 | `AI` | Yes | Yes | AI enable state and selected models |
+| 1 | `AI` | Yes | Yes | AI enable state and selected scan model |
 | 2 | `MODEL` | Yes | No | Available model names |
 | 3 | `VIDEO_OUTPUT` | Yes | Yes | Stream layout and output settings |
 | 4 | `CAPTURE` | Yes | Yes | Recording control |
@@ -102,9 +108,9 @@ Some fields use symbolic enum or bit-flag names in code. Those names come from
 `digiview_commons/public_enums.hpp`, which is included by `msg_defs.hpp`.
 This document lists the customer-facing values you need for integration.
 
-### Angles and FOV in DigiView 0.6
+### Angles and FOV in DigiView 0.7.0
 
-In current DigiView 0.6 behavior, the customer-facing native protocol uses **degrees** for returned and requested angles in the message groups that expose angle values.
+In current DigiView 0.7.0 behavior, the customer-facing native protocol uses **degrees** for returned and requested angles in the message groups that expose angle values.
 
 This applies to:
 
@@ -157,7 +163,7 @@ Read current application state.
 
 ## `AI`
 
-Enable or disable AI and select the active scan and track models.
+Enable or disable AI and select the active scan model.
 
 ### Fields
 
@@ -168,8 +174,8 @@ Enable or disable AI and select the active scan and track models.
 
 ### Behavior
 
-- `GET` returns the current enable state and selected model names.
-- `SET` updates the AI enable flag and selected models.
+- `GET` returns the current enable state and selected scan model name.
+- `SET` updates the AI enable flag and selected scan model.
 - Model names should match the names returned by `MODEL`.
 
 ## `MODEL`
@@ -185,7 +191,7 @@ List available models.
 ### Behavior
 
 - `GET` returns one `CURRENT_PARAMETERS` response per available model.
-- The first returned names are the active scan model and active track model, followed by the remaining available models.
+- The first returned name is the active scan model, followed by the remaining available models.
 - `SET` is not supported.
 
 ## `VIDEO_OUTPUT`
@@ -270,8 +276,8 @@ Adjust detection thresholds and score tuning.
 
 | Field | Type | Notes |
 |---|---|---|
-| `mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.6 |
-| `sorting_mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.6 |
+| `mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.7.0 |
+| `sorting_mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.7.0 |
 | `scan_confidence_threshold` | `float` | Scan threshold |
 | `scan_box_overlap` | `float` | Scan overlap limit |
 | `creation_score_scale` | `uint8_t` | Initial score for new detections |
@@ -285,7 +291,6 @@ Adjust detection thresholds and score tuning.
 - `GET` returns the current thresholds and score settings.
 - `SET` updates supported thresholds and score settings.
 - The threshold and overlap float values are quantized on the wire.
-- A value of `255` in the score-weight fields means “leave unchanged”.
 
 ## `TRACKED_DETECTION`
 
@@ -503,7 +508,7 @@ Control and monitor DigiView's single target tracking mode.
 ### Behavior
 
 - `GET` returns current tracking state, target direction, confidence, timestamp, and status.
-- The most reliable 0.6 customer workflow is:
+- The most reliable 0.7.0 customer workflow is:
   - set a target vector
   - switch a camera to `CAM_TARGETING` mode `Single target tracking`
   - poll tracking status with `GET`
@@ -609,19 +614,19 @@ This parameter group exists in the message format, but DigiView does not produce
 
 - DigiView runtime does not produce `NAVIGATION` responses in this release.
 - `SET` is not supported.
-- In MAVLink integrations, requesting recurring `NAVIGATION_PARAMETERS` output with `SET_MESSAGE_INTERVAL` should be treated as unsupported in this release.
+- In MAVLink integrations, requesting recurring `NAVIGATION_PARAMETERS` output with `COMMAND_LONG` and `MAV_CMD_SET_MESSAGE_INTERVAL` should be treated as unsupported in this release.
 
 ## MAVLink usage
 
-DigiView 0.6 supports both standard MAVLink interaction and the Synclair custom MAVLink dialect.
+DigiView 0.7.0 supports both standard MAVLink interaction and the Synclair custom MAVLink dialect.
 
 ## Standard MAVLink workflows
 
-The standard MAVLink workflows most relevant to customers in DigiView 0.6 are:
+The standard MAVLink workflows most relevant to customers in DigiView 0.7.0 are:
 
 - autopilot telemetry input such as attitude and global position
 - gimbal-manager camera control
-- `MESSAGE_INTERVAL` for recurring message output
+- `COMMAND_LONG` with `MAV_CMD_SET_MESSAGE_INTERVAL` for recurring message output
 
 ### Practical standard MAVLink messages
 
@@ -633,7 +638,7 @@ The standard MAVLink workflows most relevant to customers in DigiView 0.6 are:
 | Message | `HOME_POSITION` | Home position input |
 | Message | `GIMBAL_MANAGER_SET_ATTITUDE` | Directional camera control |
 | Message | `GIMBAL_MANAGER_SET_PITCHYAW` | Directional camera control |
-| Message | `MESSAGE_INTERVAL` | Request periodic output |
+| Message | `COMMAND_LONG` | Carries the `MAV_CMD_SET_MESSAGE_INTERVAL` command to configure periodic emission of the requested message; `param1` is the MAVLink message ID and `param2` is the interval in microseconds. `param3` may select the tracked-detection ROI. |
 
 ## Synclair MAVLink dialect
 
@@ -654,7 +659,7 @@ Examples include:
 - Native DigiView `SET_PARAMETERS` maps to sending the matching custom MAVLink parameter message.
 - Native DigiView `CURRENT_PARAMETERS` maps to the matching outgoing custom MAVLink parameter message.
 
-## MAVLink notes for 0.6
+## MAVLink notes for 0.7.0
 
 - The custom MAVLink dialect follows the same parameter families as the native protocol.
 - Standard gimbal-manager messages are the recommended MAVLink path for camera pointing.
