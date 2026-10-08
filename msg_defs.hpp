@@ -21,6 +21,10 @@ static constexpr float    S16_MAX_F             = 32767.0f;
 static constexpr uint8_t  CAP_FLAG_SINGLE_IMAGE = 0x01;
 static constexpr uint8_t  CAP_FLAG_VIDEO        = 0x02;
 
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_NO_CHANGE = -2;
+static constexpr int32_t  CAM_TARGETING_CROP_CAMERA_AUTOMATIC = 0;
+static constexpr uint32_t CAM_TARGETING_CROP_CAMERA_MAGIC = 0x43524F50U;
+
 static constexpr uint32_t STREAM_NAME_SIZE      = 16;
 
 inline std::string_view stream_name_view(const char *stream_name) {
@@ -50,6 +54,7 @@ inline void copy_stream_name_field(uint8_t *dst, std::string_view stream_name) {
     memset(dst, 0, STREAM_NAME_SIZE);
     memcpy(dst, stream_name.data(), std::min(stream_name.size(), static_cast<size_t>(STREAM_NAME_SIZE)));
 }
+
 
 template <typename EnumType>
 inline uint8_t enum_to_u8(EnumType value) {
@@ -97,11 +102,13 @@ enum PARAM_TYPE : uint8_t {
     SINGLE_TARGET_TRACKING,
     CALIBRATION,
     NAVIGATION,
+    VIEW_CROP_CAMERA,
 };
 
 static_assert(CAM_TARGETING == 13, "CAM_TARGETING wire value changed");
 static_assert(CAM_OPTICS_AND_CONTROL == 14, "CAM_OPTICS_AND_CONTROL wire value changed");
 static_assert(NAVIGATION == 20, "NAVIGATION wire value changed");
+static_assert(VIEW_CROP_CAMERA == 21, "VIEW_CROP_CAMERA wire value changed");
 
 enum MESSAGE_TYPE : uint8_t {
     EMPTY,
@@ -165,6 +172,7 @@ struct video_output_parameters {
     bounding_box views[4];
     bounding_box detection_overlay_box;
     uint16_t     single_detection_size;
+    uint8_t      num_cameras;
 };
 
 struct capture_parameters {
@@ -173,6 +181,12 @@ struct capture_parameters {
     bool     record_video;
     uint16_t images_captured;
     uint16_t videos_captured;
+};
+
+struct view_crop_camera_parameters {
+    char stream_name[STREAM_NAME_SIZE];
+    uint8_t view_id;
+    int8_t camera_id; // 0 = automatic, 1.. = explicit physical camera
 };
 
 struct detection_parameters {
@@ -244,6 +258,10 @@ struct cam_targeting_parameters {
 
     // Appended tail field: request DigiView to lock the current target.
     bool lock_target = false;
+
+    // Appended tail field: source camera for this view crop.
+    // -2 = no change, 0 = automatic, 1.. = explicit physical camera.
+    int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
 };
 
 struct cam_optics_and_control_parameters {
@@ -270,6 +288,8 @@ struct sensor_parameters {
     uint32_t min_gain;
     uint32_t max_gain;
     float target_brightness;
+    // Physical camera selector: 1..num_cameras.
+    uint8_t camera_id;
 };
 
 struct cam_depth_estimation_parameters {
@@ -395,7 +415,8 @@ inline void pack_model_parameters(message &msg, const char *model_name) {
 template <typename StreamName>
 inline void pack_video_output_parameters(
     message &msg, StreamName &&stream_name, uint16_t width, uint16_t height, uint8_t fps, uint8_t layout_mode, uint8_t detection_overlay_mode,
-    uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {}, uint16_t single_detection_size = 0) {
+    uint8_t num_user_views = 0, bounding_box *views = nullptr, bounding_box detection_overlay_box = {},
+    uint16_t single_detection_size = 0, uint8_t num_cameras = 0) {
 
     msg.param_type = VIDEO_OUTPUT;
     uint16_t offset = 0;
@@ -429,6 +450,19 @@ inline void pack_video_output_parameters(
     memcpy((void *)&msg.data[offset], &detection_overlay_box, sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&msg.data[offset], &single_detection_size, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    memcpy((void *)&msg.data[offset], &num_cameras, sizeof(uint8_t));
+}
+
+template <typename StreamName>
+inline void pack_view_crop_camera_parameters(message &msg, StreamName &&stream_name, uint8_t view_id, int8_t camera_id) {
+    msg.param_type = VIEW_CROP_CAMERA;
+    uint16_t offset = 0;
+    copy_stream_name_field(&msg.data[offset], stream_name_source_view(stream_name));
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&msg.data[offset], &view_id, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &camera_id, sizeof(int8_t));
 }
 
 template <typename StreamName>
@@ -547,7 +581,8 @@ template <typename StreamName>
 inline void pack_cam_targeting_parameters(
     message &msg, StreamName &&stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t stabilize_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
+    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false,
+    int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE) {
     msg.param_type = CAM_TARGETING;
     uint16_t offset = 0;
     int16_t offs_int;
@@ -592,6 +627,15 @@ inline void pack_cam_targeting_parameters(
     memcpy((void *)&msg.data[offset], &view_id, sizeof(int16_t));
     offset += sizeof(int16_t);
     memcpy((void *)&msg.data[offset], &lock_target, sizeof(bool));
+    offset += sizeof(bool);
+    const bool crop_camera_update = crop_camera != CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
+    const uint8_t crop_camera_value =
+        crop_camera_update ? static_cast<uint8_t>(crop_camera) : 0U;
+    const uint32_t crop_camera_magic =
+        crop_camera_update ? CAM_TARGETING_CROP_CAMERA_MAGIC : 0U;
+    memcpy((void *)&msg.data[offset], &crop_camera_value, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&msg.data[offset], &crop_camera_magic, sizeof(uint32_t));
 }
 
 template <typename StreamName>
@@ -640,7 +684,8 @@ inline void pack_cam_offset_parameters(
 }
 
 inline void pack_sensor_parameters(
-    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness,
+    uint8_t camera_id) {
     msg.param_type = SENSOR;
     uint16_t offset = 0;
     int32_t mm;
@@ -654,6 +699,8 @@ inline void pack_sensor_parameters(
     offset += sizeof(uint32_t);
     mm = static_cast<int32_t>(target_brightness * 1000.0f);
     memcpy((void *)&msg.data[offset], &mm, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    memcpy((void *)&msg.data[offset], &camera_id, sizeof(uint8_t));
 }
 
 template <typename StreamName>
@@ -885,6 +932,10 @@ inline void pack_get_navigation_parameters(message &msg) {
     pack_get_parameters(msg, NAVIGATION);
 }
 
+inline void pack_get_view_crop_camera_parameters(message &msg, const char *stream_name, uint8_t view_id) {
+    pack_get_parameters(msg, VIEW_CROP_CAMERA, stream_name, view_id);
+}
+
 /*
 ------------------------------------------------------------------------------------------------------------------------
     SET PACKING FUNCTIONS
@@ -904,6 +955,12 @@ inline void pack_set_video_output_parameters(
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_video_output_parameters(msg, stream_name, width, height, fps, layout_mode, detection_overlay_mode);
+}
+
+inline void pack_set_view_crop_camera_parameters(message &msg, const char *stream_name, uint8_t view_id, int8_t camera_id) {
+    msg.version = VERSION;
+    msg.message_type = SET_PARAMETERS;
+    pack_view_crop_camera_parameters(msg, stream_name, view_id, camera_id);
 }
 
 inline void pack_set_capture_parameters(message &msg, const char *stream_name, bool pic, bool vid) {
@@ -927,13 +984,23 @@ inline void pack_set_detection_parameters(
 inline void pack_set_cam_targeting_parameters(
     message &msg, const char *stream_name, uint8_t cam_id, View::TargetingMode targeting_mode, bool euler_delta, float yaw, float pitch, float roll,
     uint8_t stabilize_flags, float x_offset, float y_offset, float target_latitude,
-    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false) {
+    float target_longitude, float target_altitude, uint16_t track_id = 0, int16_t view_id = -1, bool lock_target = false,
+    int32_t crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE) {
 
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;
     pack_cam_targeting_parameters(
         msg, stream_name, cam_id, targeting_mode, euler_delta, yaw, pitch, roll, stabilize_flags, x_offset, y_offset,
-        target_latitude, target_longitude, target_altitude, track_id, view_id, lock_target);
+        target_latitude, target_longitude, target_altitude, track_id, view_id, lock_target, crop_camera);
+}
+
+inline void pack_set_cam_targeting_crop_camera_parameters(
+    message &msg, const char *stream_name, uint8_t view_id, int32_t crop_camera) {
+    msg = {};
+    pack_set_cam_targeting_parameters(
+        msg, stream_name, view_id, static_cast<View::TargetingMode>(UINT8_MAX), false,
+        0.0f, 0.0f, 0.0f, 0x8, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0, -1, false, crop_camera);
 }
 
 inline void pack_set_cam_optics_and_control_parameters(
@@ -945,10 +1012,11 @@ inline void pack_set_cam_optics_and_control_parameters(
 }
 
 inline void pack_set_sensor_parameters(
-    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness) {
+    message &msg, uint32_t min_exposure, uint32_t max_exposure, uint32_t min_gain, uint32_t max_gain, float target_brightness,
+    uint8_t camera_id) {
     msg.version      = VERSION;
     msg.message_type = SET_PARAMETERS;  
-    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain, target_brightness);
+    pack_sensor_parameters(msg, min_exposure, max_exposure, min_gain, max_gain, target_brightness, camera_id);
 }
 
 inline void pack_set_cam_depth_estimation_parameters(message &msg, const char *stream_name, uint8_t cam_id, uint8_t depth_estimation_mode) {
@@ -1047,6 +1115,23 @@ inline void unpack_video_output_parameters(message &raw_msg, video_output_parame
     memcpy((void *)&params.detection_overlay_box, (void *)&raw_msg.data[offset], sizeof(bounding_box));
     offset += sizeof(bounding_box);
     memcpy((void *)&params.single_detection_size, (void *)&raw_msg.data[offset], sizeof(uint16_t));
+    offset += sizeof(uint16_t);
+    params.num_cameras = 0;
+    if (offset + sizeof(uint8_t) <= PARAMCOUNT) {
+        memcpy((void *)&params.num_cameras, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    }
+}
+
+inline void unpack_view_crop_camera_parameters(message &raw_msg, view_crop_camera_parameters &params) {
+    uint16_t offset = 0;
+    memcpy((void *)&params.stream_name, (void *)&raw_msg.data[offset], STREAM_NAME_SIZE);
+    offset += STREAM_NAME_SIZE;
+    memcpy((void *)&params.view_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    params.camera_id = CAM_TARGETING_CROP_CAMERA_AUTOMATIC;
+    if (raw_msg.message_type != GET_PARAMETERS) {
+        memcpy((void *)&params.camera_id, (void *)&raw_msg.data[offset], sizeof(int8_t));
+    }
 }
 
 inline void unpack_capture_parameters(message &raw_msg, capture_parameters &params) {
@@ -1205,6 +1290,16 @@ inline void unpack_cam_targeting_parameters(message &raw_msg, cam_targeting_para
     offset += sizeof(int16_t);
     params.lock_target = false;
     memcpy((void *)&params.lock_target, (void *)&raw_msg.data[offset], sizeof(bool));
+    offset += sizeof(bool);
+    params.crop_camera = CAM_TARGETING_CROP_CAMERA_NO_CHANGE;
+    uint8_t crop_camera_value = 0;
+    uint32_t crop_camera_magic = 0;
+    memcpy((void *)&crop_camera_value, (void *)&raw_msg.data[offset], sizeof(uint8_t));
+    offset += sizeof(uint8_t);
+    memcpy((void *)&crop_camera_magic, (void *)&raw_msg.data[offset], sizeof(uint32_t));
+    if (crop_camera_magic == CAM_TARGETING_CROP_CAMERA_MAGIC) {
+        params.crop_camera = static_cast<int32_t>(crop_camera_value);
+    }
 }
 
 inline void unpack_cam_optics_and_control_parameters(message &raw_msg, cam_optics_and_control_parameters &params) {
@@ -1260,6 +1355,8 @@ inline void unpack_sensor_parameters(message &raw_msg, sensor_parameters &params
     offset += sizeof(uint32_t);
     memcpy((void *)&mm, (void *)&raw_msg.data[offset], sizeof(int32_t));
     params.target_brightness = static_cast<float>(mm) / 1000.0f;
+    offset += sizeof(int32_t);
+    memcpy((void *)&params.camera_id, (void *)&raw_msg.data[offset], sizeof(uint8_t));
 }
 
 inline void unpack_cam_depth_estimation_parameters(message &raw_msg, cam_depth_estimation_parameters &params) {

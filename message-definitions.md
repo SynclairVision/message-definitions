@@ -94,13 +94,15 @@ Many messages include `stream_name` as `char[16]`.
 - The maximum length is 16 characters.
 - For some GET requests, an empty stream name returns data for all streams.
 
-### `cam_id`
+### Camera identifiers
 
-Many camera-related messages include `cam_id`.
+Camera-related messages use two different identifier spaces.
 
-- It selects a user view within a stream.
-- Valid values are typically `0 .. num_user_views - 1`.
-- `num_user_views` is returned by `VIDEO_OUTPUT`.
+- View-control `cam_id` fields select a user view within a stream and remain zero-based: `0 .. num_user_views - 1`.
+- Physical camera IDs are one-based: `1 .. num_cameras`.
+- Source-camera selection uses `0` for automatic selection and `1 .. num_cameras` for an explicit physical camera.
+- `SENSOR` `camera_id` is required and uses the physical camera convention: `1 .. num_cameras`.
+- `num_user_views` and `num_cameras` are returned by `VIDEO_OUTPUT`.
 
 ### Enum and flag value names
 
@@ -212,6 +214,7 @@ Control stream resolution and layout, and read back current output geometry.
 | `views[4]` | `bounding_box[]` | Bounding boxes for user views |
 | `detection_overlay_box` | `bounding_box` | Bounding box for the full detection overlay area |
 | `single_detection_size` | `uint16_t` | Side length of each detection tile |
+| `num_cameras` | `uint8_t` | Number of available physical cameras |
 
 `bounding_box` contains `x`, `y`, `w`, and `h`, all as `uint16_t`.
 
@@ -356,6 +359,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | `track_id` | `uint16_t` | Tracked object ID |
 | `view_id` | `int16_t` | AI-view slot index |
 | `lock_target` | `bool` | Request DigiView to lock onto the currently selected target |
+| `crop_camera` | `int32_t` | Native source selector: -2 no change, 0 automatic, 1 through `num_cameras` physical camera |
 
 ### Targeting modes
 
@@ -376,9 +380,21 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 
 ### Behavior
 
-- `GET` returns the current targeting state for the selected stream and camera.
+- `GET` returns the current targeting state for the selected stream and view.
 - `SET` updates targeting mode and the relevant fields for that mode.
+- A source-only update can set `crop_camera` while leaving targeting unchanged.
+- MAVLink uses the same camera values: 0 = automatic and 1 through `num_cameras` = physical cameras. `crop_camera_magic` indicates whether the field should be applied.
 - `roll` is available, but should not be treated as a primary control path.
+
+## `VIEW_CROP_CAMERA`
+
+Select the physical source used by a displayed video view without changing its targeting state.
+
+| Field | Type | Notes |
+|---|---|---|
+| `stream_name` | `char[16]` | Selected stream |
+| `view_id` | `uint8_t` | Zero-based displayed user-view slot |
+| `camera_id` | `int8_t` | 0 automatic, 1 through `num_cameras` select a physical camera |
 
 ## `CAM_OPTICS_AND_CONTROL`
 
@@ -437,6 +453,7 @@ Control exposure, gain, and brightness targets.
 | `min_gain` | `uint32_t` | Minimum gain |
 | `max_gain` | `uint32_t` | Maximum gain |
 | `target_brightness` | `float` | Brightness target |
+| `camera_id` | `uint8_t` | Required physical camera ID, `1 .. num_cameras` |
 
 ### Behavior
 
@@ -524,7 +541,7 @@ This message group is intended for the MOSS One hardware platform.
 
 | Field | Type | Notes |
 |---|---|---|
-| `cam_id` | `uint8_t` | Selected camera |
+| `cam_id` | `uint8_t` | Physical camera ID, 1 through `num_cameras` |
 | `calib_command` | `uint8_t` | Requested calibration action |
 | `calib_status` | `uint8_t` | Current calibration state |
 | `completed_face_mask` | `uint8_t` | Completed 6DoF face datasets |
