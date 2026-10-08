@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mavlink>
   <version>2</version>
-  <!-- 
-  Datum denna fil är skriven:
-  2026-01-27
-
-  Baserat på dev-1.0 branchen av message-definitions:
-  https://github.com/SynclairVision/message-definitions/tree/dev-1.0
-
-  commit version:
-  9fb55714b6fa8b2d42e043fd312d92b1b1507fae
-  -->
+  <!-- Pinned DigiView message-definitions source: cae3fd40ebb5b4d655062cebfc6ca4398c977344. -->
 
   <enums>
     <enum name="SV_APP_STATUS">
@@ -248,7 +239,7 @@
             <field type="uint16_t"     name="width">Total output width in pixels.</field>
             <field type="uint16_t"     name="height">Total output height in pixels.</field>
 
-            <field type="uint8_t"      name="fps">Unused / reserved FPS field.</field>
+            <field type="uint8_t"      name="fps">Output frame rate in frames per second.</field>
             <field type="uint8_t"      name="layout_mode" enum="SV_LAYOUT_ID">User camera layout.</field>
             <field type="uint8_t"      name="detection_overlay_mode" enum="SV_LAYOUT_DET_OVERLAY_MODE">Detection overlay layout.</field>
             <field type="uint8_t"      name="num_user_views">Number of active user-controllable views.</field>
