@@ -347,7 +347,7 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | `yaw` | `float` | Degrees |
 | `pitch` | `float` | Degrees |
 | `roll` | `float` | Degrees |
-| `stabilize_flags` | `uint8_t` | Axis stabilization bitmask |
+| `stabilize_flags` | `uint8_t` | `View::Stabilization` mode |
 | `x_offset` | `float` | Normalized horizontal offset |
 | `y_offset` | `float` | Normalized vertical offset |
 | `target_latitude` | `float` | Target coordinate latitude |
@@ -366,13 +366,21 @@ Aim a selected camera by angle, coordinate, detection, or single-target-tracking
 | 2 | Detection targeting |
 | 3 | Single target tracking |
 
-### Stabilization flags
+### Stabilization mode
 
-`stabilize_flags` uses the lowest 3 bits:
+The existing `stabilize_flags` byte (`stabilization_flags` in MAVLink) carries
+`View::Stabilization` from `digiview_commons/public_enums.hpp`, not a bitmask.
 
-- bit 0: yaw stabilization
-- bit 1: pitch stabilization
-- bit 2: roll stabilization
+| Value | Enum | Config value | Behavior |
+| --- | --- | --- | --- |
+| 0 | `FULL` | `full` | Stabilize yaw, pitch and roll |
+| 1 | `PILOT` | `pilot` | Stabilize pitch and roll; follow system heading |
+| 2 | `ROLL` | `roll` | Follow camera direction; level roll |
+| 3 | `NONE` | `none` | Keep the view fixed relative to the camera |
+| 255 | `UNSET` | — | Leave the current mode unchanged in a partial command |
+
+`UNSET` is never persisted. Other values are rejected by `CAM_TARGETING SET`.
+Each configured view uses one `stabilize` string, defaulting to `full`.
 
 ### Behavior
 

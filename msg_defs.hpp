@@ -227,7 +227,7 @@ struct cam_targeting_parameters {
     float   yaw;
     float   pitch;
     float   roll;
-    uint8_t stabilize_flags;
+    uint8_t stabilize_flags; ///< View::Stabilization mode; UNSET preserves the current mode.
     float   x_offset;
     float   y_offset;
     float   target_latitude;
