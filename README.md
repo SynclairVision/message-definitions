@@ -16,8 +16,9 @@ You will also find:
   DigiView MAVLink dialect definition used to generate MAVLink bindings.
 
 - **`copilot_operator_mavlink_dialect.xml`**
-  Shared Copilot operator request, payload transfer, discovery, and response
-  definitions. See **`copilot-operator.md`** for field meanings and transaction rules.
+  Shared Copilot operator request/response, discovery, subscriptions, full
+  snapshots, logs, runtime ticks, and payload transfer definitions. See
+  **`copilot-operator.md`** for field meanings and transaction rules.
 
 Generated MAVLink code is intentionally not stored in this repository; it is typically generated and versioned in the consuming project.
 
