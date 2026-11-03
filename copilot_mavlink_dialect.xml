@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mavlink>
+  <version>2</version>
+
+  <enums>
+    <enum name="COPILOT_ACTION">
+      <description>Generic Copilot control action.</description>
+      <entry value="0" name="COPILOT_ACTION_UNSPECIFIED"/>
+      <entry value="1" name="COPILOT_ACTION_GET"/>
+      <entry value="2" name="COPILOT_ACTION_ITEM"/>
+      <entry value="3" name="COPILOT_ACTION_SET"/>
+      <entry value="4" name="COPILOT_ACTION_START"/>
+      <entry value="5" name="COPILOT_ACTION_STOP"/>
+      <entry value="6" name="COPILOT_ACTION_ACK"/>
+      <entry value="7" name="COPILOT_ACTION_ERROR"/>
+    </enum>
+
+    <enum name="COPILOT_RESULT">
+      <description>Result of a Copilot control request.</description>
+      <entry value="0" name="COPILOT_RESULT_UNSPECIFIED"/>
+      <entry value="1" name="COPILOT_RESULT_OK"/>
+      <entry value="2" name="COPILOT_RESULT_NOT_FOUND"/>
+      <entry value="3" name="COPILOT_RESULT_INVALID_VALUE"/>
+      <entry value="4" name="COPILOT_RESULT_BUSY"/>
+      <entry value="5" name="COPILOT_RESULT_ERROR"/>
+    </enum>
+
+    <enum name="COPILOT_AUTOPILOT_CONNECTION">
+      <description>Autopilot connection state.</description>
+      <entry value="0" name="COPILOT_AUTOPILOT_CONNECTION_UNKNOWN"/>
+      <entry value="1" name="COPILOT_AUTOPILOT_CONNECTION_DISCONNECTED"/>
+      <entry value="2" name="COPILOT_AUTOPILOT_CONNECTION_CONNECTING"/>
+      <entry value="3" name="COPILOT_AUTOPILOT_CONNECTION_CONNECTED"/>
+      <entry value="4" name="COPILOT_AUTOPILOT_CONNECTION_ERROR"/>
+    </enum>
+
+    <enum name="COPILOT_AUTOPILOT_TYPE">
+      <description>Detected autopilot implementation.</description>
+      <entry value="0" name="COPILOT_AUTOPILOT_TYPE_UNKNOWN"/>
+      <entry value="1" name="COPILOT_AUTOPILOT_TYPE_PX4"/>
+      <entry value="2" name="COPILOT_AUTOPILOT_TYPE_ARDUPILOT"/>
+      <entry value="3" name="COPILOT_AUTOPILOT_TYPE_GENERIC"/>
+    </enum>
+
+    <enum name="COPILOT_COMMAND_STATE">
+      <description>Current command runtime state.</description>
+      <entry value="0" name="COPILOT_COMMAND_STATE_IDLE"/>
+      <entry value="1" name="COPILOT_COMMAND_STATE_RUNNING"/>
+      <entry value="2" name="COPILOT_COMMAND_STATE_STOPPING"/>
+      <entry value="3" name="COPILOT_COMMAND_STATE_ERROR"/>
+    </enum>
+
+    <enum name="COPILOT_NAVIGATION_TYPE">
+      <description>Navigation source currently used by Copilot.</description>
+      <entry value="0" name="COPILOT_NAVIGATION_TYPE_NONE"/>
+      <entry value="1" name="COPILOT_NAVIGATION_TYPE_GPS"/>
+      <entry value="2" name="COPILOT_NAVIGATION_TYPE_MYGGNAV"/>
+      <entry value="3" name="COPILOT_NAVIGATION_TYPE_STELLAR"/>
+      <entry value="4" name="COPILOT_NAVIGATION_TYPE_CUSTOM"/>
+    </enum>
+
+    <enum name="COPILOT_NAVIGATION_STATUS">
+      <description>Navigation source health/status.</description>
+      <entry value="0" name="COPILOT_NAVIGATION_STATUS_UNKNOWN"/>
+      <entry value="1" name="COPILOT_NAVIGATION_STATUS_READY"/>
+      <entry value="2" name="COPILOT_NAVIGATION_STATUS_ACTIVE"/>
+      <entry value="3" name="COPILOT_NAVIGATION_STATUS_DEGRADED"/>
+      <entry value="4" name="COPILOT_NAVIGATION_STATUS_LOST"/>
+      <entry value="5" name="COPILOT_NAVIGATION_STATUS_ERROR"/>
+    </enum>
+
+    <enum name="COPILOT_TARGET_STATUS">
+      <description>Target state visible to Copilot commands.</description>
+      <entry value="0" name="COPILOT_TARGET_STATUS_NONE"/>
+      <entry value="1" name="COPILOT_TARGET_STATUS_SEEN"/>
+      <entry value="2" name="COPILOT_TARGET_STATUS_STABLE"/>
+      <entry value="3" name="COPILOT_TARGET_STATUS_LOCKED"/>
+      <entry value="4" name="COPILOT_TARGET_STATUS_LOST"/>
+    </enum>
+
+    <enum name="COPILOT_LOGGING_STATUS">
+      <description>Copilot logging state.</description>
+      <entry value="0" name="COPILOT_LOGGING_STATUS_OFF"/>
+      <entry value="1" name="COPILOT_LOGGING_STATUS_ON"/>
+    </enum>
+  </enums>
+
+  <messages>
+    <message id="41000" name="COPILOT_STATUS">
+      <description>High-level Copilot runtime status.</description>
+      <field type="uint16_t" name="request_id">Client request id copied into the response.</field>
+      <field type="uint8_t" name="autopilot_connection" enum="COPILOT_AUTOPILOT_CONNECTION">Autopilot connection state.</field>
+      <field type="uint8_t" name="autopilot_type" enum="COPILOT_AUTOPILOT_TYPE">Detected autopilot type.</field>
+      <field type="uint16_t" name="active_command_id">Active command id; 0 means no running command.</field>
+      <field type="char[64]" name="active_command">Active command name; empty or idle means no running command.</field>
+      <field type="uint8_t" name="command_state" enum="COPILOT_COMMAND_STATE">Current command runtime state.</field>
+      <field type="uint8_t" name="navigation_type" enum="COPILOT_NAVIGATION_TYPE">Current navigation source.</field>
+      <field type="uint8_t" name="navigation_status" enum="COPILOT_NAVIGATION_STATUS">Current navigation health/status.</field>
+      <field type="uint8_t" name="target_status" enum="COPILOT_TARGET_STATUS">Current target status.</field>
+      <field type="uint8_t" name="logging" enum="COPILOT_LOGGING_STATUS">Logging state.</field>
+      <field type="uint32_t" name="flags">Reserved status bitmask.</field>
+    </message>
+
+    <message id="41001" name="COPILOT_COMMAND">
+      <description>List, start, stop, or acknowledge a Copilot command.</description>
+      <field type="uint16_t" name="request_id">Client request id copied into the response.</field>
+      <field type="uint8_t" name="action" enum="COPILOT_ACTION">Requested action or response action.</field>
+      <field type="uint8_t" name="result" enum="COPILOT_RESULT">Action result for ACK/ERROR responses.</field>
+      <field type="uint16_t" name="total">Total available commands for list responses.</field>
+      <field type="uint16_t" name="id">Command id; 0 is the command-list root for GET.</field>
+      <field type="char[64]" name="name">Command machine name, for example hold or copter/drone_takeoff.</field>
+      <field type="char[48]" name="label">Human-readable command label.</field>
+      <field type="char[32]" name="section">UI/group section, for example main or copter.</field>
+      <field type="uint32_t" name="flags">Reserved command capability bitmask.</field>
+    </message>
+
+    <message id="41002" name="COPILOT_PARAMETER">
+      <description>List, set, or acknowledge a Copilot runtime parameter.</description>
+      <field type="uint16_t" name="request_id">Client request id copied into the response.</field>
+      <field type="uint8_t" name="action" enum="COPILOT_ACTION">Requested action or response action.</field>
+      <field type="uint8_t" name="result" enum="COPILOT_RESULT">Action result for ACK/ERROR responses.</field>
+      <field type="uint16_t" name="total">Total available parameters for list responses.</field>
+      <field type="uint16_t" name="id">Parameter id; 0 is the parameter-list root for GET.</field>
+      <field type="char[64]" name="name">Parameter key/name.</field>
+      <field type="char[96]" name="value">Parameter value encoded as UTF-8 text.</field>
+      <field type="char[48]" name="section">UI/group section, for example core, safety, or navigation.</field>
+      <field type="uint32_t" name="flags">Reserved parameter bitmask.</field>
+    </message>
+  </messages>
+</mavlink>
