@@ -2,6 +2,8 @@
 
 This repository contains the official DigiView message definitions used by Synclair Vision systems and third-party integrations. It brings together protocol documentation, native definitions, and MAVLink dialect data so integrators can work from a consistent source.
 
+This branch documents DigiView **0.7.1**.
+
 ## Repository contents and where to start
 
 Start with **`message-definitions.md`**.
