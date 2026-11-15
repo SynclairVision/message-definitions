@@ -1,6 +1,6 @@
-# DigiView 0.7.0 Message Definitions
+# DigiView 0.7.1 Message Definitions
 
-This document is a customer-facing reference for DigiView 0.7.0 communication. It covers both:
+This document is a customer-facing reference for DigiView 0.7.1 communication. It covers both:
 
 - the native DigiView message format from `msg_defs.hpp`
 - the Synclair MAVLink dialect, which mirrors the same parameter groups
@@ -15,7 +15,7 @@ DigiView exposes parameter-based messages. A client typically:
 2. sends a `SET_PARAMETERS` message to change supported fields
 3. receives `CURRENT_PARAMETERS` as the normal response containing the current values
 
-Some parameter groups are read-only, some are writable, and some exist in the message format but are only partly active in DigiView 0.7.0.
+Some parameter groups are read-only, some are writable, and some exist in the message format but are only partly active in DigiView 0.7.1.
 
 ## Base message structure
 
@@ -57,7 +57,7 @@ integers rather than native `float` objects.
 
 ### Recurring GET requests
 
-In DigiView 0.7.0, recurring updates use the base field `interval_ms`.
+In DigiView 0.7.1, recurring updates use the base field `interval_ms`.
 
 - Send `GET_PARAMETERS` with `interval_ms = 0` for a one-time response.
 - Send `GET_PARAMETERS` with a non-zero `interval_ms` to request repeated updates.
@@ -110,9 +110,9 @@ Some fields use symbolic enum or bit-flag names in code. Those names come from
 `digiview_commons/public_enums.hpp`, which is included by `msg_defs.hpp`.
 This document lists the customer-facing values you need for integration.
 
-### Angles and FOV in DigiView 0.7.0
+### Angles and FOV in DigiView 0.7.1
 
-In current DigiView 0.7.0 behavior, the customer-facing native protocol uses **degrees** for returned and requested angles in the message groups that expose angle values.
+In current DigiView 0.7.1 behavior, the customer-facing native protocol uses **degrees** for returned and requested angles in the message groups that expose angle values.
 
 This applies to:
 
@@ -279,8 +279,8 @@ Adjust detection thresholds and score tuning.
 
 | Field | Type | Notes |
 |---|---|---|
-| `mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.7.0 |
-| `sorting_mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.7.0 |
+| `mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.7.1 |
+| `sorting_mode` | `uint8_t` | Present in the message format, but not a primary user control in 0.7.1 |
 | `scan_confidence_threshold` | `float` | Scan threshold |
 | `scan_box_overlap` | `float` | Scan overlap limit |
 | `creation_score_scale` | `uint8_t` | Initial score for new detections |
@@ -533,7 +533,7 @@ Control and monitor DigiView's single target tracking mode.
 ### Behavior
 
 - `GET` returns current tracking state, target direction, confidence, timestamp, and status.
-- The most reliable 0.7.0 customer workflow is:
+- The most reliable 0.7.1 customer workflow is:
   - set a target vector
   - switch a camera to `CAM_TARGETING` mode `Single target tracking`
   - poll tracking status with `GET`
@@ -643,11 +643,11 @@ This parameter group exists in the message format, but DigiView does not produce
 
 ## MAVLink usage
 
-DigiView 0.7.0 supports both standard MAVLink interaction and the Synclair custom MAVLink dialect.
+DigiView 0.7.1 supports both standard MAVLink interaction and the Synclair custom MAVLink dialect.
 
 ## Standard MAVLink workflows
 
-The standard MAVLink workflows most relevant to customers in DigiView 0.7.0 are:
+The standard MAVLink workflows most relevant to customers in DigiView 0.7.1 are:
 
 - autopilot telemetry input such as attitude and global position
 - gimbal-manager camera control
@@ -684,7 +684,7 @@ Examples include:
 - Native DigiView `SET_PARAMETERS` maps to sending the matching custom MAVLink parameter message.
 - Native DigiView `CURRENT_PARAMETERS` maps to the matching outgoing custom MAVLink parameter message.
 
-## MAVLink notes for 0.7.0
+## MAVLink notes for 0.7.1
 
 - The custom MAVLink dialect follows the same parameter families as the native protocol.
 - Standard gimbal-manager messages are the recommended MAVLink path for camera pointing.
