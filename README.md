@@ -21,7 +21,7 @@ You will also find:
   Copilot status, command, and parameter MAVLink definitions for ground-station integrations.
 
 - **`dclink_mavlink_dialect.xml`**
-  DCLink status, command, and parameter MAVLink definitions shared by DCLink and QGroundControl.
+  DCLink status, command, parameter, and selected-target MAVLink definitions shared by DCLink and QGroundControl.
 
 See **`dclink-mavlink.md`** for DCLink request and response rules, wire checksums,
 and generation inputs. See **`copilot-mavlink.md`** for the Copilot protocol.

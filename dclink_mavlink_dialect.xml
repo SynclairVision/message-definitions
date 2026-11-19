@@ -89,6 +89,31 @@
       <entry value="0" name="DCLINK_LOGGING_STATUS_OFF"/>
       <entry value="1" name="DCLINK_LOGGING_STATUS_ON"/>
     </enum>
+    <enum name="DCLINK_STATUS_FLAGS" bitmask="true">
+      <entry value="1" name="DCLINK_STATUS_FLAGS_ERROR"/>
+      <entry value="2" name="DCLINK_STATUS_FLAGS_TARGET_VIEW"/>
+    </enum>
+    <enum name="DCLINK_TARGET_VIEW_FLAGS" bitmask="true">
+      <entry value="1" name="DCLINK_TARGET_VIEW_FLAGS_PRESENT"/>
+      <entry value="2" name="DCLINK_TARGET_VIEW_FLAGS_AZIMUTH"/>
+      <entry value="4" name="DCLINK_TARGET_VIEW_FLAGS_ELEVATION"/>
+      <entry value="8" name="DCLINK_TARGET_VIEW_FLAGS_RANGE"/>
+      <entry value="16" name="DCLINK_TARGET_VIEW_FLAGS_GLOBAL_POSITION"/>
+      <entry value="32" name="DCLINK_TARGET_VIEW_FLAGS_RELATIVE_POSITION"/>
+      <entry value="64" name="DCLINK_TARGET_VIEW_FLAGS_SOURCE_AGE"/>
+      <entry value="128" name="DCLINK_TARGET_VIEW_FLAGS_BEHIND"/>
+      <entry value="256" name="DCLINK_TARGET_VIEW_FLAGS_DRIVING"/>
+    </enum>
+    <enum name="DCLINK_CONTROL_OWNER">
+      <entry value="0" name="DCLINK_CONTROL_OWNER_UNKNOWN"/>
+      <entry value="1" name="DCLINK_CONTROL_OWNER_MANUAL"/>
+      <entry value="2" name="DCLINK_CONTROL_OWNER_AUTOPILOT"/>
+      <entry value="3" name="DCLINK_CONTROL_OWNER_DCLINK"/>
+    </enum>
+    <enum name="DCLINK_RANGE_SOURCE">
+      <entry value="0" name="DCLINK_RANGE_SOURCE_UNKNOWN"/>
+      <entry value="1" name="DCLINK_RANGE_SOURCE_RUNTIME_ESTIMATE"/>
+    </enum>
   </enums>
 
   <messages>
@@ -133,6 +158,30 @@
       <field type="char[48]" name="section">UI/group section, for example core, safety, or navigation.</field>
       <field type="uint32_t" name="flags">Reserved parameter bitmask.</field>
       <field type="uint8_t" name="access_role" enum="DCLINK_PARAMETER_ACCESS_ROLE" display="bitmask">Roles allowed to access this parameter. Zero means unspecified metadata.</field>
+    </message>
+    <message id="41003" name="DCLINK_TARGET_VIEW">
+      <description>Read-only selected runtime target. Query: every field zero except request_id. Reply: schema_version=1. Validity flags govern all geometry; zero is never an unavailable sentinel. Angles require no range or GPS. Replies do not establish service liveness.</description>
+      <field type="uint32_t" name="request_id">Independent read correlation ID; never reused within a client lifetime.</field>
+      <field type="uint64_t" name="boot_id">Random nonzero endpoint lifetime identity.</field>
+      <field type="uint32_t" name="sequence">Increasing reply sequence within boot_id.</field>
+      <field type="uint32_t" name="flags" enum="DCLINK_TARGET_VIEW_FLAGS">Independent validity and target state bits.</field>
+      <field type="uint32_t" name="age_ms" units="ms">Age of selected observation on receipt at DCLink.</field>
+      <field type="uint32_t" name="source_age_ms" units="ms">Measurement age when SOURCE_AGE is set.</field>
+      <field type="uint16_t" name="valid_for_ms" units="ms">Remaining target lifetime at reply creation, at most 3000 ms. Client subtracts full query round trip.</field>
+      <field type="float" name="azimuth_deg" units="deg">Aircraft-relative nose azimuth, positive right, wrapped to [-180,180].</field>
+      <field type="float" name="elevation_deg" units="deg">Body-frame line-of-sight elevation, positive up, [-90,90].</field>
+      <field type="float" name="horizontal_range_m" units="m">Horizontal range estimate; never slant range.</field>
+      <field type="double" name="latitude_deg" units="deg">Target latitude in WGS84 degrees.</field>
+      <field type="double" name="longitude_deg" units="deg">Target longitude in WGS84 degrees.</field>
+      <field type="float" name="relative_north_m" units="m">Target minus aircraft north offset in local NED.</field>
+      <field type="float" name="relative_east_m" units="m">Target minus aircraft east offset in local NED.</field>
+      <field type="uint8_t" name="schema_version">Zero for query, one for reply.</field>
+      <field type="uint8_t" name="vehicle_system_id">Aircraft associated with the runtime observation.</field>
+      <field type="uint8_t" name="vehicle_component_id">Aircraft component associated with the runtime observation.</field>
+      <field type="uint8_t" name="control_owner" enum="DCLINK_CONTROL_OWNER">Reported runtime control authority, independent of active command.</field>
+      <field type="uint8_t" name="range_source" enum="DCLINK_RANGE_SOURCE">Range provenance, independent of angle validity.</field>
+      <field type="char[32]" name="target_id">Selected track ID if supplied; empty means unknown. UTF-8.</field>
+      <field type="char[24]" name="target_source">Selected observation source if supplied; empty means unknown. UTF-8.</field>
     </message>
   </messages>
 </mavlink>
