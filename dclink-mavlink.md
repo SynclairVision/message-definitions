@@ -17,8 +17,8 @@ CRC validation is required. Do not combine this dialect with
 `copilot_mavlink_dialect.xml`: both allocate IDs 41000 through 41002.
 
 The [mission planning contract](missions/README.md) defines the separate shared
-mission service and planned transfer families. Phase 1 supplies its schema and
-design only; this operator dialect does not yet contain mission messages.
+mission service and planned transfer families. Library operations use local IPC;
+this operator dialect does not yet contain mission messages.
 
 ## Requests and replies
 

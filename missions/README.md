@@ -1,8 +1,9 @@
 # DCLink mission planning contract
 
-Status: phase 1 design contract. The schema and examples are reviewable inputs
-for implementation; this branch does not add a mission service, MAVLink messages,
-mission controls, or flight behavior. The existing operator dialect is unchanged.
+Status: version-1 contract. DCLink's phase-2 mission library and local IPC adapter
+implement storage operations. MAVLink transfer, QGC mission editing, rules,
+behavior areas, and mission execution are subsequent deliveries. The existing
+operator dialect is unchanged.
 
 ## Ownership and first delivery
 
@@ -113,9 +114,19 @@ and survives its transport reconnects; it is not authentication.
 | `missions.create` | `mission` content. | `{mission_id, revision: 1}`. |
 | `missions.update` | `mission_id`, `expected_revision`, complete `mission`. | `{mission_id, revision}` for the committed content. |
 | `missions.delete` | `mission_id`, `expected_revision`. | Deleted ID and revision. A mission used by a nonterminal run is busy. |
+| `missions.import_route` | `name`, optional positive `acceptance_radius_m`. | `{mission_id, revision: 1}` for a one-time import of DCLink's stored route. |
 
 Rename is an update of `name`. Duplicate/Save as copy is a create using the draft
 content and a chosen name. There is no mutable service-wide selected mission.
+
+Import reads the fixed route source owned by DCLink; clients cannot supply a
+filesystem path. It accepts only representable HOME-relative waypoint records
+and preserves each positive stored radius. Zero or missing radii require the
+explicit supplied radius. Unsupported commands, frames, holds, yaw, pass radii,
+or continuation behavior reject the whole import. The source file is preserved.
+The import marker and mission commit together; another import returns `conflict`
+with `reason: "route_already_imported"` and the original `mission_id`. The marker
+survives restarts and deletion of that mission. Import never changes execution.
 
 List cursors bind a consistent catalog generation and stable mission-ID order.
 If another client changes the catalog between pages, the service returns
@@ -128,8 +139,9 @@ and includes `result` plus `data`. Result codes are `ok`, `not_found`,
 Validation failures include `{path, message}` entries using JSON Pointer paths.
 A revision conflict includes `current_revision`; it never returns success for
 an overwritten edit. A storage failure reports `error` without claiming a save.
-Transferred result bodies share the 262144-byte cap. Limit validation details
-to fit and set `data.errors_truncated` when some errors are omitted.
+Mission content is capped at 262144 bytes; a complete logical result is capped
+at 264192 bytes to allow its identity and revision envelope. Limit validation
+details to fit and set `data.errors_truncated` when some errors are omitted.
 Discovery returns the current `service_session` because its request has none.
 A `stale_session` response echoes the requested session for correlation and
 includes `data.current_service_session`; clients rediscover rather than treating
@@ -139,6 +151,10 @@ Capabilities return `protocol_version: 1`, `schema_versions: [1]`, the current
 supported `operations`, `features: ["waypoint_routes"]`, and these limits:
 `max_document_bytes: 262144`, `max_waypoints: 1000`, `max_name_characters: 80`,
 `max_list_page: 50`, and a MAVLink `max_chunk_bytes` no greater than 160.
+IPC additionally reports `max_result_bytes: 264192` and the bounded
+`max_session_mutations`. The IPC-only delivery advertises `transports: ["ipc"]`
+and omits MAVLink chunk support. `stored_route_import` advertises the explicit
+import operation; execution reports `supported: false` until implemented.
 Execution operations and readiness are advertised independently of library
 operations. Unimplemented features are omitted. Clients never infer support
 from a connection, a vehicle heartbeat, or the presence of a schema file.
@@ -275,7 +291,7 @@ validator, execution behavior, and both clients' preservation/editing behavior.
 
 ## Implementation acceptance
 
-The phase-1 handoff consists of this contract, the schema, a synthetic example,
+The planning handoff consists of this contract, the schema, a synthetic example,
 and the [QGC editing design](https://github.com/SynclairVision/qgroundcontrol/blob/dev-0.8-qgc-missions/docs/en/qgc-dev-guide/plan/dclink_missions.md).
 Later deliveries must demonstrate these outcomes using local validation and
 simulation before operational evaluation:
