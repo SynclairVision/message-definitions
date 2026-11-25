@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "name": "Synthetic route - not for flight",
+  "altitude_reference": "relative_home",
+  "waypoints": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "latitude_deg": 0,
+      "longitude_deg": 0,
+      "altitude_m": 30,
+      "acceptance_radius_m": 30
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "latitude_deg": 0.0001,
+      "longitude_deg": 0.0001,
+      "altitude_m": 30,
+      "acceptance_radius_m": 30
+    }
+  ],
+  "rules": [],
+  "areas": []
+}

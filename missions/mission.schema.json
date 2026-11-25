@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/SynclairVision/message-definitions/dev-0.8-qgc-missions/missions/mission.schema.json",
+  "title": "DCLink mission content version 1",
+  "description": "Editable mission content, separate from the service-assigned mission ID and revision. Saving content does not authorize execution.",
+  "$comment": "Service validation also rejects duplicate JSON object keys, non-finite decoded numbers, duplicate waypoint IDs, and documents larger than 262144 UTF-8 bytes. Execution requires at least one waypoint and independent readiness checks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "altitude_reference",
+    "waypoints",
+    "rules",
+    "areas"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "description": "A label of 1–80 Unicode code points, without control characters or leading/trailing whitespace. Names are not mission identity.",
+      "minLength": 1,
+      "maxLength": 80,
+      "allOf": [
+        {
+          "not": {
+            "pattern": "[\u0000-\u001f\u007f-\u009f]"
+          }
+        },
+        {
+          "not": {
+            "pattern": "^[\\s\uFEFF]|[\\s\uFEFF]$"
+          }
+        }
+      ]
+    },
+    "altitude_reference": {
+      "type": "string",
+      "const": "relative_home",
+      "description": "Metres above the admitted aircraft HOME altitude, not terrain clearance. HOME availability is checked before execution."
+    },
+    "waypoints": {
+      "type": "array",
+      "description": "Ordered route. Empty saved drafts are allowed. Waypoint IDs must be unique within the mission; the service checks ID uniqueness because JSON Schema cannot express uniqueness of one object property.",
+      "minItems": 0,
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/waypoint"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Reserved for a later capability-gated schema. Version 1 accepts no rules.",
+      "maxItems": 0,
+      "items": false
+    },
+    "areas": {
+      "type": "array",
+      "description": "Reserved for a later capability-gated schema. Version 1 accepts no behavior areas.",
+      "maxItems": 0,
+      "items": false
+    }
+  },
+  "$defs": {
+    "waypoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "latitude_deg",
+        "longitude_deg",
+        "altitude_m",
+        "acceptance_radius_m"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Lowercase UUIDv4, stable through coordinate edits and reordering, and unique within this mission.",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "latitude_deg": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude_deg": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "altitude_m": {
+          "type": "number",
+          "description": "Finite metres relative to HOME. Configured flight altitude limits are checked separately before and during execution."
+        },
+        "acceptance_radius_m": {
+          "type": "number",
+          "description": "Finite positive metres for this waypoint. Editors initially offer 30 metres; execution must honor the saved value or reject unsupported behavior.",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  }
+}

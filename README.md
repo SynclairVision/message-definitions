@@ -28,6 +28,11 @@ and generation inputs. See **`copilot-mavlink.md`** for the Copilot protocol.
 Select one of these operator dialects per generated bus: they use the same
 message IDs with different wire checksums and must not be included together.
 
+The [DCLink mission planning contract](missions/README.md) defines the phase-1
+mission schema, shared service operations, and transfer design for QGC and
+Maintenance. It is a design contract; mission wire messages and runtime support
+are delivered in subsequent phases.
+
 Generated MAVLink code is intentionally not stored in this repository; it is typically generated and versioned in the consuming project.
 
 ## CMake integration
