@@ -1,9 +1,9 @@
 # DCLink mission planning contract
 
 Status: version-1 contract. DCLink's phase-2 mission library and local IPC adapter
-implement storage operations. MAVLink transfer, QGC mission editing, rules,
-behavior areas, and mission execution are subsequent deliveries. The existing
-operator dialect is unchanged.
+implement storage operations. Phase 3 adds the addressed MAVLink transport and
+QGC client interface. QGC mission editing, rules, behavior areas and execution
+are subsequent deliveries. Existing operator messages retain their layouts.
 
 ## Ownership and first delivery
 
@@ -190,17 +190,20 @@ service must not silently send a bound draft to another destination.
 
 ## MAVLink mapping for the transfer phase
 
-The transfer implementation adds independent message families to
-`dclink_mavlink_dialect.xml`; phase 1 does not allocate IDs or change wire layouts.
-Existing status, commands, parameters, and target-view messages retain their
-layouts. Mission identity and content are not encoded in command names.
+The [MAVLink transport profile](mavlink.md) defines exact layouts, identities,
+exchange stages, integrity, limits and retry behavior for the three implemented
+message families in `dclink_mavlink_dialect.xml`. Existing status, commands,
+parameters and target-view messages retain their layouts. Mission identity and
+content are not encoded in command names.
 
-| Planned family | Purpose |
+| Family | Purpose |
 | --- | --- |
 | `DCLINK_MISSION_REQUEST` | Discovery, service operation, transfer stage, read offset, or abort. |
 | `DCLINK_MISSION_RESULT` | Correlated outcome, metadata, transfer descriptor, or acknowledged offset. |
 | `DCLINK_MISSION_DATA` | Explicit-length bytes at an offset in a bounded transfer. |
-| `DCLINK_MISSION_RUN` | Later execution request/status with mission revision and run identity. |
+
+Execution requests and run status are a subsequent delivery with their own
+definitions. They are not advertised by the library transport.
 
 Requests and replies carry destination system/component fields and service,
 client, and request identities. MAVLink routing uses unique source identities
@@ -238,9 +241,8 @@ exchange while the service session is unchanged. Timeout ends the transfer UI;
 a timed-out commit remains uncertain and is reconciled as described above.
 Background transfer work yields to command/status traffic and the runtime loop.
 
-The transfer phase assigns IDs, enums, exact fields and byte layouts, validates
-payload sizes and checksums through generation, and aligns consumer pins. No
-runtime advertises these families before its service/adapter is implemented.
+The transport profile is authoritative for its packet stages and bounds.
+Consumers generate their language bindings from the same pinned definitions.
 
 ## Execution boundary
 

@@ -30,8 +30,9 @@ message IDs with different wire checksums and must not be included together.
 
 The [DCLink mission planning contract](missions/README.md) defines the version-1
 mission schema, shared service operations, and transfer design for QGC and
-Maintenance. DCLink supplies the mission library and local IPC operations;
-mission wire messages and QGC editing are delivered in subsequent phases.
+Maintenance. DCLink supplies local IPC and the addressed
+[MAVLink mission transport](missions/mavlink.md); QGC supplies its transport
+client. QGC map editing and mission execution are subsequent deliveries.
 
 Generated MAVLink code is intentionally not stored in this repository; it is typically generated and versioned in the consuming project.
 

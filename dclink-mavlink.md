@@ -11,14 +11,18 @@ the same commit and generate their language bindings with the pinned
 | 41001 | DCLINK_COMMAND | 157 | 121 | GET indexed commands, START, STOP, ITEM, ACK, ERROR. |
 | 41002 | DCLINK_PARAMETER | 221 | 27 | GET indexed parameters, SET a value, ITEM, ACK, ERROR. |
 | 41003 | DCLINK_TARGET_VIEW | 127 | 137 | Query the selected operator target and control authority. |
+| 41010 | DCLINK_MISSION_REQUEST | 108 | 198 | Addressed mission-library RPC stages. |
+| 41011 | DCLINK_MISSION_RESULT | 109 | 10 | Correlated transfer acknowledgements and reply descriptors. |
+| 41012 | DCLINK_MISSION_DATA | 232 | 193 | Bounded upload and reply chunks. |
 
 Payload sizes are the complete layouts before MAVLink 2 trailing-zero trimming.
 CRC validation is required. Do not combine this dialect with
 `copilot_mavlink_dialect.xml`: both allocate IDs 41000 through 41002.
 
 The [mission planning contract](missions/README.md) defines the separate shared
-mission service and planned transfer families. Library operations use local IPC;
-this operator dialect does not yet contain mission messages.
+mission service shared by local IPC and the addressed
+[mission MAVLink transport](missions/mavlink.md). Library support does not enable
+mission execution or change command availability.
 
 ## Requests and replies
 

@@ -114,6 +114,23 @@
       <entry value="0" name="DCLINK_RANGE_SOURCE_UNKNOWN"/>
       <entry value="1" name="DCLINK_RANGE_SOURCE_RUNTIME_ESTIMATE"/>
     </enum>
+    <enum name="DCLINK_MISSION_STAGE">
+      <description>Stop-and-wait mission RPC transfer stage.</description>
+      <entry value="1" name="DCLINK_MISSION_STAGE_BEGIN"/>
+      <entry value="2" name="DCLINK_MISSION_STAGE_CHUNK"/>
+      <entry value="3" name="DCLINK_MISSION_STAGE_COMMIT"/>
+      <entry value="4" name="DCLINK_MISSION_STAGE_READ"/>
+      <entry value="5" name="DCLINK_MISSION_STAGE_ABORT"/>
+    </enum>
+    <enum name="DCLINK_MISSION_TRANSFER_RESULT">
+      <description>Transfer outcome, independent of the logical mission service result.</description>
+      <entry value="0" name="DCLINK_MISSION_TRANSFER_RESULT_OK"/>
+      <entry value="1" name="DCLINK_MISSION_TRANSFER_RESULT_INVALID"/>
+      <entry value="2" name="DCLINK_MISSION_TRANSFER_RESULT_NOT_FOUND"/>
+      <entry value="3" name="DCLINK_MISSION_TRANSFER_RESULT_BUSY"/>
+      <entry value="4" name="DCLINK_MISSION_TRANSFER_RESULT_STALE_SESSION"/>
+      <entry value="5" name="DCLINK_MISSION_TRANSFER_RESULT_ERROR"/>
+    </enum>
   </enums>
 
   <messages>
@@ -182,6 +199,48 @@
       <field type="uint8_t" name="range_source" enum="DCLINK_RANGE_SOURCE">Range provenance, independent of angle validity.</field>
       <field type="char[32]" name="target_id">Selected track ID if supplied; empty means unknown. UTF-8.</field>
       <field type="char[24]" name="target_source">Selected observation source if supplied; empty means unknown. UTF-8.</field>
+    </message>
+    <message id="41010" name="DCLINK_MISSION_REQUEST">
+      <description>Addressed mission RPC transfer request. The complete wire profile is defined in missions/mavlink.md. Only BEGIN, COMMIT, READ and ABORT are request stages.</description>
+      <field type="uint8_t" name="protocol_version">Mission transfer protocol version, currently 1.</field>
+      <field type="uint8_t" name="target_system">Destination system; zero broadcasts are not accepted.</field>
+      <field type="uint8_t" name="target_component">Destination component; zero broadcasts are not accepted.</field>
+      <field type="uint8_t[16]" name="service_session">DCLink boot UUID in RFC 4122 byte order; all zero only for discovery.</field>
+      <field type="uint8_t[16]" name="client_id">Client process UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="request_id">Logical operation UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="transfer_id">Client-assigned transfer UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t" name="stage" enum="DCLINK_MISSION_STAGE">Requested transfer stage.</field>
+      <field type="uint32_t" name="offset">BEGIN and ABORT: zero; COMMIT: complete upload length; READ: requested reply byte offset.</field>
+      <field type="uint32_t" name="total_size">BEGIN and COMMIT: complete upload length; otherwise zero.</field>
+      <field type="uint8_t[32]" name="sha256">BEGIN and COMMIT: SHA-256 of exact upload bytes; otherwise all zero.</field>
+    </message>
+    <message id="41011" name="DCLINK_MISSION_RESULT">
+      <description>Addressed mission RPC transfer acknowledgement or error. COMMIT success describes the immutable logical JSON reply, whose own result determines operation success.</description>
+      <field type="uint8_t" name="protocol_version">Mission transfer protocol version, currently 1.</field>
+      <field type="uint8_t" name="target_system">Destination client system.</field>
+      <field type="uint8_t" name="target_component">Destination client component.</field>
+      <field type="uint8_t[16]" name="service_session">Current actual DCLink boot UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="client_id">Echoed client process UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="request_id">Echoed logical operation UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="transfer_id">Echoed transfer UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t" name="stage" enum="DCLINK_MISSION_STAGE">Acknowledged request stage, or CHUNK for uploaded DATA.</field>
+      <field type="uint32_t" name="offset">BEGIN and CHUNK success: next upload offset; COMMIT success: zero.</field>
+      <field type="uint32_t" name="total_size">BEGIN and CHUNK success: upload length; COMMIT success: reply length; otherwise zero.</field>
+      <field type="uint8_t[32]" name="sha256">BEGIN and CHUNK success: upload digest; COMMIT success: reply digest; otherwise all zero.</field>
+      <field type="uint8_t" name="result" enum="DCLINK_MISSION_TRANSFER_RESULT">Transfer outcome, not the logical service result.</field>
+    </message>
+    <message id="41012" name="DCLINK_MISSION_DATA">
+      <description>Addressed mission RPC bytes. Client uploads are acknowledged by RESULT CHUNK; server replies to READ contain an immutable logical reply slice. Only data_length bytes are meaningful, including trailing zero bytes.</description>
+      <field type="uint8_t" name="protocol_version">Mission transfer protocol version, currently 1.</field>
+      <field type="uint8_t" name="target_system">Destination system; zero broadcasts are not accepted.</field>
+      <field type="uint8_t" name="target_component">Destination component; zero broadcasts are not accepted.</field>
+      <field type="uint8_t[16]" name="service_session">DCLink boot UUID in RFC 4122 byte order; all zero only during discovery upload.</field>
+      <field type="uint8_t[16]" name="client_id">Client process UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="request_id">Logical operation UUID in RFC 4122 byte order.</field>
+      <field type="uint8_t[16]" name="transfer_id">Transfer UUID in RFC 4122 byte order.</field>
+      <field type="uint32_t" name="offset">Byte offset of this slice in its complete upload or reply.</field>
+      <field type="uint8_t" name="data_length">Number of meaningful data bytes, from 1 through 160.</field>
+      <field type="uint8_t[160]" name="data">Exact bytes followed by zero padding; use data_length after MAVLink 2 zero restoration.</field>
     </message>
   </messages>
 </mavlink>
