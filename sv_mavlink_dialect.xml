@@ -207,6 +207,18 @@
         <description>Excellent good position quality.</description>
       </entry>
     </enum>
+    <enum name="SV_CENTER_TARGET_SWITCH_POSITION">
+      <description>Position of the sender's CENTER_TARGET switch.</description>
+      <entry value="0" name="SV_CENTER_TARGET_SWITCH_POSITION_DISABLED">
+        <description>Disabled: DigiView disables the center target highlight and lock on.</description>
+      </entry>
+      <entry value="1" name="SV_CENTER_TARGET_SWITCH_POSITION_ENABLED">
+        <description>Enabled: DigiView enables the center target highlight.</description>
+      </entry>
+      <entry value="2" name="SV_CENTER_TARGET_SWITCH_POSITION_LOCK">
+        <description>Lock: Starts STT on the target closest to center.</description>
+      </entry>
+    </enum>
   </enums>
 
 
@@ -463,6 +475,11 @@
             <field type="float" name="desired_thrust">Desired thrust command.</field>
             <extensions/>
             <field type="uint8_t" name="position_quality" enum="SV_POSITION_QUALITY">Estimated position quality.</field>
+        </message>
+
+        <message id="40016" name="CENTER_TARGET">
+            <description>Report the sender's switch position for the DigiView local display highlight.</description>
+            <field type="uint8_t" name="mode" enum="SV_CENTER_TARGET_SWITCH_POSITION">Sender's switch position. Current DigiView receivers ignore undefined values without changing the highlight or refreshing its timeout.</field>
         </message>
 
     </messages>
