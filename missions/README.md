@@ -1,24 +1,27 @@
 # DCLink mission planning contract
 
-Status: version-1 contract. DCLink's phase-2 mission library and local IPC adapter
-implement storage operations. Phase 3 adds the addressed MAVLink transport and
-QGC client interface. QGC mission editing, rules, behavior areas and execution
-are subsequent deliveries. Existing operator messages retain their layouts.
+Status: version-1 contract. The shared mission library, runtime IPC/MAVLink
+adapters, QGC route editor and Maintenance local helper implement planning and
+storage. Rules, behavior areas and execution remain subsequent deliveries.
+Existing operator messages retain their layouts.
 
 ## Ownership and first delivery
 
 DCLink owns the saved mission library, validation, revisions, and execution.
-QGC and Maintenance are clients of the same service:
+QGC and Maintenance use the same validated, revisioned SQLite mission library:
 
 ```text
-QGC Plan view -- MAVLink ------+--> DCLink mission service --> mission library
-Maintenance -- local IPC -----+             |
-                                           +--> planner execution adapter
+QGC Plan view -- MAVLink --> running DCLink mission service --+
+                                                            +--> SQLite library
+Maintenance web server --> local DCLink filesystem helper ---+
 ```
 
-Maintenance sends authenticated requests through its web server to local IPC.
-Both adapters invoke the same service operations and validation. Clients do not
-write mission storage files. Saving a mission never starts or changes a flight.
+Maintenance invokes the installed DCLink Python helper from its authenticated
+web server, following its configuration-file helper pattern. It does not open a
+runtime socket or require the DCLink process to be running. The helper and
+runtime reuse DCLink's storage validation and transaction functions. Neither
+frontend writes SQL or mission configuration files itself.
+Saving a mission never starts or changes a flight.
 Editing, importing, listing, loading, and saving do not require an autopilot.
 
 The first delivery supports named waypoint routes and multiple saved missions.
@@ -86,9 +89,11 @@ document over a version it cannot edit.
 
 ## Shared service operations
 
-Logical request and result envelopes are the same for both adapters. The IPC
-adapter maps them onto its existing request/response envelope; the MAVLink
-adapter maps them onto addressed requests and bounded data transfers.
+Runtime IPC and MAVLink use the following logical request and result envelopes.
+The IPC adapter maps them onto its existing request/response envelope; MAVLink
+maps them onto addressed requests and bounded data transfers. Maintenance uses
+the separate local-helper identity profile below with the same mission schema
+and supported storage operations.
 
 ```json
 {
@@ -243,6 +248,51 @@ Background transfer work yields to command/status traffic and the runtime loop.
 
 The transport profile is authoritative for its packet stages and bounds.
 Consumers generate their language bindings from the same pinned definitions.
+
+## Maintenance local-helper profile
+
+Maintenance invokes `python -B -m src.tools.mission_library` from the selected
+DCLink installation. One bounded strict UTF-8 JSON object arrives on stdin and
+one correlated JSON object is returned on stdout. The helper opens only the
+mission library; it does not start DCLink, connect to a vehicle, or use IPC.
+
+| Request field | Meaning |
+| --- | --- |
+| `action`, `payload` | The storage operation and its payload from the shared operation table. |
+| `client_id`, `request_id` | Lowercase UUIDv4 identities retained for an explicit retry. |
+| `library_id` | Stable SQLite-library UUID, omitted only for capabilities discovery. |
+
+Capabilities advertise `transports: ["local_helper"]` and the six operations
+capabilities, list, get, create, update and delete. The response echoes action,
+client/request IDs, `library_id`, `result` and `data`. Input is limited to 270336
+bytes and logical output to 264192 bytes. A replaced library with a different
+identity returns `stale_library` and its current ID without admitting the write.
+`library_id` identifies stored data and survives process restarts; it is separate
+from the runtime boot's `service_session` and is not a MAVLink field.
+
+The default library is `<installed DCLink>/config/mission-library.sqlite3`.
+It contains named mission documents, revisions, catalog generation, the stable
+library identity and compact helper mutation receipts. The helper commits the
+mutation and its receipt in one SQLite transaction. Repeating an identical
+client/request identity returns that retained result across helper or runtime
+restarts; different content under the same identity is rejected. A missing reply
+requires an explicit original-request retry or operator review, never automatic
+creation of another mission. Runtime MAVLink/IPC retain their boot-scoped replay
+rules above.
+
+SQLite serializes helper and runtime writes and checks the expected revision in
+the write transaction. A successful save reply follows commit; there is no
+shutdown-time mission flush. A concurrent edit produces a conflict and leaves
+the losing draft intact. QGC sees helper changes on its next read/Refresh, and
+Maintenance sees QGC changes on its next read. Refreshing does not replace local
+draft content; Reload requires an explicit discard decision.
+
+QGC retains its drafts in its application-data file; Maintenance retains drafts
+and pending identities in browser storage. These are local working copies,
+separate from the onboard saved library. Stopping DCLink preserves committed
+missions. Maintenance can continue editing while the runtime is stopped if
+WebMenu and the computer remain available; QGC remote requests require DCLink
+to be running. Neither client automatically starts a mission after reconnection.
 
 ## Execution boundary
 
