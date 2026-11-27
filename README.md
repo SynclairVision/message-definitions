@@ -28,7 +28,7 @@ and generation inputs. See **`copilot-mavlink.md`** for the Copilot protocol.
 Select one of these operator dialects per generated bus: they use the same
 message IDs with different wire checksums and must not be included together.
 
-The [DCLink mission planning contract](missions/README.md) defines the version-1
+The [DCLink mission planning contract](missions/README.md) defines the version-2
 mission schema, shared service operations, and transfer design for QGC and
 Maintenance. QGC's route editor uses the addressed
 [MAVLink mission transport](missions/mavlink.md) through the running DCLink

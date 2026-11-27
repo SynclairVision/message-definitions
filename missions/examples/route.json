@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "name": "Synthetic route - not for flight",
   "altitude_reference": "relative_home",
   "waypoints": [
@@ -18,6 +18,30 @@
       "acceptance_radius_m": 30
     }
   ],
-  "rules": [],
+  "rules": [
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "trigger": {
+        "type": "waypoint_reached",
+        "waypoint_id": "00000000-0000-4000-8000-000000000001"
+      },
+      "actions": [
+        {"type": "notify", "text": "Reached the first waypoint"},
+        {"type": "wait", "duration_s": 5},
+        {"type": "notify", "text": "Continuing the route"}
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000102",
+      "trigger": {
+        "type": "leg_started",
+        "from_waypoint_id": "00000000-0000-4000-8000-000000000001",
+        "to_waypoint_id": "00000000-0000-4000-8000-000000000002"
+      },
+      "actions": [
+        {"type": "notify", "text": "Moving to the second waypoint"}
+      ]
+    }
+  ],
   "areas": []
 }

@@ -1,11 +1,10 @@
 # DCLink mission planning contract
 
-Status: version-1 contract. The shared library supports planning and storage
-through QGC and Maintenance. The runtime IPC and MAVLink adapters also support
-execution of a saved waypoint revision. Rules and behavior areas are separate
-extensions.
+The version-2 mission format supports waypoint routes and ordered rules in the
+shared QGC and Maintenance library. The running DCLink planner evaluates the
+saved revision's rules. The IPC and MAVLink exchange stays at protocol version 1.
 
-## Ownership and first delivery
+## Ownership
 
 DCLink owns the saved mission library, validation, revisions, and execution.
 QGC and Maintenance use the same validated, revisioned SQLite mission library:
@@ -24,9 +23,8 @@ frontend writes SQL or mission configuration files itself.
 Saving a mission never starts or changes a flight.
 Editing, importing, listing, loading, and saving do not require an autopilot.
 
-The first delivery supports named waypoint routes and multiple saved missions.
-It reuses the QGC map and preserves aircraft upload and current flight controls.
-Conditional rules and behavior areas are subsequent, capability-gated deliveries.
+The shared library supports named waypoint routes, multiple saved missions, and
+rules that react to waypoint arrival or the start of a leg.
 
 ## Mission document, identity, and limits
 
@@ -35,7 +33,7 @@ Conditional rules and behavior areas are subsequent, capability-gated deliveries
 
 | Field | Contract |
 | --- | --- |
-| `schema_version` | Integer `1`; a client must understand the complete version before editing. |
+| `schema_version` | Integer `2` for new and editable missions. |
 | `name` | 1–80 Unicode code points, without control characters or leading/trailing whitespace. Names are labels, not identity. |
 | `altitude_reference` | `relative_home`: metres above the admitted aircraft HOME altitude, not terrain clearance or height above the launch map point. |
 | `waypoints` | Ordered list of 0–1000 waypoints. An empty mission is a saved draft and cannot execute. |
@@ -43,12 +41,14 @@ Conditional rules and behavior areas are subsequent, capability-gated deliveries
 | `latitude_deg`, `longitude_deg` | WGS84 degrees in [-90, 90] and [-180, 180]. Zero is valid. |
 | `altitude_m` | Finite JSON number in metres relative to HOME. Execution checks configured flight limits separately. |
 | `acceptance_radius_m` | Finite positive metres for that waypoint. The editor initially offers 30 m and exposes the value. |
-| `rules`, `areas` | Empty arrays in version 1. Nonempty content is rejected, never silently discarded. |
+| `rules` | Ordered list of 0–16 rules. An empty list gives normal waypoint navigation. |
+| `areas` | Empty array. Behavior areas require a later capability. |
 
 All listed fields are required. Unknown fields, duplicate JSON object keys,
-non-finite numbers, duplicate waypoint IDs, and unsupported versions are invalid.
-The schema validates structure; the service also checks unique IDs, trimmed
-names, finite values, and a maximum encoded document size of 262144 UTF-8 bytes.
+non-finite numbers, and unsupported versions are invalid on save. The schema
+validates structure. The service also checks unique waypoint and rule IDs,
+waypoint references, the wait budget, and a maximum encoded document size of
+262144 UTF-8 bytes.
 The same limits apply to IPC and MAVLink. No production JSON Schema dependency
 is required: each implementation may validate these rules with existing tools.
 
@@ -59,7 +59,7 @@ A saved record is an envelope, separate from editable content:
   "mission_id": "44444444-4444-4444-8444-444444444444",
   "revision": 1,
   "mission": {
-    "schema_version": 1,
+    "schema_version": 2,
     "name": "Example",
     "altitude_reference": "relative_home",
     "waypoints": [],
@@ -83,9 +83,8 @@ or revision. A failed validation, transfer, or conflict leaves the record intact
 Use one serialized service mutation path for both adapters. Storage replacement
 must be durable before reporting success. A reader sees a complete saved record.
 
-Unknown schema versions remain visible as unsupported library entries. A client
-may inspect available metadata but must not save a reduced or partially decoded
-document over a version it cannot edit.
+Other schema versions, including version 1, may be read and inspected as
+unsupported library entries. Editing or starting a mission requires version 2.
 
 ## Shared service operations
 
@@ -155,8 +154,9 @@ A `stale_session` response echoes the requested session for correlation and
 includes `data.current_service_session`; clients rediscover rather than treating
 that response as a successful operation in the new session.
 
-Capabilities return `protocol_version: 1`, `schema_versions: [1]`, the current
-supported `operations`, `features: ["waypoint_routes"]`, and these limits:
+Capabilities return `protocol_version: 1`, `schema_versions: [2]`, the current
+supported `operations`, the features `waypoint_routes` and `waypoint_rules`,
+and these limits:
 `max_document_bytes: 262144`, `max_waypoints: 1000`, `max_name_characters: 80`,
 `max_list_page: 50`, and a MAVLink `max_chunk_bytes` no greater than 160.
 IPC additionally reports `max_result_bytes: 264192` and the bounded
@@ -269,7 +269,8 @@ mission library; it does not start DCLink, connect to a vehicle, or use IPC.
 | `library_id` | Stable SQLite-library UUID, omitted only for capabilities discovery. |
 
 Capabilities advertise `transports: ["local_helper"]` and the six operations
-capabilities, list, get, create, update and delete. The response echoes action,
+capabilities, list, get, create, update and delete, with `schema_versions: [2]`
+and `waypoint_rules` for editing. The response echoes action,
 client/request IDs, `library_id`, `result` and `data`. Input is limited to 270336
 bytes and logical output to 264192 bytes. A replaced library with a different
 identity returns `stale_library` and its current ID without admitting the write.
@@ -326,30 +327,47 @@ the client should treat that run's state as unknown.
 
 The planner uses the aircraft's existing external-control and Hold lifecycle.
 Progress requires fresh feedback inside each waypoint's horizontal acceptance
-radius and within 2 m vertically. The final waypoint requests Hold. Cancel
+radius and within 2 m vertically. The final waypoint requests Hold after its
+rules finish. Cancel
 targets one run and is safe to repeat for that run. It can cancel a queued
 start or request the usual confirmed Hold handoff. `stopping` is pending.
 The planner reports `completed` or an in-flight `canceled` after confirmed
 handoff. Pause and resume are outside this profile.
 
-## Rules and areas extension
+## Waypoint and leg rules
 
-Future rules use a bounded **Where / When / Do / After** editor, with stable
-waypoint/leg/area references rather than displayed waypoint numbers. Define a
-route leg (progress between two points), a radius around a waypoint, and a
-geographic corridor as distinct scopes. Advertise only implemented scopes.
+Each rule has a lowercase UUIDv4 `id`, one `trigger`, and an ordered `actions`
+list of one to four steps. In the editor, choose where a rule applies, when to
+run it, and what to do in order. After the last step, the route continues.
 
-Class conditions require a versioned model/class vocabulary associated with the
-correct fresh track. Reacting to a selected track and automatically acquiring
-a matching unselected detection are separate capabilities. Rule design must
-specify dwell, rearming, action timeout, target loss, action ownership, and route
-return behavior before enabling execution.
+| When | Trigger fields | Runs at |
+| --- | --- | --- |
+| Reaching a waypoint | `type: "waypoint_reached"`, `waypoint_id` | Confirmed arrival at the named waypoint, using normal mission progress checks. |
+| Starting a leg | `type: "leg_started"`, `from_waypoint_id`, `to_waypoint_id` | Transition to the next waypoint after the previous waypoint and its rules finish. Both IDs must be consecutive in route order. |
 
-Behavior areas select supported profiles inside a geographic boundary. They are
-distinct from aircraft fences. An avoidance profile is active only when its
-backend confirms readiness; a drawn polygon alone does not provide avoidance.
-Advertise these extensions only with an implemented versioned content schema,
-validator, execution behavior, and both clients' preservation/editing behavior.
+References use stable waypoint IDs. Moving a point keeps its ID. Removing a
+referenced point or breaking a leg requires fixing its rules before saving.
+
+| Step | Action fields | Behavior |
+| --- | --- | --- |
+| Notify | `type: "notify"`, `text` | Record an operator message and continue to the next step. Text is 1–100 Unicode scalar values without surrounding whitespace, edge BOMs, or C0/C1 control characters. |
+| Wait at waypoint | `type: "wait"`, `duration_s` | Keep the reached waypoint as the current navigation target for 1–60 whole seconds, then continue to the next step. Available only on waypoint arrival. |
+
+Rules for the same event run in saved order. Each rule runs once per execution,
+with a combined wait budget of at most 300 seconds per mission. For example,
+an arrival rule can notify, wait five seconds, and notify again before the next
+leg begins. Wait uses the same aircraft ownership and readiness checks as
+normal route motion. Cancel and safety handoff apply during the wait.
+
+A run report may include `rule_event` while an action sequence is active.
+It contains `rule_id`, `action_index` (starting at 1 within the rule), and
+`type`. A `notify` event includes `text`; a `wait` event includes whole
+seconds left in `remaining_s`. The active event clears after the sequence.
+Each notification is logged by DCLink. `last_notification` retains the latest
+Notify event for this run so it remains visible between polls.
+
+Detection conditions and geographic behavior areas require separate advertised
+capabilities and validation.
 
 ## Implementation acceptance
 
@@ -371,3 +389,10 @@ simulation before operational evaluation:
 - Starting requires an explicit supported saved revision and execution readiness.
   Saving a newer revision leaves the active snapshot unchanged. Unsupported
   waypoint radii or backend behavior are reported before starting.
+- A waypoint arrival sequence runs its steps in order and keeps the current
+  waypoint target during a wait. A following leg rule starts only after the
+  previous waypoint's rules complete. Cancel during a wait follows the normal
+  flight handoff.
+- Missing waypoint references, nonconsecutive leg endpoints, waits on legs,
+  and excess wait time are rejected before saving. Both editors preserve the
+  order and stable IDs of valid rules.

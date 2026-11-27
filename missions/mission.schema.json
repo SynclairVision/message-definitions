@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/SynclairVision/message-definitions/dev-0.8-qgc-missions/missions/mission.schema.json",
-  "title": "DCLink mission content version 1",
+  "title": "DCLink mission content version 2",
   "description": "Editable mission content, separate from the service-assigned mission ID and revision. Saving content does not authorize execution.",
-  "$comment": "Service validation also rejects duplicate JSON object keys, non-finite decoded numbers, duplicate waypoint IDs, and documents larger than 262144 UTF-8 bytes. Execution requires at least one waypoint and independent readiness checks.",
+  "$comment": "Service validation also rejects duplicate JSON object keys, non-finite decoded numbers, duplicate waypoint or rule IDs, missing waypoint references, leg references that are not consecutive in route order, more than 300 seconds of total Wait actions, and documents larger than 262144 UTF-8 bytes. Execution requires at least one waypoint and independent readiness checks.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,7 +17,7 @@
   "properties": {
     "schema_version": {
       "type": "integer",
-      "const": 1
+      "const": 2
     },
     "name": {
       "type": "string",
@@ -53,18 +53,26 @@
     },
     "rules": {
       "type": "array",
-      "description": "Reserved for a later capability-gated schema. Version 1 accepts no rules.",
-      "maxItems": 0,
-      "items": false
+      "description": "Ordered rules. Rules matching the same event run in this order, once per run.",
+      "maxItems": 16,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
     },
     "areas": {
       "type": "array",
-      "description": "Reserved for a later capability-gated schema. Version 1 accepts no behavior areas.",
+      "description": "Reserved for capability-gated behavior areas. Version 2 accepts an empty array.",
       "maxItems": 0,
       "items": false
     }
   },
   "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
     "waypoint": {
       "type": "object",
       "additionalProperties": false,
@@ -77,11 +85,8 @@
       ],
       "properties": {
         "id": {
-          "type": "string",
-          "description": "Lowercase UUIDv4, stable through coordinate edits and reordering, and unique within this mission.",
-          "minLength": 36,
-          "maxLength": 36,
-          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          "$ref": "#/$defs/id",
+          "description": "Lowercase UUIDv4, stable through coordinate edits and reordering, and unique within this mission."
         },
         "latitude_deg": {
           "type": "number",
@@ -101,6 +106,131 @@
           "type": "number",
           "description": "Finite positive metres for this waypoint. Editors initially offer 30 metres; execution must honor the saved value or reject unsupported behavior.",
           "exclusiveMinimum": 0
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "trigger", "actions"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id",
+          "description": "Lowercase UUIDv4, unique among the rules in this mission."
+        },
+        "trigger": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/waypoint_reached"
+            },
+            {
+              "$ref": "#/$defs/leg_started"
+            }
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "description": "Ordered steps. Each step completes before the next; the route continues after the last matching rule.",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/notify"
+              },
+              {
+                "$ref": "#/$defs/wait"
+              }
+            ]
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "trigger": {
+            "$ref": "#/$defs/leg_started"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/$defs/notify"
+            }
+          }
+        }
+      }
+    },
+    "waypoint_reached": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "waypoint_id"],
+      "properties": {
+        "type": {
+          "const": "waypoint_reached"
+        },
+        "waypoint_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "leg_started": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "from_waypoint_id", "to_waypoint_id"],
+      "properties": {
+        "type": {
+          "const": "leg_started"
+        },
+        "from_waypoint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "to_waypoint_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "notify": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {
+        "type": {
+          "const": "notify"
+        },
+        "text": {
+          "type": "string",
+          "description": "Pilot-facing message of 1–100 Unicode scalar values. Trim surrounding whitespace.",
+          "minLength": 1,
+          "maxLength": 100,
+          "allOf": [
+            {
+              "not": {
+                "pattern": "[\u0000-\u001f\u007f-\u009f\ud800-\udfff]"
+              }
+            },
+            {
+              "not": {
+                "pattern": "^[\\s\uFEFF]|[\\s\uFEFF]$"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "wait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "duration_s"],
+      "properties": {
+        "type": {
+          "const": "wait"
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
         }
       }
     }
