@@ -34,7 +34,8 @@ Maintenance. QGC's route editor uses the addressed
 [MAVLink mission transport](missions/mavlink.md) through the running DCLink
 service. Maintenance invokes DCLink's local filesystem helper against the same
 SQLite library, without a runtime connection. Runtime IPC remains available to
-local operator clients. Mission execution is a subsequent delivery.
+local operator clients. The running DCLink service can also execute a saved
+waypoint revision on a compatible aircraft through its planner.
 
 Generated MAVLink code is intentionally not stored in this repository; it is typically generated and versioned in the consuming project.
 

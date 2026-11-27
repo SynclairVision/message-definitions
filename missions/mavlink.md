@@ -1,7 +1,7 @@
-# Mission library MAVLink transport, version 1
+# Mission MAVLink transport, version 1
 
-This profile carries the [mission service](README.md) over MAVLink 2. It provides
-library operations only; execution is not advertised. The canonical layouts are
+This profile carries the [mission service](README.md) over MAVLink 2. Library
+and supported execution operations use the same exchange. The canonical layouts are
 in [dclink_mavlink_dialect.xml](../dclink_mavlink_dialect.xml).
 
 | ID | Message | Full payload bytes | CRC extra |
@@ -41,8 +41,8 @@ An upload is strict UTF-8 JSON with exactly two keys:
 ```
 
 The logical identity comes from the packet header. Permit only advertised
-`missions.*` library actions and object payloads; never dispatch command or
-vehicle-control actions through this transport. Both this adapter and local IPC
+`missions.*` actions and object payloads. Execution admits a saved revision and
+aircraft identity, or cancels a specific run, through the planner. Both this adapter and local IPC
 invoke the same mission service, session and mutation receipt cache.
 
 An upload or complete logical reply is at most 264192 bytes. Editable mission
@@ -74,8 +74,8 @@ NOT_FOUND=2, BUSY=3, STALE_SESSION=4 and ERROR=5.
 3. **COMMIT:** REQUEST repeats the upload `total_size` and digest, with
    `offset=total_size`. The endpoint requires exact length/digest, strict JSON,
    valid session and an allowed operation before invoking the service. Revision
-   checks occur inside the service's storage transaction, including after a
-   competing IPC edit during upload.
+   checks use the service's storage transaction, including after a competing
+   library edit during upload. Start acceptance queues runtime admission.
 4. **Reply descriptor:** RESULT COMMIT OK has `offset=0` and the immutable logical
    reply's size/digest. This means the reply is available, not that the operation
    succeeded. The downloaded JSON envelope's `result` is the operation outcome.
@@ -111,8 +111,9 @@ service returns its retained mutation outcome, preventing duplicate creation or
 revision increments. Changing content under that logical identity is invalid.
 
 After a mutation COMMIT was sent, a lost reply or connection change leaves its
-outcome unknown. A timeout is not evidence of failure. Preserve the draft and
-logical identity. Reads and rediscovery must not silently clear that uncertainty.
+outcome unknown. Preserve the draft or run request identity. For execution, read
+run status to reconcile a matching Start or Cancel, or require operator review.
+Read-only status polling never repeats an execution request.
 Never automatically replay a whole operation across reconnects or service boots.
 After a boot change, refresh the library and require an operator decision before
 a new mutation identity. An explicit retry of an old identity must stay bound to

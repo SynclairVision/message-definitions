@@ -1,9 +1,9 @@
 # DCLink mission planning contract
 
-Status: version-1 contract. The shared mission library, runtime IPC/MAVLink
-adapters, QGC route editor and Maintenance local helper implement planning and
-storage. Rules, behavior areas and execution remain subsequent deliveries.
-Existing operator messages retain their layouts.
+Status: version-1 contract. The shared library supports planning and storage
+through QGC and Maintenance. The runtime IPC and MAVLink adapters also support
+execution of a saved waypoint revision. Rules and behavior areas are separate
+extensions.
 
 ## Ownership and first delivery
 
@@ -118,8 +118,11 @@ and survives its transport reconnects; it is not authentication.
 | `missions.get` | `mission_id`. | Latest complete saved record. |
 | `missions.create` | `mission` content. | `{mission_id, revision: 1}`. |
 | `missions.update` | `mission_id`, `expected_revision`, complete `mission`. | `{mission_id, revision}` for the committed content. |
-| `missions.delete` | `mission_id`, `expected_revision`. | Deleted ID and revision. A mission used by a nonterminal run is busy. |
+| `missions.delete` | `mission_id`, `expected_revision`. | Deleted ID and revision. An admitted run retains its own snapshot. |
 | `missions.import_route` | `name`, optional positive `acceptance_radius_m`. | `{mission_id, revision: 1}` for a one-time import of DCLink's stored route. |
+| `missions.start` | `mission_id`, exact saved `revision`, and `vehicle_system_id` (1–255). | `{run}` with a new run ID and queued state, pending runtime admission. |
+| `missions.run_status` | Empty. | `{fresh, execution, run}`. Latest run on this runtime boot or null, plus current start readiness. |
+| `missions.cancel` | Exact `run_id`. | `{run}` with cancellation requested, or the retained state of that cancellation. |
 
 Rename is an update of `name`. Duplicate/Save as copy is a create using the draft
 content and a chosen name. There is no mutable service-wide selected mission.
@@ -159,8 +162,9 @@ supported `operations`, `features: ["waypoint_routes"]`, and these limits:
 IPC additionally reports `max_result_bytes: 264192` and the bounded
 `max_session_mutations`. The IPC-only delivery advertises `transports: ["ipc"]`
 and omits MAVLink chunk support. `stored_route_import` advertises the explicit
-import operation; execution reports `supported: false` until implemented.
-Execution operations and readiness are advertised independently of library
+import operation. Execution capabilities contain `supported`, `ready`,
+`reason` and, when supported, `vehicle_system_id`. Execution operations are
+advertised independently of library
 operations. Unimplemented features are omitted. Clients never infer support
 from a connection, a vehicle heartbeat, or the presence of a schema file.
 
@@ -177,6 +181,8 @@ mission ID. Different content under a retained request ID is invalid. Retain
 completed mutation identities for the entire session; use a bounded cache and
 reject new mutations with `busy` when full instead of evicting replay protection.
 Pending identical requests join the same operation and cannot commit twice.
+Cancel instead uses the run ID as its idempotence boundary. A repeat can only
+read or request cancellation of that same run.
 
 Read requests can retry. A library mutation can retry with its original identity
 while the service session is unchanged. A client timeout means outcome unknown,
@@ -207,8 +213,8 @@ content are not encoded in command names.
 | `DCLINK_MISSION_RESULT` | Correlated outcome, metadata, transfer descriptor, or acknowledged offset. |
 | `DCLINK_MISSION_DATA` | Explicit-length bytes at an offset in a bounded transfer. |
 
-Execution requests and run status are a subsequent delivery with their own
-definitions. They are not advertised by the library transport.
+Execution operations are logical requests over the same addressed exchange.
+They are advertised by a service with a running planner.
 
 Requests and replies carry destination system/component fields and service,
 client, and request identities. MAVLink routing uses unique source identities
@@ -294,33 +300,37 @@ missions. Maintenance can continue editing while the runtime is stopped if
 WebMenu and the computer remain available; QGC remote requests require DCLink
 to be running. Neither client automatically starts a mission after reconnection.
 
-## Execution boundary
+## Execution
 
-The execution delivery adds `missions.start` with explicit `mission_id` and
-`revision`. DCLink atomically checks that saved revision and captures an immutable
-run snapshot. A concurrent save either precedes admission (causing conflict) or
-creates a newer revision without changing the admitted run. Start never chooses
-whichever mission another editor last selected.
+Start checks the requested revision against one SQLite read snapshot. If a save
+committed first, Start returns `conflict` and the current revision. A later save
+or deletion changes the library while the run keeps its original route and name.
+Start is retained under the boot-scoped mutation identity. A repeated Start with
+that identity returns the original acceptance and can never launch a second run.
 
-Execution requires a nonempty supported route, an admitted matching vehicle,
-fresh HOME/navigation data required by the backend, compatible vehicle/controller
-support, and existing ownership and safety admission. Planning a relative-HOME
-route does not invent HOME or authorize arming. A start does not add automatic
-arming, takeoff, or landing behavior.
+DCLink queues one run at a time and rechecks readiness on the runtime thread.
+The supported profile is an already armed, airborne PX4 multicopter in Hold
+(MAVLink mode LOITER) or Position. The aircraft must match the requested system
+ID, have valid fresh heartbeat, airborne state, HOME and global position, and
+pass existing command and runtime safety admission. Every waypoint must be
+within the configured HOME-relative altitude limits and above zero. Start
+supplies no automatic arming, takeoff or landing.
 
-Execution requests use the planner's normal lifecycle. Future pause/resume/cancel
-requests identify a `run_id`; capability/readiness states govern availability.
-Their acknowledgements mean acceptance, not completed movement or handoff.
-Run status reports mission ID/revision, run ID, state, current waypoint ID,
-progress, and reason. A missing or stale run report means state unknown. It is
-not evidence that a vehicle has stopped, and must not cause automatic restart.
+Run reports contain `run_id`, `start_request_id`, `mission_id`, `revision`,
+`name`, `vehicle_system_id`, `state`, `waypoint_id` (null after the last point),
+`waypoints_reached`, `waypoint_count` and `reason`. States are `queued`,
+`starting`, `running`, `stopping`, `completed`, `canceled`, `rejected`,
+`interrupted` and `failed`. The latest report is kept in memory for this boot.
+An absent report for an expected run, a stale session, or `fresh: false` means
+the client should treat that run's state as unknown.
 
-The execution adapter must preserve waypoint IDs and honor each acceptance radius
-or reject unsupported values before start. It must use the admitted mission
-snapshot explicitly and retain existing route cleanup/restart requirements.
-Unrelated aircraft plans and implicit route-source selection cannot substitute
-for the named mission. No client or transport bypasses planner ownership,
-telemetry freshness checks, cancellation, or the final flight safety envelope.
+The planner uses the aircraft's existing external-control and Hold lifecycle.
+Progress requires fresh feedback inside each waypoint's horizontal acceptance
+radius and within 2 m vertically. The final waypoint requests Hold. Cancel
+targets one run and is safe to repeat for that run. It can cancel a queued
+start or request the usual confirmed Hold handoff. `stopping` is pending.
+The planner reports `completed` or an in-flight `canceled` after confirmed
+handoff. Pause and resume are outside this profile.
 
 ## Rules and areas extension
 
