@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mavlink>
+  <version>2</version>
+
+  <enums>
+    <enum name="DCLINK_ACTION">
+      <description>Generic DCLink control action.</description>
+      <entry value="0" name="DCLINK_ACTION_UNSPECIFIED"/>
+      <entry value="1" name="DCLINK_ACTION_GET"/>
+      <entry value="2" name="DCLINK_ACTION_ITEM"/>
+      <entry value="3" name="DCLINK_ACTION_SET"/>
+      <entry value="4" name="DCLINK_ACTION_START"/>
+      <entry value="5" name="DCLINK_ACTION_STOP"/>
+      <entry value="6" name="DCLINK_ACTION_ACK"/>
+      <entry value="7" name="DCLINK_ACTION_ERROR"/>
+    </enum>
+
+    <enum name="DCLINK_RESULT">
+      <description>Result of a DCLink control request.</description>
+      <entry value="0" name="DCLINK_RESULT_UNSPECIFIED"/>
+      <entry value="1" name="DCLINK_RESULT_OK"/>
+      <entry value="2" name="DCLINK_RESULT_NOT_FOUND"/>
+      <entry value="3" name="DCLINK_RESULT_INVALID_VALUE"/>
+      <entry value="4" name="DCLINK_RESULT_BUSY"/>
+      <entry value="5" name="DCLINK_RESULT_ERROR"/>
+    </enum>
+
+    <enum name="DCLINK_AUTOPILOT_CONNECTION">
+      <description>Autopilot connection state.</description>
+      <entry value="0" name="DCLINK_AUTOPILOT_CONNECTION_UNKNOWN"/>
+      <entry value="1" name="DCLINK_AUTOPILOT_CONNECTION_DISCONNECTED"/>
+      <entry value="2" name="DCLINK_AUTOPILOT_CONNECTION_CONNECTING"/>
+      <entry value="3" name="DCLINK_AUTOPILOT_CONNECTION_CONNECTED"/>
+      <entry value="4" name="DCLINK_AUTOPILOT_CONNECTION_ERROR"/>
+    </enum>
+
+    <enum name="DCLINK_AUTOPILOT_TYPE">
+      <description>Detected autopilot implementation.</description>
+      <entry value="0" name="DCLINK_AUTOPILOT_TYPE_UNKNOWN"/>
+      <entry value="1" name="DCLINK_AUTOPILOT_TYPE_PX4"/>
+      <entry value="2" name="DCLINK_AUTOPILOT_TYPE_ARDUPILOT"/>
+      <entry value="3" name="DCLINK_AUTOPILOT_TYPE_GENERIC"/>
+    </enum>
+
+    <enum name="DCLINK_COMMAND_STATE">
+      <description>Current command runtime state.</description>
+      <entry value="0" name="DCLINK_COMMAND_STATE_IDLE"/>
+      <entry value="1" name="DCLINK_COMMAND_STATE_RUNNING"/>
+      <entry value="2" name="DCLINK_COMMAND_STATE_STOPPING"/>
+      <entry value="3" name="DCLINK_COMMAND_STATE_ERROR"/>
+    </enum>
+
+    <enum name="DCLINK_NAVIGATION_TYPE">
+      <description>Navigation source currently used by DCLink.</description>
+      <entry value="0" name="DCLINK_NAVIGATION_TYPE_NONE"/>
+      <entry value="1" name="DCLINK_NAVIGATION_TYPE_GPS"/>
+      <entry value="2" name="DCLINK_NAVIGATION_TYPE_MYGGNAV"/>
+      <entry value="3" name="DCLINK_NAVIGATION_TYPE_STELLAR"/>
+      <entry value="4" name="DCLINK_NAVIGATION_TYPE_CUSTOM"/>
+    </enum>
+
+    <enum name="DCLINK_NAVIGATION_STATUS">
+      <description>Navigation source health/status.</description>
+      <entry value="0" name="DCLINK_NAVIGATION_STATUS_UNKNOWN"/>
+      <entry value="1" name="DCLINK_NAVIGATION_STATUS_READY"/>
+      <entry value="2" name="DCLINK_NAVIGATION_STATUS_ACTIVE"/>
+      <entry value="3" name="DCLINK_NAVIGATION_STATUS_DEGRADED"/>
+      <entry value="4" name="DCLINK_NAVIGATION_STATUS_LOST"/>
+      <entry value="5" name="DCLINK_NAVIGATION_STATUS_ERROR"/>
+    </enum>
+
+    <enum name="DCLINK_TARGET_STATUS">
+      <description>Target state visible to DCLink commands.</description>
+      <entry value="0" name="DCLINK_TARGET_STATUS_NONE"/>
+      <entry value="1" name="DCLINK_TARGET_STATUS_SEEN"/>
+      <entry value="2" name="DCLINK_TARGET_STATUS_STABLE"/>
+      <entry value="3" name="DCLINK_TARGET_STATUS_LOCKED"/>
+      <entry value="4" name="DCLINK_TARGET_STATUS_LOST"/>
+    </enum>
+
+    <enum name="DCLINK_PARAMETER_ACCESS_ROLE" bitmask="true">
+      <description>Operator roles advertised by command and parameter catalog metadata.</description>
+      <entry value="1" name="DCLINK_PARAMETER_ACCESS_ROLE_INTEGRATOR"/>
+      <entry value="2" name="DCLINK_PARAMETER_ACCESS_ROLE_PILOT"/>
+    </enum>
+
+    <enum name="DCLINK_LOGGING_STATUS">
+      <description>DCLink logging state.</description>
+      <entry value="0" name="DCLINK_LOGGING_STATUS_OFF"/>
+      <entry value="1" name="DCLINK_LOGGING_STATUS_ON"/>
+    </enum>
+    <enum name="DCLINK_STATUS_FLAGS" bitmask="true">
+      <entry value="1" name="DCLINK_STATUS_FLAGS_ERROR"/>
+      <entry value="2" name="DCLINK_STATUS_FLAGS_TARGET_VIEW"/>
+    </enum>
+    <enum name="DCLINK_TARGET_VIEW_FLAGS" bitmask="true">
+      <entry value="1" name="DCLINK_TARGET_VIEW_FLAGS_PRESENT"/>
+      <entry value="2" name="DCLINK_TARGET_VIEW_FLAGS_AZIMUTH"/>
+      <entry value="4" name="DCLINK_TARGET_VIEW_FLAGS_ELEVATION"/>
+      <entry value="8" name="DCLINK_TARGET_VIEW_FLAGS_RANGE"/>
+      <entry value="16" name="DCLINK_TARGET_VIEW_FLAGS_GLOBAL_POSITION"/>
+      <entry value="32" name="DCLINK_TARGET_VIEW_FLAGS_RELATIVE_POSITION"/>
+      <entry value="64" name="DCLINK_TARGET_VIEW_FLAGS_SOURCE_AGE"/>
+      <entry value="128" name="DCLINK_TARGET_VIEW_FLAGS_BEHIND"/>
+      <entry value="256" name="DCLINK_TARGET_VIEW_FLAGS_DRIVING"/>
+    </enum>
+    <enum name="DCLINK_CONTROL_OWNER">
+      <entry value="0" name="DCLINK_CONTROL_OWNER_UNKNOWN"/>
+      <entry value="1" name="DCLINK_CONTROL_OWNER_MANUAL"/>
+      <entry value="2" name="DCLINK_CONTROL_OWNER_AUTOPILOT"/>
+      <entry value="3" name="DCLINK_CONTROL_OWNER_DCLINK"/>
+    </enum>
+    <enum name="DCLINK_RANGE_SOURCE">
+      <entry value="0" name="DCLINK_RANGE_SOURCE_UNKNOWN"/>
+      <entry value="1" name="DCLINK_RANGE_SOURCE_RUNTIME_ESTIMATE"/>
+    </enum>
+  </enums>
+
+  <messages>
+    <message id="41000" name="DCLINK_STATUS">
+      <description>High-level DCLink runtime status.</description>
+      <field type="uint16_t" name="request_id">Client request id copied into the response.</field>
+      <field type="uint8_t" name="autopilot_connection" enum="DCLINK_AUTOPILOT_CONNECTION">Autopilot connection state.</field>
+      <field type="uint8_t" name="autopilot_type" enum="DCLINK_AUTOPILOT_TYPE">Detected autopilot type.</field>
+      <field type="uint16_t" name="active_command_id">Active command id; 0 means no running command.</field>
+      <field type="char[64]" name="active_command">Active command name; empty or idle means no running command.</field>
+      <field type="uint8_t" name="command_state" enum="DCLINK_COMMAND_STATE">Current command runtime state.</field>
+      <field type="uint8_t" name="navigation_type" enum="DCLINK_NAVIGATION_TYPE">Current navigation source.</field>
+      <field type="uint8_t" name="navigation_status" enum="DCLINK_NAVIGATION_STATUS">Current navigation health/status.</field>
+      <field type="uint8_t" name="target_status" enum="DCLINK_TARGET_STATUS">Current target status.</field>
+      <field type="uint8_t" name="logging" enum="DCLINK_LOGGING_STATUS">Logging state.</field>
+      <field type="uint32_t" name="flags">Reserved status bitmask.</field>
+    </message>
+
+    <message id="41001" name="DCLINK_COMMAND">
+      <description>List, start, stop, or acknowledge a DCLink command.</description>
+      <field type="uint16_t" name="request_id">Client request id copied into the response.</field>
+      <field type="uint8_t" name="action" enum="DCLINK_ACTION">Requested action or response action.</field>
+      <field type="uint8_t" name="result" enum="DCLINK_RESULT">Action result for ACK/ERROR responses.</field>
+      <field type="uint16_t" name="total">Total available commands for list responses.</field>
+      <field type="uint16_t" name="id">Command id; 0 is the command-list root for GET.</field>
+      <field type="char[64]" name="name">Command machine name, for example hold or copter/takeoff.</field>
+      <field type="char[48]" name="label">Human-readable command label.</field>
+      <field type="char[32]" name="section">UI/group section, for example main or copter.</field>
+      <field type="uint32_t" name="flags">Reserved command capability bitmask.</field>
+      <field type="uint8_t" name="access_role" enum="DCLINK_PARAMETER_ACCESS_ROLE" display="bitmask">Roles allowed to access this command. Zero means unspecified metadata.</field>
+    </message>
+
+    <message id="41002" name="DCLINK_PARAMETER">
+      <description>List, set, or acknowledge a DCLink runtime parameter.</description>
+      <field type="uint16_t" name="request_id">Client request id copied into the response.</field>
+      <field type="uint8_t" name="action" enum="DCLINK_ACTION">Requested action or response action.</field>
+      <field type="uint8_t" name="result" enum="DCLINK_RESULT">Action result for ACK/ERROR responses.</field>
+      <field type="uint16_t" name="total">Total available parameters for list responses.</field>
+      <field type="uint16_t" name="id">Parameter id; 0 is the parameter-list root for GET.</field>
+      <field type="char[64]" name="name">Parameter key/name.</field>
+      <field type="char[96]" name="value">Parameter value encoded as UTF-8 text.</field>
+      <field type="char[48]" name="section">UI/group section, for example core, safety, or navigation.</field>
+      <field type="uint32_t" name="flags">Reserved parameter bitmask.</field>
+      <field type="uint8_t" name="access_role" enum="DCLINK_PARAMETER_ACCESS_ROLE" display="bitmask">Roles allowed to access this parameter. Zero means unspecified metadata.</field>
+    </message>
+    <message id="41003" name="DCLINK_TARGET_VIEW">
+      <description>Read-only selected runtime target. Query: every field zero except request_id. Reply: schema_version=1. Validity flags govern all geometry; zero is never an unavailable sentinel. Angles require no range or GPS. Replies do not establish service liveness.</description>
+      <field type="uint32_t" name="request_id">Independent read correlation ID; never reused within a client lifetime.</field>
+      <field type="uint64_t" name="boot_id">Random nonzero endpoint lifetime identity.</field>
+      <field type="uint32_t" name="sequence">Increasing reply sequence within boot_id.</field>
+      <field type="uint32_t" name="flags" enum="DCLINK_TARGET_VIEW_FLAGS">Independent validity and target state bits.</field>
+      <field type="uint32_t" name="age_ms" units="ms">Age of selected observation on receipt at DCLink.</field>
+      <field type="uint32_t" name="source_age_ms" units="ms">Measurement age when SOURCE_AGE is set.</field>
+      <field type="uint16_t" name="valid_for_ms" units="ms">Remaining target lifetime at reply creation, at most 3000 ms. Client subtracts full query round trip.</field>
+      <field type="float" name="azimuth_deg" units="deg">Aircraft-relative nose azimuth, positive right, wrapped to [-180,180].</field>
+      <field type="float" name="elevation_deg" units="deg">Body-frame line-of-sight elevation, positive up, [-90,90].</field>
+      <field type="float" name="horizontal_range_m" units="m">Horizontal range estimate; never slant range.</field>
+      <field type="double" name="latitude_deg" units="deg">Target latitude in WGS84 degrees.</field>
+      <field type="double" name="longitude_deg" units="deg">Target longitude in WGS84 degrees.</field>
+      <field type="float" name="relative_north_m" units="m">Target minus aircraft north offset in local NED.</field>
+      <field type="float" name="relative_east_m" units="m">Target minus aircraft east offset in local NED.</field>
+      <field type="uint8_t" name="schema_version">Zero for query, one for reply.</field>
+      <field type="uint8_t" name="vehicle_system_id">Aircraft associated with the runtime observation.</field>
+      <field type="uint8_t" name="vehicle_component_id">Aircraft component associated with the runtime observation.</field>
+      <field type="uint8_t" name="control_owner" enum="DCLINK_CONTROL_OWNER">Reported runtime control authority, independent of active command.</field>
+      <field type="uint8_t" name="range_source" enum="DCLINK_RANGE_SOURCE">Range provenance, independent of angle validity.</field>
+      <field type="char[32]" name="target_id">Selected track ID if supplied; empty means unknown. UTF-8.</field>
+      <field type="char[24]" name="target_source">Selected observation source if supplied; empty means unknown. UTF-8.</field>
+    </message>
+  </messages>
+</mavlink>

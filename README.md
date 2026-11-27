@@ -20,7 +20,13 @@ You will also find:
 - **`copilot_mavlink_dialect.xml`**
   Copilot status, command, and parameter MAVLink definitions for ground-station integrations.
 
-See **`copilot-mavlink.md`** for native Copilot request and response rules.
+- **`dclink_mavlink_dialect.xml`**
+  DCLink status, command, parameter, and selected-target MAVLink definitions shared by DCLink and QGroundControl.
+
+See **`dclink-mavlink.md`** for DCLink request and response rules, wire checksums,
+and generation inputs. See **`copilot-mavlink.md`** for the Copilot protocol.
+Select one of these operator dialects per generated bus: they use the same
+message IDs with different wire checksums and must not be included together.
 
 Generated MAVLink code is intentionally not stored in this repository; it is typically generated and versioned in the consuming project.
 
