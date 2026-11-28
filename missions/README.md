@@ -1,8 +1,9 @@
 # DCLink mission planning contract
 
-The version-2 mission format supports waypoint routes and ordered rules in the
-shared QGC and Maintenance library. The running DCLink planner evaluates the
-saved revision's rules. The IPC and MAVLink exchange stays at protocol version 1.
+The version-2 mission format supports waypoint routes, ordered rules and
+geographic behavior areas in the shared QGC and Maintenance library. The running
+DCLink planner evaluates the saved revision. The IPC and MAVLink exchange stays
+at protocol version 1.
 
 ## Ownership
 
@@ -25,7 +26,7 @@ Editing, importing, listing, loading, and saving do not require an autopilot.
 
 The shared library supports named waypoint routes, multiple saved missions, and
 rules that react to waypoint arrivals or progress along a leg. A rule can
-require a current detection before running its steps.
+require a current detection, aircraft presence inside a drawn area, or both.
 
 ## Mission document, identity, and limits
 
@@ -43,13 +44,13 @@ require a current detection before running its steps.
 | `altitude_m` | Finite JSON number in metres relative to HOME. Execution checks configured flight limits separately. |
 | `acceptance_radius_m` | Finite positive metres for that waypoint. The editor initially offers 30 m and exposes the value. |
 | `rules` | Ordered list of 0–16 rules. An empty list gives normal waypoint navigation. |
-| `areas` | Empty array. Behavior areas require a later capability. |
+| `areas` | Ordered list of 0–8 geographic behavior areas. |
 
 All listed fields are required. Unknown fields, duplicate JSON object keys,
 non-finite numbers, and unsupported versions are invalid on save. The schema
-validates structure. The service also checks unique waypoint and rule IDs,
-waypoint references, the wait budget, and a maximum encoded document size of
-262144 UTF-8 bytes.
+validates structure. The service also checks unique waypoint, rule and area IDs,
+waypoint and area references, polygon geometry, the wait budget, and a maximum
+encoded document size of 262144 UTF-8 bytes.
 The same limits apply to IPC and MAVLink. No production JSON Schema dependency
 is required: each implementation may validate these rules with existing tools.
 
@@ -74,7 +75,8 @@ DCLink assigns the mission UUIDv4 and revision 1 on create. Revisions are positi
 uint32 values, increase on every successful update, and never wrap. Identity is
 scoped to the selected DCLink service; identical labels do not merge missions.
 Clients distinguish duplicate labels with a short ID in the picker when needed.
-Waypoint IDs are scoped to their mission and may be retained when making a copy.
+Waypoint, rule and area IDs are scoped to their mission and may be retained
+when making a copy.
 At revision exhaustion, reject updates with `busy` and reason
 `revision_exhausted`; the operator can save a copy with a new identity.
 
@@ -159,7 +161,10 @@ Capabilities return `protocol_version: 1`, `schema_versions: [2]`, the current
 supported `operations`, and the features `waypoint_routes` and `waypoint_rules`.
 `mission_detection_rules` advertises support for the optional condition and
 `leg_progress` trigger within version 2. Clients require this feature to save
-documents using either addition. Earlier version 2 documents remain valid.
+documents using either addition. `mission_behavior_areas` advertises support
+for area definitions, rule references, and area status. Clients require it to
+save any document with areas or rules that reference them. Earlier version 2
+documents remain valid.
 The service advertises `max_document_bytes: 262144`, `max_waypoints: 1000`,
 `max_name_characters: 80`, `max_list_page: 50`, and a MAVLink `max_chunk_bytes`
 no greater than 160.
@@ -274,8 +279,9 @@ mission library; it does not start DCLink, connect to a vehicle, or use IPC.
 
 Capabilities advertise `transports: ["local_helper"]` and the six operations
 capabilities, list, get, create, update and delete, with `schema_versions: [2]`
-and `waypoint_rules` and `mission_detection_rules` for editing. The helper
-validates and stores rules. The running planner evaluates them during a run.
+and the `waypoint_rules`, `mission_detection_rules` and `mission_behavior_areas`
+editing features. The helper validates and stores rules and areas. The running
+planner evaluates them during a run.
 The response echoes action, client/request IDs, `library_id`, `result` and
 `data`. Input is limited to 270336 bytes and logical output to 264192 bytes.
 A replaced library with a different identity returns `stale_library` and its
@@ -341,16 +347,15 @@ confirmed handoff. Pause and resume are outside this profile.
 
 ## Waypoint and leg rules
 
-Each rule has a lowercase UUIDv4 `id`, one `trigger`, an optional `condition`,
-and an ordered `actions` list of one to four steps. Choose when the rule applies,
-whether it needs a detection, and what to do. After the last step, the route
-continues.
+Each rule has a lowercase UUIDv4 `id`, one `trigger`, and an ordered `actions`
+list of one to four steps. Optional `condition` and `area_id` fields limit when
+the rule can run. After the last step, the route continues.
 
 | When | Trigger fields | Runs at |
 | --- | --- | --- |
 | Reaching a waypoint | `type: "waypoint_reached"`, `waypoint_id` | Confirmed arrival at the named waypoint, using normal mission progress checks. |
 | Starting a leg | `type: "leg_started"`, `from_waypoint_id`, `to_waypoint_id` | Transition to the next waypoint after the previous waypoint and its rules finish. |
-| Anywhere on a leg | `type: "leg_progress"`, `from_waypoint_id`, `to_waypoint_id`, `position: {"type":"anywhere"}` | First eligible point on the active leg, including an accepted arrival at its end. With a condition, the leg keeps watching for the first match. |
+| Anywhere on a leg | `type: "leg_progress"`, `from_waypoint_id`, `to_waypoint_id`, `position: {"type":"anywhere"}` | First eligible point on the active leg, including an accepted arrival at its end. Evaluates any saved conditions until the first match. |
 | At a percentage of a leg | `type: "leg_progress"`, `from_waypoint_id`, `to_waypoint_id`, `position: {"type":"percent","percent":50}` | First time a fresh aircraft position reaches or crosses the specified whole percentage from 0 to 100. |
 
 References use stable waypoint IDs. Both leg IDs must be consecutive in route
@@ -365,17 +370,23 @@ inside its arrival radius before reaching an interior percentage. An interior
 percentage that was never observed is skipped. A leg with coincident horizontal
 endpoints can reach 0% and 100% and can use Anywhere.
 
-Omit `condition` to run the rule whenever its trigger becomes eligible. Set
-`condition: {"type":"detection_present"}` to require any fresh, active
+The first sample at or beyond a percentage is its only check in that run.
+If its conditions fail at that sample, the rule is skipped for that run.
+Anywhere checks each eligible sample until it matches once or the leg ends.
+
+Set `condition: {"type":"detection_present"}` to require any fresh, active
 classified detection reported to DCLink. Add `class_id` to match an exact
 integer class ID from the camera model, from 0 to 32767. While a mission uses
 conditions, DCLink polls its configured DigiView for a complete classified
 detection snapshot. A detection is fresh for at most 1.5 seconds. Empty reports
-clear presence. Missing, stale, or lost
-detections do not satisfy the condition. Waypoint arrival, leg start and
-percentage rules check once at their event. An Anywhere rule can keep checking
-until the leg ends. A rule never holds route progress while waiting for a
-detection.
+clear presence. The route continues while a rule waits for a match.
+
+Set `area_id` to the ID of a saved area to require the aircraft's current
+horizontal position to be inside it. This combines with a detection condition
+when both are present. Waypoint arrival, leg start and percentage rules check
+both conditions once at their event. A wait that starts after a match continues
+for its saved duration if the aircraft drifts outside the area. The original
+Cancel, telemetry checks and safety handoff still apply.
 
 | Step | Action fields | Behavior |
 | --- | --- | --- |
@@ -395,8 +406,38 @@ whole seconds left in `remaining_s`. Each notification is logged by DCLink.
 `last_notification` retains the latest notification for this run and includes
 `rule_id`, `action_index`, `type: "notify"` and `text`.
 
-Geographic behavior areas require a separate advertised capability and
-validation.
+## Geographic behavior areas
+
+Draw the boundary on the QGC Plan map. Give it a name, optionally enter an
+advisory, then select it under the rule's area condition. A named area can be
+reused by several rules. Keep its ID when editing its name, advisory or
+vertices. If an area is removed, repair the affected rules before saving.
+
+| Area field | Contract |
+| --- | --- |
+| `id` | Lowercase UUIDv4, unique among areas in the mission. |
+| `name` | Pilot-facing label of 1–80 Unicode scalar values, with the same constraints as the mission name. |
+| `vertices` | 3–32 `{latitude_deg, longitude_deg}` corners in boundary order. The closing edge is implicit. |
+| `advisory` | Optional message of 1–100 Unicode scalar values, with the same constraints as a Notify step. |
+
+Each vertex uses finite WGS84 degrees, with latitude strictly between -90 and
+90 and longitude between -180 and 180 inclusive. Rings require distinct
+vertices, nonzero area and a longitude span under 180 degrees. Intersecting or
+touching nonadjacent edges and adjacent edges that double back are invalid.
+Consecutive corners that continue along the same straight edge are valid.
+Clockwise and counterclockwise vertex orders have the same meaning.
+
+Membership uses fresh aircraft latitude and longitude and includes the
+boundary. Longitude 180° and -180° refer to the same meridian for membership.
+Membership is independent of altitude. Areas can overlap and each is evaluated
+independently. Advisories are for the operator, and area-scoped rules use the
+same steps and command ownership as waypoint and leg rules. The route and
+aircraft geofence remain separate from these areas.
+
+While running, `run.active_areas` lists the areas containing the aircraft's
+fresh position in saved order. Each item includes `area_id`, `name` and the
+optional `advisory`. The field is omitted when no area is active. The run uses
+area definitions and rule references from its admitted saved revision.
 
 ## Implementation acceptance
 
@@ -429,3 +470,6 @@ simulation before operational evaluation:
   Missing, stale, and mismatched detections leave navigation running normally.
   An Anywhere rule fires at most once, and a percentage rule checks only when
   the position reaches its specified progress.
+- In simulation, aircraft entry and exit update active areas and advisories.
+  A rule with both an area and a detection condition fires only if both match.
+  Reject malformed polygons and missing area references before a save commits.

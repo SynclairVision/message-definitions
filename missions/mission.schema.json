@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/SynclairVision/message-definitions/dev-0.8-qgc-missions/missions/mission.schema.json",
   "title": "DCLink mission content version 2",
   "description": "Editable mission content, separate from the service-assigned mission ID and revision. Saving content does not authorize execution.",
-  "$comment": "Service validation also rejects duplicate JSON object keys, non-finite decoded numbers, duplicate waypoint or rule IDs, missing waypoint references, leg references that are not consecutive in route order, more than 300 seconds of total Wait actions, and documents larger than 262144 UTF-8 bytes. Execution requires at least one waypoint and independent readiness checks.",
+  "$comment": "The service also checks duplicate object keys, finite numbers, unique waypoint, rule and area IDs, valid waypoint and area references, consecutive leg endpoints, simple polygons with nonzero area and longitude span below 180 degrees, a 300-second total wait limit, and a 262144-byte UTF-8 document limit. Execution requires a waypoint and independent readiness checks.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,22 +20,7 @@
       "const": 2
     },
     "name": {
-      "type": "string",
-      "description": "A label of 1–80 Unicode code points, without control characters or leading/trailing whitespace. Names are not mission identity.",
-      "minLength": 1,
-      "maxLength": 80,
-      "allOf": [
-        {
-          "not": {
-            "pattern": "[\u0000-\u001f\u007f-\u009f]"
-          }
-        },
-        {
-          "not": {
-            "pattern": "^[\\s\uFEFF]|[\\s\uFEFF]$"
-          }
-        }
-      ]
+      "$ref": "#/$defs/name"
     },
     "altitude_reference": {
       "type": "string",
@@ -61,12 +46,40 @@
     },
     "areas": {
       "type": "array",
-      "description": "Reserved for capability-gated behavior areas. Version 2 accepts an empty array.",
-      "maxItems": 0,
-      "items": false
+      "description": "Ordered geographic areas for rule conditions and operator advisories. Each area ID is unique within the mission.",
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/area"
+      }
     }
   },
   "$defs": {
+    "clean_text": {
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        {
+          "not": {
+            "pattern": "[\u0000-\u001f\u007f-\u009f\ud800-\udfff]"
+          }
+        },
+        {
+          "not": {
+            "pattern": "^[\\s\uFEFF]|[\\s\uFEFF]$"
+          }
+        }
+      ]
+    },
+    "name": {
+      "$ref": "#/$defs/clean_text",
+      "description": "A label of 1–80 Unicode scalar values without controls, edge whitespace, or edge BOMs.",
+      "maxLength": 80
+    },
+    "message_text": {
+      "$ref": "#/$defs/clean_text",
+      "description": "Pilot-facing message of 1–100 Unicode scalar values without controls, edge whitespace, or edge BOMs.",
+      "maxLength": 100
+    },
     "id": {
       "type": "string",
       "minLength": 36,
@@ -133,6 +146,10 @@
         },
         "condition": {
           "$ref": "#/$defs/detection_present"
+        },
+        "area_id": {
+          "$ref": "#/$defs/id",
+          "description": "An area in this mission. The aircraft must be inside that area when the rule is checked. If a detection condition also exists, both must be satisfied."
         },
         "actions": {
           "type": "array",
@@ -269,22 +286,52 @@
           "const": "notify"
         },
         "text": {
-          "type": "string",
-          "description": "Pilot-facing message of 1–100 Unicode scalar values. Trim surrounding whitespace.",
-          "minLength": 1,
-          "maxLength": 100,
-          "allOf": [
-            {
-              "not": {
-                "pattern": "[\u0000-\u001f\u007f-\u009f\ud800-\udfff]"
-              }
-            },
-            {
-              "not": {
-                "pattern": "^[\\s\uFEFF]|[\\s\uFEFF]$"
-              }
-            }
-          ]
+          "$ref": "#/$defs/message_text"
+        }
+      }
+    },
+    "area": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "vertices"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id",
+          "description": "Lowercase UUIDv4, stable through edits and unique among the areas in this mission."
+        },
+        "name": {
+          "$ref": "#/$defs/name"
+        },
+        "vertices": {
+          "type": "array",
+          "description": "Corners in boundary order. The closing edge is implicit. The service checks polygon geometry.",
+          "minItems": 3,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/area_vertex"
+          }
+        },
+        "advisory": {
+          "$ref": "#/$defs/message_text",
+          "description": "Optional operator message displayed while the aircraft is inside the area."
+        }
+      }
+    },
+    "area_vertex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latitude_deg", "longitude_deg"],
+      "properties": {
+        "latitude_deg": {
+          "type": "number",
+          "exclusiveMinimum": -90,
+          "exclusiveMaximum": 90
+        },
+        "longitude_deg": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
         }
       }
     },

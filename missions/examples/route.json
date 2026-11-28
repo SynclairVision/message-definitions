@@ -51,8 +51,9 @@
         "position": {"type": "anywhere"}
       },
       "condition": {"type": "detection_present"},
+      "area_id": "00000000-0000-4000-8000-000000000201",
       "actions": [
-        {"type": "notify", "text": "A detection was reported on the leg"}
+        {"type": "notify", "text": "A detection was reported in the survey area"}
       ]
     },
     {
@@ -69,5 +70,17 @@
       ]
     }
   ],
-  "areas": []
+  "areas": [
+    {
+      "id": "00000000-0000-4000-8000-000000000201",
+      "name": "Survey area",
+      "vertices": [
+        {"latitude_deg": 0.00035, "longitude_deg": 0.00035},
+        {"latitude_deg": 0.00035, "longitude_deg": 0.00075},
+        {"latitude_deg": 0.00075, "longitude_deg": 0.00075},
+        {"latitude_deg": 0.00075, "longitude_deg": 0.00035}
+      ],
+      "advisory": "Survey area: monitor camera observations"
+    }
+  ]
 }
