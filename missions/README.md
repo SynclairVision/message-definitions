@@ -24,7 +24,8 @@ Saving a mission never starts or changes a flight.
 Editing, importing, listing, loading, and saving do not require an autopilot.
 
 The shared library supports named waypoint routes, multiple saved missions, and
-rules that react to waypoint arrival or the start of a leg.
+rules that react to waypoint arrivals or progress along a leg. A rule can
+require a current detection before running its steps.
 
 ## Mission document, identity, and limits
 
@@ -155,10 +156,13 @@ includes `data.current_service_session`; clients rediscover rather than treating
 that response as a successful operation in the new session.
 
 Capabilities return `protocol_version: 1`, `schema_versions: [2]`, the current
-supported `operations`, the features `waypoint_routes` and `waypoint_rules`,
-and these limits:
-`max_document_bytes: 262144`, `max_waypoints: 1000`, `max_name_characters: 80`,
-`max_list_page: 50`, and a MAVLink `max_chunk_bytes` no greater than 160.
+supported `operations`, and the features `waypoint_routes` and `waypoint_rules`.
+`mission_detection_rules` advertises support for the optional condition and
+`leg_progress` trigger within version 2. Clients require this feature to save
+documents using either addition. Earlier version 2 documents remain valid.
+The service advertises `max_document_bytes: 262144`, `max_waypoints: 1000`,
+`max_name_characters: 80`, `max_list_page: 50`, and a MAVLink `max_chunk_bytes`
+no greater than 160.
 IPC additionally reports `max_result_bytes: 264192` and the bounded
 `max_session_mutations`. The IPC-only delivery advertises `transports: ["ipc"]`
 and omits MAVLink chunk support. `stored_route_import` advertises the explicit
@@ -270,10 +274,12 @@ mission library; it does not start DCLink, connect to a vehicle, or use IPC.
 
 Capabilities advertise `transports: ["local_helper"]` and the six operations
 capabilities, list, get, create, update and delete, with `schema_versions: [2]`
-and `waypoint_rules` for editing. The response echoes action,
-client/request IDs, `library_id`, `result` and `data`. Input is limited to 270336
-bytes and logical output to 264192 bytes. A replaced library with a different
-identity returns `stale_library` and its current ID without admitting the write.
+and `waypoint_rules` and `mission_detection_rules` for editing. The helper
+validates and stores rules. The running planner evaluates them during a run.
+The response echoes action, client/request IDs, `library_id`, `result` and
+`data`. Input is limited to 270336 bytes and logical output to 264192 bytes.
+A replaced library with a different identity returns `stale_library` and its
+current ID without admitting the write.
 `library_id` identifies stored data and survives process restarts; it is separate
 from the runtime boot's `service_session` and is not a MAVLink field.
 
@@ -328,46 +334,69 @@ the client should treat that run's state as unknown.
 The planner uses the aircraft's existing external-control and Hold lifecycle.
 Progress requires fresh feedback inside each waypoint's horizontal acceptance
 radius and within 2 m vertically. The final waypoint requests Hold after its
-rules finish. Cancel
-targets one run and is safe to repeat for that run. It can cancel a queued
-start or request the usual confirmed Hold handoff. `stopping` is pending.
-The planner reports `completed` or an in-flight `canceled` after confirmed
-handoff. Pause and resume are outside this profile.
+rules finish. Cancel targets one run and is safe to repeat for that run. It can
+cancel a queued start or request the usual confirmed Hold handoff. `stopping`
+is pending. The planner reports `completed` or an in-flight `canceled` after
+confirmed handoff. Pause and resume are outside this profile.
 
 ## Waypoint and leg rules
 
-Each rule has a lowercase UUIDv4 `id`, one `trigger`, and an ordered `actions`
-list of one to four steps. In the editor, choose where a rule applies, when to
-run it, and what to do in order. After the last step, the route continues.
+Each rule has a lowercase UUIDv4 `id`, one `trigger`, an optional `condition`,
+and an ordered `actions` list of one to four steps. Choose when the rule applies,
+whether it needs a detection, and what to do. After the last step, the route
+continues.
 
 | When | Trigger fields | Runs at |
 | --- | --- | --- |
 | Reaching a waypoint | `type: "waypoint_reached"`, `waypoint_id` | Confirmed arrival at the named waypoint, using normal mission progress checks. |
-| Starting a leg | `type: "leg_started"`, `from_waypoint_id`, `to_waypoint_id` | Transition to the next waypoint after the previous waypoint and its rules finish. Both IDs must be consecutive in route order. |
+| Starting a leg | `type: "leg_started"`, `from_waypoint_id`, `to_waypoint_id` | Transition to the next waypoint after the previous waypoint and its rules finish. |
+| Anywhere on a leg | `type: "leg_progress"`, `from_waypoint_id`, `to_waypoint_id`, `position: {"type":"anywhere"}` | First eligible point on the active leg, including an accepted arrival at its end. With a condition, the leg keeps watching for the first match. |
+| At a percentage of a leg | `type: "leg_progress"`, `from_waypoint_id`, `to_waypoint_id`, `position: {"type":"percent","percent":50}` | First time a fresh aircraft position reaches or crosses the specified whole percentage from 0 to 100. |
 
-References use stable waypoint IDs. Moving a point keeps its ID. Removing a
-referenced point or breaking a leg requires fixing its rules before saving.
+References use stable waypoint IDs. Both leg IDs must be consecutive in route
+order. Moving a point keeps its ID. Removing a referenced point or breaking a
+leg requires fixing its rules before saving.
+
+Leg progress is relative to the straight horizontal segment between the saved
+waypoints, calculated by projecting the aircraft position along that segment.
+0% is the first fresh sample after steering toward the next waypoint begins.
+100% is confirmed arrival under the normal waypoint checks. A leg can finish
+inside its arrival radius before reaching an interior percentage. An interior
+percentage that was never observed is skipped. A leg with coincident horizontal
+endpoints can reach 0% and 100% and can use Anywhere.
+
+Omit `condition` to run the rule whenever its trigger becomes eligible. Set
+`condition: {"type":"detection_present"}` to require any fresh, active
+classified detection reported to DCLink. Add `class_id` to match an exact
+integer class ID from the camera model, from 0 to 32767. While a mission uses
+conditions, DCLink polls its configured DigiView for a complete classified
+detection snapshot. A detection is fresh for at most 1.5 seconds. Empty reports
+clear presence. Missing, stale, or lost
+detections do not satisfy the condition. Waypoint arrival, leg start and
+percentage rules check once at their event. An Anywhere rule can keep checking
+until the leg ends. A rule never holds route progress while waiting for a
+detection.
 
 | Step | Action fields | Behavior |
 | --- | --- | --- |
 | Notify | `type: "notify"`, `text` | Record an operator message and continue to the next step. Text is 1–100 Unicode scalar values without surrounding whitespace, edge BOMs, or C0/C1 control characters. |
 | Wait at waypoint | `type: "wait"`, `duration_s` | Keep the reached waypoint as the current navigation target for 1–60 whole seconds, then continue to the next step. Available only on waypoint arrival. |
 
-Rules for the same event run in saved order. Each rule runs once per execution,
-with a combined wait budget of at most 300 seconds per mission. For example,
-an arrival rule can notify, wait five seconds, and notify again before the next
-leg begins. Wait uses the same aircraft ownership and readiness checks as
-normal route motion. Cancel and safety handoff apply during the wait.
+Rules that become eligible together run in saved order. Each rule runs at most
+once per execution, with a combined wait budget of at most 300 seconds per
+mission. For example, an arrival rule can notify, wait five seconds, and
+notify again before the next leg begins. Wait uses the same aircraft ownership
+and readiness checks as normal route motion. Cancel and safety handoff apply
+during the wait.
 
-A run report may include `rule_event` while an action sequence is active.
-It contains `rule_id`, `action_index` (starting at 1 within the rule), and
-`type`. A `notify` event includes `text`; a `wait` event includes whole
-seconds left in `remaining_s`. The active event clears after the sequence.
-Each notification is logged by DCLink. `last_notification` retains the latest
-Notify event for this run so it remains visible between polls.
+A run report may include `rule_event` while a wait is active. It contains
+`rule_id`, `action_index` (starting at 1 within the rule), `type: "wait"` and
+whole seconds left in `remaining_s`. Each notification is logged by DCLink.
+`last_notification` retains the latest notification for this run and includes
+`rule_id`, `action_index`, `type: "notify"` and `text`.
 
-Detection conditions and geographic behavior areas require separate advertised
-capabilities and validation.
+Geographic behavior areas require a separate advertised capability and
+validation.
 
 ## Implementation acceptance
 
@@ -396,3 +425,7 @@ simulation before operational evaluation:
 - Missing waypoint references, nonconsecutive leg endpoints, waits on legs,
   and excess wait time are rejected before saving. Both editors preserve the
   order and stable IDs of valid rules.
+- In simulation, a matching detection can satisfy a waypoint or leg rule.
+  Missing, stale, and mismatched detections leave navigation running normally.
+  An Anywhere rule fires at most once, and a percentage rule checks only when
+  the position reaches its specified progress.

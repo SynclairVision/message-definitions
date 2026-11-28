@@ -6,7 +6,8 @@ in [dclink_mavlink_dialect.xml](../dclink_mavlink_dialect.xml).
 
 The mission content version and the exchange protocol version are separate.
 Version-2 rules are part of the existing JSON mission body, and rule status is
-part of the existing JSON run report.
+part of the existing JSON run report. The `mission_detection_rules` capability
+advertises detection conditions and leg progress triggers in that JSON body.
 
 | ID | Message | Full payload bytes | CRC extra |
 | --- | --- | --- | --- |

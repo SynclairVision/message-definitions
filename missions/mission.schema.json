@@ -53,7 +53,7 @@
     },
     "rules": {
       "type": "array",
-      "description": "Ordered rules. Rules matching the same event run in this order, once per run.",
+      "description": "Ordered rules. Each eligible rule runs at most once per run. Rules that become eligible together run in saved order.",
       "maxItems": 16,
       "items": {
         "$ref": "#/$defs/rule"
@@ -125,8 +125,14 @@
             },
             {
               "$ref": "#/$defs/leg_started"
+            },
+            {
+              "$ref": "#/$defs/leg_progress"
             }
           ]
+        },
+        "condition": {
+          "$ref": "#/$defs/detection_present"
         },
         "actions": {
           "type": "array",
@@ -148,7 +154,9 @@
       "if": {
         "properties": {
           "trigger": {
-            "$ref": "#/$defs/leg_started"
+            "not": {
+              "$ref": "#/$defs/waypoint_reached"
+            }
           }
         }
       },
@@ -188,6 +196,67 @@
         },
         "to_waypoint_id": {
           "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "leg_progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "from_waypoint_id", "to_waypoint_id", "position"],
+      "properties": {
+        "type": {
+          "const": "leg_progress"
+        },
+        "from_waypoint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "to_waypoint_id": {
+          "$ref": "#/$defs/id"
+        },
+        "position": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type"],
+              "properties": {
+                "type": {
+                  "const": "anywhere"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "percent"],
+              "properties": {
+                "type": {
+                  "const": "percent"
+                },
+                "percent": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "detection_present": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "const": "detection_present"
+        },
+        "class_id": {
+          "type": "integer",
+          "description": "Exact class ID from the detector model. Omit to match any fresh, active classified detection.",
+          "minimum": 0,
+          "maximum": 32767
         }
       }
     },

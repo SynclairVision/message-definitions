@@ -12,8 +12,8 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000002",
-      "latitude_deg": 0.0001,
-      "longitude_deg": 0.0001,
+      "latitude_deg": 0.001,
+      "longitude_deg": 0.001,
       "altitude_m": 30,
       "acceptance_radius_m": 30
     }
@@ -40,6 +40,32 @@
       },
       "actions": [
         {"type": "notify", "text": "Moving to the second waypoint"}
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000103",
+      "trigger": {
+        "type": "leg_progress",
+        "from_waypoint_id": "00000000-0000-4000-8000-000000000001",
+        "to_waypoint_id": "00000000-0000-4000-8000-000000000002",
+        "position": {"type": "anywhere"}
+      },
+      "condition": {"type": "detection_present"},
+      "actions": [
+        {"type": "notify", "text": "A detection was reported on the leg"}
+      ]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000104",
+      "trigger": {
+        "type": "leg_progress",
+        "from_waypoint_id": "00000000-0000-4000-8000-000000000001",
+        "to_waypoint_id": "00000000-0000-4000-8000-000000000002",
+        "position": {"type": "percent", "percent": 50}
+      },
+      "condition": {"type": "detection_present", "class_id": 3},
+      "actions": [
+        {"type": "notify", "text": "Class 3 was detected halfway along the leg"}
       ]
     }
   ],
