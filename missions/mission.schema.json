@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/SynclairVision/message-definitions/dev-0.8-qgc-missions/missions/mission.schema.json",
   "title": "DCLink mission content version 2",
   "description": "Editable mission content, separate from the service-assigned mission ID and revision. Saving content does not authorize execution.",
-  "$comment": "The service also checks duplicate object keys, finite numbers, unique waypoint, rule and area IDs, valid waypoint and area references, consecutive leg endpoints, simple polygons with nonzero area and longitude span below 180 degrees, a 300-second total wait limit, and a 262144-byte UTF-8 document limit. Execution requires a waypoint and independent readiness checks.",
+  "$comment": "The service also checks duplicate object keys, finite numbers, unique waypoint, rule and area IDs, valid waypoint and area references, consecutive leg endpoints, simple polygons with nonzero area and longitude span below 180 degrees, compatible command IDs, a 300-second total wait limit, and a 262144-byte UTF-8 document limit. Execution requires a waypoint and independent readiness checks.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -163,6 +163,9 @@
               },
               {
                 "$ref": "#/$defs/wait"
+              },
+              {
+                "$ref": "#/$defs/command_step"
               }
             ]
           }
@@ -181,7 +184,14 @@
         "properties": {
           "actions": {
             "items": {
-              "$ref": "#/$defs/notify"
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/notify"
+                },
+                {
+                  "$ref": "#/$defs/command_step"
+                }
+              ]
             }
           }
         }
@@ -287,6 +297,22 @@
         },
         "text": {
           "$ref": "#/$defs/message_text"
+        }
+      }
+    },
+    "command_step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "command_id"],
+      "properties": {
+        "type": {
+          "const": "command"
+        },
+        "command_id": {
+          "type": "string",
+          "description": "Canonical ID from the DCLink mission command catalog. The service checks compatibility.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*(/[a-z][a-z0-9_]*)*(?![\\s\\S])"
         }
       }
     },

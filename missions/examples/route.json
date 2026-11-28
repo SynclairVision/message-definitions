@@ -39,6 +39,7 @@
         "to_waypoint_id": "00000000-0000-4000-8000-000000000002"
       },
       "actions": [
+        {"type": "command", "command_id": "copter/rotate_north"},
         {"type": "notify", "text": "Moving to the second waypoint"}
       ]
     },

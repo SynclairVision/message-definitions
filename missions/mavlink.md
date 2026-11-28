@@ -5,11 +5,13 @@ and supported execution operations use the same exchange. The canonical layouts 
 in [dclink_mavlink_dialect.xml](../dclink_mavlink_dialect.xml).
 
 The mission content version and the exchange protocol version are separate.
-Version-2 rules and geographic behavior areas are part of the JSON mission
-body. The `mission_detection_rules` capability advertises detection conditions
-and leg progress triggers. The `mission_behavior_areas` capability advertises
+Version-2 rules, geographic behavior areas and command steps are part of the
+JSON mission body. The `mission_detection_rules` capability advertises detection
+conditions and leg progress triggers. The `mission_behavior_areas` capability advertises
 area definitions and rule area references in the mission body and optional
-`active_areas` in the JSON run report.
+`active_areas` in the JSON run report. The `mission_command_steps` capability
+adds the compatible `mission_commands` catalog to discovery, `command` actions
+to the mission body, and an optional active command `rule_event` to run reports.
 
 | ID | Message | Full payload bytes | CRC extra |
 | --- | --- | --- | --- |

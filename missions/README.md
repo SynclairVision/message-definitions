@@ -49,8 +49,8 @@ require a current detection, aircraft presence inside a drawn area, or both.
 All listed fields are required. Unknown fields, duplicate JSON object keys,
 non-finite numbers, and unsupported versions are invalid on save. The schema
 validates structure. The service also checks unique waypoint, rule and area IDs,
-waypoint and area references, polygon geometry, the wait budget, and a maximum
-encoded document size of 262144 UTF-8 bytes.
+waypoint and area references, polygon geometry, command compatibility, the wait
+budget, and a maximum encoded document size of 262144 UTF-8 bytes.
 The same limits apply to IPC and MAVLink. No production JSON Schema dependency
 is required: each implementation may validate these rules with existing tools.
 
@@ -115,7 +115,7 @@ and survives its transport reconnects; it is not authentication.
 
 | Action | Payload | Successful result data |
 | --- | --- | --- |
-| `missions.capabilities` | Empty; the discovery request omits `service_session`. | Session, versions, supported operations, features, limits, and readiness. |
+| `missions.capabilities` | Empty; the discovery request omits `service_session`. | Session, versions, supported operations, features, limits, readiness, and the mission command catalog when supported. |
 | `missions.list` | Optional opaque `cursor`, `limit` from 1 to 50 (default 50). | `items` of `{mission_id, revision, name, schema_version, waypoint_count}`, `next_cursor` or null. |
 | `missions.get` | `mission_id`. | Latest complete saved record. |
 | `missions.create` | `mission` content. | `{mission_id, revision: 1}`. |
@@ -163,8 +163,16 @@ supported `operations`, and the features `waypoint_routes` and `waypoint_rules`.
 `leg_progress` trigger within version 2. Clients require this feature to save
 documents using either addition. `mission_behavior_areas` advertises support
 for area definitions, rule references, and area status. Clients require it to
-save any document with areas or rules that reference them. Earlier version 2
-documents remain valid.
+save any document with areas or rules that reference them.
+`mission_command_steps` advertises the `command` step and adds a
+`mission_commands` array of `{id, label}` to capability discovery. `id` is the
+canonical saved command ID and `label` is the pilot-facing name. The catalog is
+available for planning without an autopilot and is independent of start
+readiness. Editors populate their command choices from this catalog. Saving or
+retrying a write with command steps, including Save as copy, requires the
+feature and each referenced command in the current catalog. DCLink validates
+each command against its mission catalog when accepting the document. Earlier
+version 2 documents remain valid.
 The service advertises `max_document_bytes: 262144`, `max_waypoints: 1000`,
 `max_name_characters: 80`, `max_list_page: 50`, and a MAVLink `max_chunk_bytes`
 no greater than 160.
@@ -279,9 +287,10 @@ mission library; it does not start DCLink, connect to a vehicle, or use IPC.
 
 Capabilities advertise `transports: ["local_helper"]` and the six operations
 capabilities, list, get, create, update and delete, with `schema_versions: [2]`
-and the `waypoint_rules`, `mission_detection_rules` and `mission_behavior_areas`
-editing features. The helper validates and stores rules and areas. The running
-planner evaluates them during a run.
+and the `waypoint_rules`, `mission_detection_rules`, `mission_behavior_areas`
+and `mission_command_steps` editing features. The helper advertises the shared
+`mission_commands` catalog and validates and stores the rules and areas. The
+running planner evaluates them during a run.
 The response echoes action, client/request IDs, `library_id`, `result` and
 `data`. Input is limited to 270336 bytes and logical output to 264192 bytes.
 A replaced library with a different identity returns `stale_library` and its
@@ -343,7 +352,8 @@ radius and within 2 m vertically. The final waypoint requests Hold after its
 rules finish. Cancel targets one run and is safe to repeat for that run. It can
 cancel a queued start or request the usual confirmed Hold handoff. `stopping`
 is pending. The planner reports `completed` or an in-flight `canceled` after
-confirmed handoff. Pause and resume are outside this profile.
+confirmed handoff. The operator controls are Start, status and Cancel. The
+planner resumes the route automatically after a successful command step.
 
 ## Waypoint and leg rules
 
@@ -392,17 +402,33 @@ Cancel, telemetry checks and safety handoff still apply.
 | --- | --- | --- |
 | Notify | `type: "notify"`, `text` | Record an operator message and continue to the next step. Text is 1–100 Unicode scalar values without surrounding whitespace, edge BOMs, or C0/C1 control characters. |
 | Wait at waypoint | `type: "wait"`, `duration_s` | Keep the reached waypoint as the current navigation target for 1–60 whole seconds, then continue to the next step. Available only on waypoint arrival. |
+| Run compatible command | `type: "command"`, `command_id` | Pause route progress, run the selected command within the saved mission, then continue to the next step on success. Available at waypoint and leg triggers. |
 
 Rules that become eligible together run in saved order. Each rule runs at most
 once per execution, with a combined wait budget of at most 300 seconds per
 mission. For example, an arrival rule can notify, wait five seconds, and
 notify again before the next leg begins. Wait uses the same aircraft ownership
 and readiness checks as normal route motion. Cancel and safety handoff apply
-during the wait.
+during the wait and any command step.
 
-A run report may include `rule_event` while a wait is active. It contains
-`rule_id`, `action_index` (starting at 1 within the rule), `type: "wait"` and
-whole seconds left in `remaining_s`. Each notification is logged by DCLink.
+Command IDs contain up to 64 characters. Use lowercase slash-separated
+segments that start with a letter and continue with letters, ASCII digits, or
+underscores. Each step stores only its command ID, and DCLink supplies its
+bounded implementation. The current catalog contains **Face north**
+(`copter/rotate_north`). It holds the current captured position and altitude
+while turning north. The mission retains movement ownership and normal flight
+eligibility checks. The step has a 20-second deadline and completes when fresh
+heading and position feedback confirm the turn and the hold. The planner then
+finishes the remaining steps and resumes the current waypoint or leg. Timeout
+or failure ends the run through the normal safe Hold handoff. Failure reasons
+include `mission_command_timeout`, `mission_command_heading_unavailable` and
+`mission_command_position_out_of_bounds`. Cancel uses the same confirmed Hold
+path as Cancel during route navigation.
+
+A run report may include `rule_event` while a wait or command is active. It
+contains `rule_id`, `action_index` (starting at 1 within the rule), `type`
+(`"wait"` or `"command"`), and whole seconds left in `remaining_s`. A command
+event also includes `command_id`. Each notification is logged by DCLink.
 `last_notification` retains the latest notification for this run and includes
 `rule_id`, `action_index`, `type: "notify"` and `text`.
 
@@ -473,3 +499,12 @@ simulation before operational evaluation:
 - In simulation, aircraft entry and exit update active areas and advisories.
   A rule with both an area and a detection condition fires only if both match.
   Reject malformed polygons and missing area references before a save commits.
+- Discover the compatible command list without an autopilot. Save and reload a
+  command at a waypoint and on a leg in both editors. A syntactically valid
+  command outside the catalog is rejected by the service.
+- In PX4 SITL, start a saved route with Face north followed by Notify. Confirm
+  that the command holds position and altitude, reports a running step, and
+  resumes the same waypoint or leg after the turn. Cancel a separate run
+  during the turn and verify confirmed Hold. With synthetic stale heading or
+  an expired deadline, check that the failure requests Hold and later steps
+  are skipped.
